@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from bs4 import BeautifulSoup
 
 # تنظیمات
@@ -8,14 +9,17 @@ OUTPUT_FILE = 'assets/js/data.js'
 
 def normalize_text(text):
     if not text: return ""
-    # جدول تبدیل کاراکترها
+    # جدول تبدیل: اعداد فارسی به انگلیسی، عربی به فارسی، حذف نیم‌فاصله
     translations = {
         ord('ي'): 'ی', ord('ك'): 'ک', ord('ة'): 'ه',
         ord('۰'): '0', ord('۱'): '1', ord('۲'): '2', ord('۳'): '3', ord('۴'): '4',
         ord('۵'): '5', ord('۶'): '6', ord('۷'): '7', ord('۸'): '8', ord('۹'): '9',
-        0x200C: ' ' # نیم‌فاصله به فاصله
+        0x200C: ' ' 
     }
-    return text.translate(translations).strip()
+    # جایگزینی فاصله‌های اضافه و خط‌های جدید با یک فاصله
+    clean_text = text.translate(translations)
+    clean_text = re.sub(r'\s+', ' ', clean_text)
+    return clean_text.strip()
 
 def parse_html_file(filepath):
     courses = []
@@ -29,13 +33,12 @@ def parse_html_file(filepath):
             # چک کردن ساختار جدول گلستان (حداقل 13 ستون)
             if len(cells) < 13: continue
             
-            # ستون اول باید عدد باشد (ردیف)
+            # ستون اول باید عدد باشد
             first_cell = cells[0].get_text(strip=True)
             if not first_cell.isdigit(): continue
 
             # استخراج داده‌ها
-            # ستون 4: شماره و گروه درس (شناسه یکتا)
-            raw_id = normalize_text(cells[4].get_text())
+            raw_id = normalize_text(cells[4].get_text()) # شماره و گروه
             
             course = {
                 "id": raw_id,
@@ -44,8 +47,9 @@ def parse_html_file(filepath):
                 "group": normalize_text(cells[3].get_text()),
                 "gender": normalize_text(cells[11].get_text()),
                 "prof": normalize_text(cells[12].get_text()),
-                # HTML زمان را نگه می‌داریم اما ی/ک را اصلاح می‌کنیم
+                # HTML زمان را برای پردازش بعدی نگه می‌داریم (با اصلاح ی/ک)
                 "time_html": str(cells[13]).replace('ي', 'ی').replace('ك', 'ک'), 
+                # متن کامل را هم برای استخراج امتحان نگه می‌داریم
                 "exam_text": normalize_text(cells[13].get_text(" ", strip=True))
             }
             courses.append(course)
@@ -78,7 +82,6 @@ def main():
     unique_map = {}
     for course in all_raw_courses:
         c_id = course['id']
-        # اگر قبلاً اضافه نشده، اضافه کن
         if c_id not in unique_map:
             unique_map[c_id] = course
 

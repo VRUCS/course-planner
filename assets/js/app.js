@@ -1,6 +1,6 @@
 // State
 let selectedCourses = new Set();
-// اگر دیتابیس وجود نداشت (هنوز پایتون اجرا نشده)، آرایه خالی بساز
+// اگر دیتابیس لود نشد، با آرایه خالی شروع کن
 const courses = (typeof UNIVERSITY_DATA !== 'undefined') ? UNIVERSITY_DATA : [];
 
 // DOM Elements
@@ -23,23 +23,35 @@ function init() {
     renderTimetableGrid();
     renderList();
     
-    // Listeners
+    // Event Listeners
     els.faculty.addEventListener('change', () => { populateGroups(); renderList(); });
     els.group.addEventListener('change', renderList);
     els.gender.addEventListener('change', renderList);
     els.search.addEventListener('input', renderList);
     
-    // Manual File Upload Handler
-    els.fileInput.addEventListener('change', async (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length === 0) return;
-        for (const file of files) await processFile(file);
-        els.fileInput.value = ''; 
-        // Refresh UI
-        setupFilters();
-        populateGroups();
-        renderList();
-    });
+    if(els.fileInput) {
+        els.fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+            for (const file of files) await processFile(file);
+            els.fileInput.value = ''; 
+            setupFilters();
+            populateGroups();
+            renderList();
+        });
+    }
+}
+
+// --- Helper: Normalize String ---
+// تمام فاصله‌های عجیب، اینترها و اعداد فارسی را یکدست می‌کند
+function normalizeStr(str) {
+    if (!str) return '';
+    return str
+        .replace(/ي/g, 'ی').replace(/ك/g, 'ک')
+        .replace(/۰/g, '0').replace(/۱/g, '1').replace(/۲/g, '2').replace(/۳/g, '3').replace(/۴/g, '4')
+        .replace(/۵/g, '5').replace(/۶/g, '6').replace(/۷/g, '7').replace(/۸/g, '8').replace(/۹/g, '9')
+        .replace(/\s+/g, ' ') // تبدیل تمام فاصله‌های چندتایی و اینترها به یک اسپیس
+        .trim();
 }
 
 // --- Manual File Processing ---
@@ -67,10 +79,9 @@ function parseAndAppendCourses(doc) {
         const firstCellText = cells[0].innerText.trim();
         if (isNaN(firstCellText) || firstCellText === '') return;
 
-        // شناسه یکتا = شماره درس + گروه
         const rawId = normalizeStr(cells[4].innerText);
         
-        // **جلوگیری از تکراری**: اگر درس هست، اضافه نکن
+        // جلوگیری از تکراری
         if (courses.some(c => c.id === rawId)) return;
 
         courses.push({
@@ -80,8 +91,7 @@ function parseAndAppendCourses(doc) {
             group: normalizeStr(cells[3].innerText),
             gender: normalizeStr(cells[11].innerText),
             prof: normalizeStr(cells[12].innerText),
-            // نرمال سازی متن زمان (ي -> ی)
-            time_html: cells[13].innerHTML.replace(/ي/g, 'ی').replace(/ك/g, 'ک'),
+            time_html: cells[13].innerHTML, 
             exam_text: normalizeStr(cells[13].innerText)
         });
         added++;
@@ -91,9 +101,7 @@ function parseAndAppendCourses(doc) {
 
 // --- Filters & UI ---
 function setupFilters() {
-    // پاک کردن آپشن‌های قبلی (به جز اولی)
     while (els.faculty.options.length > 1) els.faculty.remove(1);
-    
     const faculties = [...new Set(courses.map(c => c.faculty))].sort();
     faculties.forEach(f => els.faculty.add(new Option(f, f)));
 }
@@ -101,28 +109,20 @@ function setupFilters() {
 function populateGroups() {
     const selectedFac = els.faculty.value;
     els.group.innerHTML = '<option value="">همه گروه‌ها</option>';
-    
     const filtered = selectedFac ? courses.filter(c => c.faculty === selectedFac) : courses;
     const groups = [...new Set(filtered.map(c => c.group))].sort();
     groups.forEach(g => els.group.add(new Option(g, g)));
 }
 
-function normalizeStr(str) {
-    // تبدیل حروف عربی و اعداد
-    return str ? str.replace(/ي/g, 'ی').replace(/ك/g, 'ک')
-                   .replace(/۰/g, '0').replace(/۱/g, '1') // و ... (ساده‌شده برای جستجو)
-                   .trim().toLowerCase() : '';
-}
-
 function renderList() {
-    const term = normalizeStr(els.search.value);
+    const term = normalizeStr(els.search.value).toLowerCase();
     const fac = els.faculty.value;
     const grp = els.group.value;
     const gen = els.gender.value;
 
     const filtered = courses.filter(c => {
-        const cName = normalizeStr(c.name);
-        const cProf = normalizeStr(c.prof);
+        const cName = normalizeStr(c.name).toLowerCase();
+        const cProf = normalizeStr(c.prof).toLowerCase();
         const cId = normalizeStr(c.id);
         
         return (
@@ -136,7 +136,6 @@ function renderList() {
     els.stats.textContent = `${filtered.length} درس`;
     els.list.innerHTML = '';
 
-    // رندر کردن حداکثر ۱۰۰ آیتم برای جلوگیری از کندی
     filtered.slice(0, 100).forEach(c => {
         const div = document.createElement('div');
         div.className = `course-card ${selectedCourses.has(c.id) ? 'selected' : ''}`;
@@ -197,19 +196,14 @@ function renderTimetableGrid() {
     });
 }
 
-// *** منطق تشخیص روز (اصلاح شده) ***
 function getDayIndex(text) {
-    const t = normalizeStr(text).replace(/\u200c/g, ' ').replace(/\s+/g, ' '); 
-    
-    // اولویت با روزهای ترکیبی است
+    const t = normalizeStr(text);
     if (t.includes('پنج شنبه') || t.includes('پنجشنبه')) return -1; 
     if (t.includes('چهار شنبه') || t.includes('چهارشنبه')) return 4;
     if (t.includes('سه شنبه') || t.includes('سهشنبه')) return 3;
     if (t.includes('دو شنبه') || t.includes('دوشنبه')) return 2;
     if (t.includes('یک شنبه') || t.includes('یکشنبه')) return 1;
-    // شنبه باید آخر چک شود تا با یکشنبه اشتباه نشود
     if (t.includes('شنبه')) return 0;
-    
     return -1;
 }
 
@@ -224,11 +218,9 @@ function parseSchedule(html) {
         let day = getDayIndex(text);
         if (day === -1) return;
 
-        // استخراج ساعت (مثلاً 17:30-19:30)
         const timeMatch = text.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
         if (timeMatch) {
             const startH = parseInt(timeMatch[1]);
-            
             let slot = null;
             if (startH >= 7 && startH < 10) slot = '08';
             else if (startH >= 10 && startH < 12) slot = '10';
@@ -251,8 +243,7 @@ function parseSchedule(html) {
 
 function updateTimetable() {
     document.querySelectorAll('.slot').forEach(el => el.innerHTML = '');
-
-    const slotMap = {}; // Key: "day-slot"
+    const slotMap = {};
 
     selectedCourses.forEach(id => {
         const course = courses.find(c => c.id === id);
@@ -264,7 +255,7 @@ function updateTimetable() {
             if (!slotMap[key]) slotMap[key] = [];
             
             slotMap[key].push({
-                courseId: course.id, // مهم برای تشخیص تداخل
+                courseId: course.id,
                 courseName: course.name,
                 prof: course.prof,
                 isTA: sess.isTA,
@@ -276,27 +267,20 @@ function updateTimetable() {
     Object.keys(slotMap).forEach(key => {
         const slotEl = document.getElementById(`slot-${key}`);
         if (!slotEl) return;
-
         const blocks = slotMap[key];
         
-        // **منطق تداخل هوشمند**:
-        // تعداد درس‌های *متفاوت* را می‌شماریم.
+        // تداخل واقعی: اگر کدهای درس متفاوت باشند
         const uniqueIds = new Set(blocks.map(b => b.courseId));
         const isConflict = uniqueIds.size > 1;
 
         blocks.forEach(b => {
             const div = document.createElement('div');
             div.className = `class-block ${isConflict ? 'conflict' : ''}`;
-            if (blocks.length > 1 && !isConflict) div.classList.add('multi-part'); // استایل ساده برای چند بخشی
+            if (blocks.length > 1 && !isConflict) div.classList.add('multi-part');
             
             div.title = `${b.courseName}\n${b.prof}\n${b.raw}`;
-            
-            let displayType = b.isTA ? '(تمرین)' : '';
-            div.innerHTML = `
-                <span>${b.courseName} ${displayType}</span>
-                <span style="font-size:0.65rem; opacity:0.8">${b.prof}</span>
-            `;
-            
+            const type = b.isTA ? '(ت)' : '';
+            div.innerHTML = `<span>${b.courseName} ${type}</span><span style="font-size:0.65rem; opacity:0.8">${b.prof}</span>`;
             slotEl.appendChild(div);
         });
     });
@@ -306,22 +290,33 @@ function updateTimetable() {
 function toggleTheme() {
     const html = document.documentElement;
     const current = html.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
+    const next = current === 'light' ? 'dark' : 'light';
     html.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
+    
+    const btn = document.querySelector('.btn-theme');
+    if(btn) btn.textContent = next === 'light' ? '🌗 تم' : '☀️ تم';
 }
 
-const savedTheme = localStorage.getItem('theme') || 'light';
+const savedTheme = localStorage.getItem('theme') || 'dark';
 document.documentElement.setAttribute('data-theme', savedTheme);
+const btn = document.querySelector('.btn-theme');
+if(btn) btn.textContent = savedTheme === 'light' ? '🌗 تم' : '☀️ تم';
 
-// --- Exams ---
+// --- Exams Logic (Fixed) ---
 function openExamModal() {
     els.examBody.innerHTML = '';
     const selectedList = [...selectedCourses].map(id => courses.find(c => c.id === id));
     
-    selectedList.sort((a, b) => (a.exam_text || '').localeCompare(b.exam_text || ''));
+    selectedList.sort((a, b) => {
+        const da = extractDate(a.exam_text);
+        const db = extractDate(b.exam_text);
+        if (da === '-') return 1;
+        if (db === '-') return -1;
+        return da.localeCompare(db);
+    });
 
-    // بررسی تداخل امتحانات
+    // Conflict Check
     const dateCounts = {};
     selectedList.forEach(c => {
         const d = extractDate(c.exam_text);
@@ -342,13 +337,16 @@ function openExamModal() {
 }
 function closeExamModal() { els.examModal.style.display = 'none'; }
 
-function extractDate(txt) { 
-    const m = txt.match(/\d{4}[\/\.]\d{1,2}[\/\.]\d{1,2}/);
-    return m ? m[0] : '-';
+// *** اصلاح شده: فقط تاریخی که داخل پرانتز جلوی "امتحان" باشد ***
+function extractDate(txt) {
+    const m = txt.match(/امتحان.*?\((\d{4}[\/\.]\d{1,2}[\/\.]\d{1,2})\)/);
+    return m ? m[1] : '-';
 }
+
+// *** اصلاح شده: فقط ساعتی که بعد از کلمه "ساعت" باشد ***
 function extractTime(txt) {
-    const m = txt.match(/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/);
-    return m ? m[0] : '-';
+    const m = txt.match(/امتحان.*?ساعت\s*:\s*(\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})/);
+    return m ? m[1] : '-';
 }
 
 init();
