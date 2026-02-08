@@ -1,6 +1,8 @@
 // State
 let selectedCourses = new Set();
 const courses = (typeof UNIVERSITY_DATA !== 'undefined') ? UNIVERSITY_DATA : [];
+const STORAGE_KEY = 'uni_schedule_data';
+const EXPIRY_DAYS = 30;
 
 // DOM Elements
 const els = {
@@ -12,20 +14,58 @@ const els = {
     stats: document.getElementById('stats'),
     timetable: document.getElementById('timetable'),
     examModal: document.getElementById('examModal'),
-    examBody: document.getElementById('examBody')
+    examBody: document.getElementById('examBody'),
+    fileInput: document.getElementById('fileInput')
 };
 
 // --- Initialization ---
 function init() {
+    loadFromStorage(); // بازیابی اطلاعات ذخیره شده
     setupFilters();
     renderTimetableGrid();
     renderList();
+    updateTimetable(); // رندر کردن جدول با درس‌های لود شده
     
     // Listeners
     els.faculty.addEventListener('change', () => { populateGroups(); renderList(); });
     els.group.addEventListener('change', renderList);
     els.gender.addEventListener('change', renderList);
     els.search.addEventListener('input', renderList);
+}
+
+// --- LocalStorage Logic (New) ---
+function saveToStorage() {
+    const data = {
+        selected: Array.from(selectedCourses),
+        timestamp: Date.now()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function loadFromStorage() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+
+    try {
+        const data = JSON.parse(raw);
+        // چک کردن تاریخ انقضا (۳۰ روز)
+        const now = Date.now();
+        const daysDiff = (now - data.timestamp) / (1000 * 60 * 60 * 24);
+        
+        if (daysDiff > EXPIRY_DAYS) {
+            localStorage.removeItem(STORAGE_KEY); // پاک کردن اطلاعات قدیمی
+            return;
+        }
+
+        // بازیابی درس‌ها (فقط اگر در دیتابیس موجود باشند)
+        data.selected.forEach(id => {
+            if (courses.some(c => c.id === id)) {
+                selectedCourses.add(id);
+            }
+        });
+    } catch (e) {
+        console.error("Error loading storage:", e);
+    }
 }
 
 // --- Helper: Normalize String ---
@@ -76,7 +116,6 @@ function renderList() {
     els.stats.textContent = `${filtered.length} درس`;
     els.list.innerHTML = '';
 
-    // رندر کردن حداکثر ۱۰۰ آیتم
     filtered.slice(0, 100).forEach(c => {
         const div = document.createElement('div');
         div.className = `course-card ${selectedCourses.has(c.id) ? 'selected' : ''}`;
@@ -103,6 +142,8 @@ function renderList() {
 function toggleCourse(id) {
     if (selectedCourses.has(id)) selectedCourses.delete(id);
     else selectedCourses.add(id);
+    
+    saveToStorage(); // ذخیره تغییرات
     renderList();
     updateTimetable();
 }
@@ -218,20 +259,18 @@ function updateTimetable() {
             div.className = `class-block ${isConflict ? 'conflict' : ''}`;
             if (blocks.length > 1 && !isConflict) div.classList.add('multi-part');
             
-            // عنوان برای تولتیپ
             div.title = `${b.courseName}\n${b.prof}`;
 
-            // *** دکمه حذف (ضربدر) ***
+            // *** Remove Button Logic ***
             const closeBtn = document.createElement('div');
             closeBtn.className = 'remove-btn';
             closeBtn.innerHTML = '&times;';
             closeBtn.onclick = (e) => {
-                e.stopPropagation(); // جلوگیری از اجرای کلیک روی والد
-                toggleCourse(b.courseId); // حذف درس
+                e.stopPropagation();
+                toggleCourse(b.courseId); // این تابع خودکار saveToStorage را صدا می‌زند
             };
             div.appendChild(closeBtn);
             
-            // متن درس
             const type = b.isTA ? '(ت)' : '';
             const content = document.createElement('div');
             content.innerHTML = `
