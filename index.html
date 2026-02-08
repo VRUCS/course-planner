@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
     <style>
         :root {
-            /* تنظیمات پیش‌فرض (تم تاریک) */
+            /* Default Dark */
             --bg-body: #111827;
             --bg-card: #1f2937;
             --text-main: #f9fafb;
@@ -23,7 +23,7 @@
         }
 
         [data-theme="light"] {
-            /* تم روشن */
+            /* Light Theme */
             --bg-body: #f3f4f6;
             --bg-card: #ffffff;
             --text-main: #1f2937;
@@ -67,7 +67,7 @@
 
         .filter-container { padding: 15px; border-bottom: 1px solid var(--border); }
         
-        select, input {
+        select, input[type="text"] {
             width: 100%; padding: 10px; margin-bottom: 8px;
             border: 1px solid var(--border); border-radius: 8px;
             background: var(--bg-body); color: var(--text-main);
@@ -109,8 +109,6 @@
         }
         .btn-exam { background: #f59e0b; color: white; }
         .btn-theme { background: var(--border); color: var(--text-main); }
-        .btn-upload { background: var(--primary); color: white; position: relative; overflow: hidden;}
-        .btn-upload input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
 
         /* Timetable Grid */
         .timetable-container {
@@ -121,8 +119,8 @@
 
         .timetable {
             display: grid;
-            grid-template-columns: 60px repeat(5, 1fr); /* Time + 5 Days */
-            grid-template-rows: 40px repeat(5, 1fr); /* Header + 5 Slots */
+            grid-template-columns: 60px repeat(5, 1fr);
+            grid-template-rows: 40px repeat(5, 1fr);
             gap: 2px;
             min-width: 800px; height: 100%;
         }
@@ -146,9 +144,10 @@
             flex: 1; border-radius: 4px; padding: 4px;
             color: white; font-size: 0.75rem; text-align: center;
             display: flex; flex-direction: column; justify-content: center;
-            background: var(--primary); cursor: pointer;
+            background: var(--primary); cursor: default; /* Changed from pointer */
             overflow: hidden;
             border: 1px solid transparent;
+            position: relative;
         }
         
         .class-block.conflict {
@@ -157,9 +156,29 @@
             border: 1px solid #fff;
         }
         
-        .class-block.multi-part {
-            border-bottom: 1px solid rgba(255,255,255,0.4);
+        .class-block.multi-part { border-bottom: 1px solid rgba(255,255,255,0.4); }
+
+        /* استایل دکمه حذف ضربدر */
+        .remove-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px; /* سمت راست بالا */
+            width: 18px;
+            height: 18px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            border-radius: 50%;
+            display: none; /* پیش‌فرض مخفی */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            z-index: 10;
         }
+        .remove-btn:hover { background: var(--danger); }
+        .class-block:hover .remove-btn { display: flex; } /* نمایش هنگام هاور */
+
 
         /* Modal */
         .modal-overlay {
@@ -204,10 +223,6 @@
     <header>
         <h1 style="margin:0; font-size:1.4rem;">برنامه هفتگی</h1>
         <div class="actions">
-            <div class="btn btn-upload">
-                <span>📂 افزودن فایل</span>
-                <input type="file" id="fileInput" accept=".html,.htm" multiple>
-            </div>
             <button class="btn btn-theme" onclick="toggleTheme()">☀️ تم</button>
             <button class="btn btn-exam" onclick="openExamModal()">📅 امتحانات</button>
         </div>

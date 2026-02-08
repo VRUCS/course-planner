@@ -1,6 +1,5 @@
 // State
 let selectedCourses = new Set();
-// اگر دیتابیس لود نشد، با آرایه خالی شروع کن
 const courses = (typeof UNIVERSITY_DATA !== 'undefined') ? UNIVERSITY_DATA : [];
 
 // DOM Elements
@@ -13,8 +12,7 @@ const els = {
     stats: document.getElementById('stats'),
     timetable: document.getElementById('timetable'),
     examModal: document.getElementById('examModal'),
-    examBody: document.getElementById('examBody'),
-    fileInput: document.getElementById('fileInput')
+    examBody: document.getElementById('examBody')
 };
 
 // --- Initialization ---
@@ -23,80 +21,22 @@ function init() {
     renderTimetableGrid();
     renderList();
     
-    // Event Listeners
+    // Listeners
     els.faculty.addEventListener('change', () => { populateGroups(); renderList(); });
     els.group.addEventListener('change', renderList);
     els.gender.addEventListener('change', renderList);
     els.search.addEventListener('input', renderList);
-    
-    if(els.fileInput) {
-        els.fileInput.addEventListener('change', async (e) => {
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
-            for (const file of files) await processFile(file);
-            els.fileInput.value = ''; 
-            setupFilters();
-            populateGroups();
-            renderList();
-        });
-    }
 }
 
 // --- Helper: Normalize String ---
-// تمام فاصله‌های عجیب، اینترها و اعداد فارسی را یکدست می‌کند
 function normalizeStr(str) {
     if (!str) return '';
     return str
         .replace(/ي/g, 'ی').replace(/ك/g, 'ک')
         .replace(/۰/g, '0').replace(/۱/g, '1').replace(/۲/g, '2').replace(/۳/g, '3').replace(/۴/g, '4')
         .replace(/۵/g, '5').replace(/۶/g, '6').replace(/۷/g, '7').replace(/۸/g, '8').replace(/۹/g, '9')
-        .replace(/\s+/g, ' ') // تبدیل تمام فاصله‌های چندتایی و اینترها به یک اسپیس
+        .replace(/\s+/g, ' ')
         .trim();
-}
-
-// --- Manual File Processing ---
-function processFile(file) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(event.target.result, 'text/html');
-            parseAndAppendCourses(doc);
-            resolve();
-        };
-        reader.readAsText(file);
-    });
-}
-
-function parseAndAppendCourses(doc) {
-    const rows = doc.querySelectorAll('tr');
-    let added = 0;
-
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length < 13) return; 
-
-        const firstCellText = cells[0].innerText.trim();
-        if (isNaN(firstCellText) || firstCellText === '') return;
-
-        const rawId = normalizeStr(cells[4].innerText);
-        
-        // جلوگیری از تکراری
-        if (courses.some(c => c.id === rawId)) return;
-
-        courses.push({
-            id: rawId,
-            name: normalizeStr(cells[5].innerText),
-            faculty: normalizeStr(cells[1].innerText),
-            group: normalizeStr(cells[3].innerText),
-            gender: normalizeStr(cells[11].innerText),
-            prof: normalizeStr(cells[12].innerText),
-            time_html: cells[13].innerHTML, 
-            exam_text: normalizeStr(cells[13].innerText)
-        });
-        added++;
-    });
-    if(added > 0) console.log(`${added} درس جدید اضافه شد.`);
 }
 
 // --- Filters & UI ---
@@ -136,6 +76,7 @@ function renderList() {
     els.stats.textContent = `${filtered.length} درس`;
     els.list.innerHTML = '';
 
+    // رندر کردن حداکثر ۱۰۰ آیتم
     filtered.slice(0, 100).forEach(c => {
         const div = document.createElement('div');
         div.className = `course-card ${selectedCourses.has(c.id) ? 'selected' : ''}`;
@@ -269,7 +210,6 @@ function updateTimetable() {
         if (!slotEl) return;
         const blocks = slotMap[key];
         
-        // تداخل واقعی: اگر کدهای درس متفاوت باشند
         const uniqueIds = new Set(blocks.map(b => b.courseId));
         const isConflict = uniqueIds.size > 1;
 
@@ -278,9 +218,28 @@ function updateTimetable() {
             div.className = `class-block ${isConflict ? 'conflict' : ''}`;
             if (blocks.length > 1 && !isConflict) div.classList.add('multi-part');
             
-            div.title = `${b.courseName}\n${b.prof}\n${b.raw}`;
+            // عنوان برای تولتیپ
+            div.title = `${b.courseName}\n${b.prof}`;
+
+            // *** دکمه حذف (ضربدر) ***
+            const closeBtn = document.createElement('div');
+            closeBtn.className = 'remove-btn';
+            closeBtn.innerHTML = '&times;';
+            closeBtn.onclick = (e) => {
+                e.stopPropagation(); // جلوگیری از اجرای کلیک روی والد
+                toggleCourse(b.courseId); // حذف درس
+            };
+            div.appendChild(closeBtn);
+            
+            // متن درس
             const type = b.isTA ? '(ت)' : '';
-            div.innerHTML = `<span>${b.courseName} ${type}</span><span style="font-size:0.65rem; opacity:0.8">${b.prof}</span>`;
+            const content = document.createElement('div');
+            content.innerHTML = `
+                <span>${b.courseName} ${type}</span>
+                <span style="font-size:0.65rem; opacity:0.8; display:block;">${b.prof}</span>
+            `;
+            div.appendChild(content);
+
             slotEl.appendChild(div);
         });
     });
@@ -303,7 +262,7 @@ document.documentElement.setAttribute('data-theme', savedTheme);
 const btn = document.querySelector('.btn-theme');
 if(btn) btn.textContent = savedTheme === 'light' ? '🌗 تم' : '☀️ تم';
 
-// --- Exams Logic (Fixed) ---
+// --- Exams ---
 function openExamModal() {
     els.examBody.innerHTML = '';
     const selectedList = [...selectedCourses].map(id => courses.find(c => c.id === id));
@@ -316,7 +275,6 @@ function openExamModal() {
         return da.localeCompare(db);
     });
 
-    // Conflict Check
     const dateCounts = {};
     selectedList.forEach(c => {
         const d = extractDate(c.exam_text);
@@ -327,9 +285,7 @@ function openExamModal() {
         const row = document.createElement('tr');
         const date = extractDate(c.exam_text);
         const time = extractTime(c.exam_text);
-        
         if (date !== '-' && dateCounts[date] > 1) row.className = 'exam-conflict';
-
         row.innerHTML = `<td>${c.name}</td><td>${date}</td><td>${time}</td>`;
         els.examBody.appendChild(row);
     });
@@ -337,13 +293,11 @@ function openExamModal() {
 }
 function closeExamModal() { els.examModal.style.display = 'none'; }
 
-// *** اصلاح شده: فقط تاریخی که داخل پرانتز جلوی "امتحان" باشد ***
 function extractDate(txt) {
     const m = txt.match(/امتحان.*?\((\d{4}[\/\.]\d{1,2}[\/\.]\d{1,2})\)/);
     return m ? m[1] : '-';
 }
 
-// *** اصلاح شده: فقط ساعتی که بعد از کلمه "ساعت" باشد ***
 function extractTime(txt) {
     const m = txt.match(/امتحان.*?ساعت\s*:\s*(\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})/);
     return m ? m[1] : '-';
