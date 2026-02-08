@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>برنامه‌ریزی هوشمند</title>
+    <title>برنامه‌ریزی انتخاب واحد</title>
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
     <style>
         :root {
-            /* Light Theme */
+            /* Light Theme Variables */
             --bg-body: #f3f4f6;
             --bg-card: #ffffff;
             --text-main: #1f2937;
@@ -15,18 +15,15 @@
             --border: #e5e7eb;
             --primary: #3b82f6;
             --accent: #eff6ff;
-            --hover: #f9fafb;
             --danger: #ef4444;
-            --grid-line: #e5e7eb;
-            
-            /* Gender Colors */
             --male: #3b82f6;
             --female: #ec4899;
             --mixed: #8b5cf6;
+            --scroll-thumb: #d1d5db;
         }
 
         [data-theme="dark"] {
-            /* Dark Theme */
+            /* Dark Theme Variables */
             --bg-body: #111827;
             --bg-card: #1f2937;
             --text-main: #f9fafb;
@@ -34,16 +31,14 @@
             --border: #374151;
             --primary: #60a5fa;
             --accent: #1e3a8a;
-            --hover: #374151;
             --danger: #f87171;
-            --grid-line: #374151;
-
             --male: #60a5fa;
             --female: #f472b6;
             --mixed: #a78bfa;
+            --scroll-thumb: #4b5563;
         }
 
-        * { box-sizing: border-box; outline: none; transition: background-color 0.3s, color 0.1s; }
+        * { box-sizing: border-box; outline: none; transition: background-color 0.3s, color 0.1s, border-color 0.3s; }
         
         body {
             font-family: 'Vazirmatn', sans-serif;
@@ -55,7 +50,7 @@
             overflow: hidden;
         }
 
-        /* Sidebar */
+        /* Sidebar Styles */
         aside {
             width: 360px;
             background: var(--bg-card);
@@ -65,12 +60,12 @@
             box-shadow: -4px 0 15px rgba(0,0,0,0.05);
         }
 
-        .filter-header {
+        .sidebar-header {
             padding: 15px; border-bottom: 1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        .filter-body { padding: 15px; border-bottom: 1px solid var(--border); }
+        .filter-container { padding: 15px; border-bottom: 1px solid var(--border); }
         
         select, input {
             width: 100%; padding: 10px; margin-bottom: 8px;
@@ -81,6 +76,10 @@
         select:focus, input:focus { border-color: var(--primary); }
 
         .course-list { flex: 1; overflow-y: auto; padding: 10px; }
+        
+        /* Custom Scrollbar */
+        .course-list::-webkit-scrollbar { width: 8px; }
+        .course-list::-webkit-scrollbar-thumb { background-color: var(--scroll-thumb); border-radius: 4px; }
 
         .course-card {
             background: var(--bg-card);
@@ -95,24 +94,27 @@
             border-right: 4px solid var(--primary);
         }
 
-        .badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: #fff; }
+        .badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: #fff; display: inline-block; }
         .badge.male { background: var(--male); }
         .badge.female { background: var(--female); }
         .badge.mixed { background: var(--mixed); }
 
-        /* Main Area */
+        /* Main Content */
         main { flex: 1; display: flex; flex-direction: column; padding: 20px; }
 
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         
+        .actions { display: flex; gap: 10px; }
         .btn {
             padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer;
             font-family: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;
         }
         .btn-exam { background: #f59e0b; color: white; }
         .btn-theme { background: var(--border); color: var(--text-main); }
-        
-        /* Timetable */
+        .btn-upload { background: var(--primary); color: white; position: relative; overflow: hidden;}
+        .btn-upload input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+
+        /* Timetable Grid */
         .timetable-container {
             flex: 1; background: var(--bg-card);
             border-radius: 12px; border: 1px solid var(--border);
@@ -121,8 +123,8 @@
 
         .timetable {
             display: grid;
-            grid-template-columns: 60px repeat(5, 1fr);
-            grid-template-rows: 40px repeat(5, 1fr);
+            grid-template-columns: 60px repeat(5, 1fr); /* Time + 5 Days */
+            grid-template-rows: 40px repeat(5, 1fr); /* Header + 5 Slots */
             gap: 2px;
             min-width: 800px; height: 100%;
         }
@@ -139,6 +141,7 @@
             border: 1px dashed var(--border);
             padding: 2px;
             display: flex; flex-direction: column; gap: 2px;
+            position: relative;
         }
 
         .class-block {
@@ -147,15 +150,19 @@
             display: flex; flex-direction: column; justify-content: center;
             background: var(--primary); cursor: pointer;
             overflow: hidden;
+            border: 1px solid transparent;
         }
-        /* کلاس برای وقتی که یک درس چند پارت دارد (بدون تداخل) */
-        .class-block.multi-part { border-bottom: 1px solid rgba(255,255,255,0.3); }
         
-        /* تداخل واقعی */
+        /* Conflict Styling */
         .class-block.conflict {
             background: var(--danger);
             animation: pulse 2s infinite;
-            border: 2px solid #fff;
+            border: 1px solid #fff;
+        }
+        
+        /* Multi-part (Same course multiple times in slot) */
+        .class-block.multi-part {
+            border-bottom: 1px solid rgba(255,255,255,0.4);
         }
 
         /* Modal */
@@ -166,10 +173,12 @@
         .modal {
             background: var(--bg-card); width: 90%; max-width: 600px;
             border-radius: 12px; padding: 20px; color: var(--text-main);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
         .exam-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .exam-table td { padding: 10px; border-bottom: 1px solid var(--border); }
-        .exam-conflict td { color: var(--danger); font-weight: bold; }
+        .exam-table td { padding: 10px; border-bottom: 1px solid var(--border); text-align: right; }
+        .exam-table th { padding: 10px; text-align: right; color: var(--text-muted); }
+        .exam-conflict td { color: var(--danger); font-weight: bold; background: rgba(239, 68, 68, 0.1); }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
     </style>
@@ -177,11 +186,11 @@
 <body>
 
 <aside>
-    <div class="filter-header">
+    <div class="sidebar-header">
         <h2 style="margin:0; font-size:1.1rem;">انتخاب واحد</h2>
         <span id="stats" style="font-size:0.8rem; color:var(--text-muted);"></span>
     </div>
-    <div class="filter-body">
+    <div class="filter-container">
         <input type="text" id="searchInput" placeholder="جستجو (نام، استاد، کد)...">
         <select id="facultyFilter"><option value="">همه دانشکده‌ها</option></select>
         <select id="groupFilter"><option value="">همه گروه‌ها</option></select>
@@ -198,7 +207,11 @@
 <main>
     <header>
         <h1 style="margin:0; font-size:1.4rem;">برنامه هفتگی</h1>
-        <div style="display: flex; gap: 10px;">
+        <div class="actions">
+            <div class="btn btn-upload">
+                <span>📂 افزودن فایل</span>
+                <input type="file" id="fileInput" accept=".html,.htm" multiple>
+            </div>
             <button class="btn btn-theme" onclick="toggleTheme()">🌗 تم</button>
             <button class="btn btn-exam" onclick="openExamModal()">📅 امتحانات</button>
         </div>
@@ -211,8 +224,8 @@
 
 <div class="modal-overlay" id="examModal" onclick="if(event.target===this) closeExamModal()">
     <div class="modal">
-        <div style="display:flex; justify-content:space-between;">
-            <h3>برنامه امتحانات</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0;">برنامه امتحانات</h3>
             <button onclick="closeExamModal()" style="background:none; border:none; color:var(--text-main); font-size:1.5rem; cursor:pointer;">&times;</button>
         </div>
         <table class="exam-table">
@@ -224,5 +237,6 @@
 
 <script src="assets/js/data.js"></script>
 <script src="assets/js/app.js"></script>
+
 </body>
 </html>
