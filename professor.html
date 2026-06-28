@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد استاد — سامانه انتخاب واحد</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
+    <style>
+        /* ===== VARIABLES ===== */
+        :root {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --primary: #60a5fa;
+            --primary-dim: rgba(96,165,250,0.15);
+            --danger: #f87171;
+            --danger-dim: rgba(248,113,113,0.18);
+            --warning: #fb923c;
+            --warning-dim: rgba(251,146,60,0.18);
+            --success: #34d399;
+            --scroll-thumb: #475569;
+        }
+        [data-theme="light"] {
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --primary: #2563eb;
+            --primary-dim: rgba(37,99,235,0.1);
+            --danger: #dc2626;
+            --danger-dim: rgba(220,38,38,0.1);
+            --warning: #ea580c;
+            --warning-dim: rgba(234,88,12,0.1);
+            --success: #059669;
+            --scroll-thumb: #cbd5e1;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        * { transition: background-color 0.2s, border-color 0.2s; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 3px; }
+
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            font-size: 14px;
+        }
+
+        /* ===== TOP BAR ===== */
+        .topbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .topbar-right { display: flex; align-items: center; gap: 14px; }
+        .topbar-title { font-size: 1.1rem; font-weight: 700; }
+        .back-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            color: var(--text-muted); text-decoration: none; font-size: 0.85rem;
+            padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+            transition: all 0.15s;
+        }
+        .back-link:hover { color: var(--primary); border-color: var(--primary); }
+
+        /* ===== CONTROLS BAR ===== */
+        .controls-bar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .control-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; max-width: 320px; }
+        .control-group label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+        select {
+            padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
+            background: var(--bg-body); color: var(--text-main);
+            font-family: inherit; font-size: 0.875rem; appearance: none;
+        }
+        select:focus { border-color: var(--primary); outline: none; }
+        .btn {
+            padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer;
+            font-family: inherit; font-weight: 600; font-size: 0.8rem;
+            display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-print { background: #6366f1; color: #fff; }
+        .btn:hover { opacity: 0.85; }
+
+        /* ===== SUMMARY CARDS ===== */
+        .summary-row {
+            display: flex; gap: 12px; padding: 16px 24px; flex-wrap: wrap;
+        }
+        .summary-card {
+            flex: 1; min-width: 140px; background: var(--bg-card);
+            border: 1px solid var(--border); border-radius: 10px;
+            padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;
+        }
+        .summary-card .label { font-size: 0.75rem; color: var(--text-muted); }
+        .summary-card .value { font-size: 1.6rem; font-weight: 700; }
+        .summary-card.danger .value { color: var(--danger); }
+        .summary-card.warning .value { color: var(--warning); }
+        .summary-card.success .value { color: var(--success); }
+
+        /* ===== MAIN LAYOUT ===== */
+        .main-layout {
+            display: flex;
+            gap: 0;
+            padding: 0 24px 24px;
+            height: calc(100vh - 200px);
+            overflow: hidden;
+        }
+
+        /* ===== TIMETABLE PANEL ===== */
+        .timetable-panel {
+            flex: 3;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-top: 16px;
+            overflow: auto;
+        }
+        .panel-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+
+        .timetable-container {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 12px;
+            overflow: auto;
+            flex: 1;
+        }
+        .timetable {
+            display: grid;
+            grid-template-columns: 65px repeat(5, 1fr);
+            grid-template-rows: 44px repeat(5, 1fr);
+            gap: 3px;
+            min-width: 580px;
+            height: 100%;
+            min-height: 350px;
+        }
+        .cell {
+            background: var(--bg-body); display: flex; align-items: center;
+            justify-content: center; border-radius: 6px; font-size: 0.8rem; color: var(--text-muted);
+        }
+        .cell.header { background: var(--primary); color: #fff; font-weight: 700; }
+        .cell.time-label { font-size: 0.72rem; font-weight: 600; }
+        .slot {
+            background: var(--bg-body); border: 1px dashed var(--border);
+            border-radius: 6px; padding: 3px; display: flex;
+            flex-direction: column; gap: 2px; min-height: 60px; overflow: hidden;
+        }
+        .class-block {
+            flex: 1; border-radius: 4px; padding: 3px 5px;
+            color: #fff; font-size: 0.65rem; overflow: hidden;
+            cursor: default; position: relative;
+        }
+        .class-block-name { font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .class-block-id { opacity: 0.75; font-size: 0.58rem; }
+        .class-block.hard-conflict {
+            background: var(--danger) !important;
+            animation: pulse 2s infinite;
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+        .class-block.soft-conflict {
+            background: var(--warning) !important;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        /* ===== CONFLICT PANEL ===== */
+        .conflict-panel {
+            width: 380px;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            padding-top: 16px;
+            padding-right: 20px;
+            overflow: hidden;
+        }
+        .conflict-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .conflict-card {
+            border-radius: 10px; padding: 12px 14px; border: 1px solid;
+        }
+        .conflict-card.hard { background: var(--danger-dim); border-color: var(--danger); }
+        .conflict-card.soft { background: var(--warning-dim); border-color: var(--warning); }
+        .conflict-card-header {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+        }
+        .conflict-badge {
+            font-size: 0.68rem; font-weight: 700; padding: 2px 8px;
+            border-radius: 20px; color: #fff; white-space: nowrap;
+        }
+        .conflict-badge.hard { background: var(--danger); }
+        .conflict-badge.soft { background: var(--warning); }
+        .conflict-course-pair { font-size: 0.85rem; font-weight: 600; }
+        .conflict-reason { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; }
+        .conflict-times { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .time-pill {
+            font-size: 0.7rem; background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 4px;
+            padding: 2px 8px;
+        }
+
+        .no-conflict {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; padding: 40px 20px; color: var(--text-muted);
+            gap: 12px; text-align: center;
+        }
+        .no-conflict-icon { font-size: 2.5rem; opacity: 0.4; }
+
+        /* ===== PRINT ===== */
+        @media print {
+            .topbar .btn, .controls-bar .btn, .back-link { display: none; }
+            .main-layout { height: auto; overflow: visible; }
+            .timetable-container { overflow: visible; }
+            .class-block { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+
+        /* ===== LEGEND ===== */
+        .legend-bar {
+            display: flex; gap: 14px; padding: 8px 24px;
+            font-size: 0.75rem; color: var(--text-muted); flex-wrap: wrap;
+        }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+
+<!-- ===== TOP BAR ===== -->
+<div class="topbar">
+    <div class="topbar-right">
+        <span class="topbar-title">👨‍🏫 داشبورد استاد</span>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <button class="btn btn-outline" onclick="toggleTheme()">🌗 تم</button>
+        <button class="btn btn-print" onclick="window.print()">🖨️ چاپ گزارش</button>
+        <a href="index.html" class="back-link">← بازگشت به انتخاب واحد</a>
+    </div>
+</div>
+
+<!-- ===== CONTROLS ===== -->
+<div class="controls-bar">
+    <div class="control-group">
+        <label>دانشکده:</label>
+        <select id="facultySelect" onchange="onFacultyChange()">
+            <option value="">انتخاب دانشکده...</option>
+        </select>
+    </div>
+    <div class="control-group">
+        <label>گروه آموزشی:</label>
+        <select id="groupSelect" onchange="render()">
+            <option value="">انتخاب گروه...</option>
+        </select>
+    </div>
+    <div class="control-group" style="max-width:200px;">
+        <label>نوع نمایش تداخل:</label>
+        <select id="conflictFilter" onchange="render()">
+            <option value="all">همه تداخل‌ها</option>
+            <option value="hard">فقط سخت (اجباری)</option>
+            <option value="soft">فقط نرم (توصیه‌شده)</option>
+        </select>
+    </div>
+</div>
+
+<!-- ===== SUMMARY ROW ===== -->
+<div class="summary-row" id="summaryRow">
+    <div class="summary-card">
+        <span class="label">کل درس‌های نمایش داده‌شده</span>
+        <span class="value" id="sumTotal">—</span>
+    </div>
+    <div class="summary-card danger">
+        <span class="label">تداخل سخت (باید برطرف شود)</span>
+        <span class="value" id="sumHard">—</span>
+    </div>
+    <div class="summary-card warning">
+        <span class="label">تداخل نرم (توصیه برطرف‌سازی)</span>
+        <span class="value" id="sumSoft">—</span>
+    </div>
+    <div class="summary-card success">
+        <span class="label">جفت‌های بدون تداخل</span>
+        <span class="value" id="sumOk">—</span>
+    </div>
+</div>
+
+<!-- ===== LEGEND ===== -->
+<div class="legend-bar">
+    <span class="legend-item"><span class="legend-dot" style="background:var(--danger)"></span>تداخل سخت — دو درسی که دانشجو باید هر دو را در یک ترم بگیرد</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--warning)"></span>تداخل نرم — توصیه می‌شود هم‌زمان نباشند</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#60a5fa"></span>درس عادی</span>
+</div>
+
+<!-- ===== MAIN LAYOUT ===== -->
+<div class="main-layout">
+    <!-- Timetable Panel -->
+    <div class="timetable-panel">
+        <div class="panel-title" id="timetableTitle">برنامه هفتگی گروه</div>
+        <div class="timetable-container">
+            <div class="timetable" id="timetable"></div>
+        </div>
+    </div>
+
+    <!-- Conflict Report Panel -->
+    <div class="conflict-panel">
+        <div class="panel-title">گزارش تداخل‌ها</div>
+        <div class="conflict-list" id="conflictList">
+            <div class="no-conflict">
+                <div class="no-conflict-icon">📋</div>
+                <div>ابتدا یک گروه آموزشی انتخاب کنید.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/conflict_rules.js"></script>
+<script src="assets/js/professor.js"></script>
+</body>
+</html>

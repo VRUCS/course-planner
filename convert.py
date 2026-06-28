@@ -40,16 +40,21 @@ def parse_html_file(filepath):
             # استخراج داده‌ها
             raw_id = normalize_text(cells[4].get_text()) # شماره و گروه
             
+            def safe_int(cell):
+                try: return int(normalize_text(cell.get_text()) or 0)
+                except: return 0
+
             course = {
                 "id": raw_id,
                 "name": normalize_text(cells[5].get_text()),
                 "faculty": normalize_text(cells[1].get_text()),
                 "group": normalize_text(cells[3].get_text()),
+                "units": safe_int(cells[6]),
+                "capacity": safe_int(cells[8]),
+                "enrolled": safe_int(cells[9]),
                 "gender": normalize_text(cells[11].get_text()),
                 "prof": normalize_text(cells[12].get_text()),
-                # HTML زمان را برای پردازش بعدی نگه می‌داریم (با اصلاح ی/ک)
-                "time_html": str(cells[13]).replace('ي', 'ی').replace('ك', 'ک'), 
-                # متن کامل را هم برای استخراج امتحان نگه می‌داریم
+                "time_html": str(cells[13]).replace('ي', 'ی').replace('ك', 'ک'),
                 "exam_text": normalize_text(cells[13].get_text(" ", strip=True))
             }
             courses.append(course)
