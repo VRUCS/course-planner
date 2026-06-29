@@ -7,8 +7,11 @@
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
 <link rel="stylesheet" href="assets/css/main.css">
 <style>
-/* height: 100vh + overflow: hidden → بدنه اسکرول نمی‌کند، پنل‌های داخلی اسکرول می‌کنند */
 body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+@media (max-width: 768px) {
+  body { height: auto; overflow: auto; }
+  .page-layout { overflow: visible; }
+}
 
 /* min-height: 0 روی flex items اجازه می‌دهد از content size کوچک‌تر شوند و overflow کار کند */
 .page-layout { display: flex; flex: 1; min-height: 0; padding: 20px; gap: 20px; overflow: hidden; }

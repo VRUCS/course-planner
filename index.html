@@ -87,6 +87,147 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   grid-template-rows: 40px repeat(5, 1fr);
   gap: 3px; min-width: 620px; height: 100%; min-height: 320px;
 }
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE — bottom‑nav layout (≤ 768px)
+   ══════════════════════════════════════════════════════════ */
+.mob-nav        { display: none; }
+.mob-unit-pill  { display: none; }
+
+@media (max-width: 768px) {
+  /* Body stays 100vh, no body scroll */
+  body { height: 100dvh; overflow: hidden; }
+
+  /* .app becomes a grid — sidebar + main share the same cell, overlapping */
+  .app {
+    display: grid;
+    grid-template-areas: 'view';
+    grid-template-rows: 1fr;
+    grid-template-columns: 1fr;
+    overflow: hidden;
+  }
+
+  /* Both panels occupy the same grid cell → full-height guaranteed */
+  .sidebar, .main {
+    grid-area: view;
+    width: 100% !important; min-width: unset !important;
+    border: none !important;
+    transition: transform .28s cubic-bezier(.4,0,.2,1),
+                opacity    .2s ease;
+    will-change: transform, opacity;
+    overflow: hidden;
+  }
+
+  /* ── View: search (default) ── */
+  body[data-mob="search"]     .sidebar { transform: translateX(0);    opacity: 1; pointer-events: auto; }
+  body[data-mob="search"]     .main    { transform: translateX(-110%);opacity: 0; pointer-events: none; }
+
+  /* ── View: schedule ── */
+  body[data-mob="schedule"]   .sidebar { transform: translateX(110%); opacity: 0; pointer-events: none; }
+  body[data-mob="schedule"]   .main    { transform: translateX(0);    opacity: 1; pointer-events: auto; }
+
+  /* ── View: curriculum ── */
+  body[data-mob="curriculum"] .sidebar { transform: translateX(0);    opacity: 1; pointer-events: auto; }
+  body[data-mob="curriculum"] .main    { transform: translateX(-110%);opacity: 0; pointer-events: none; }
+
+  /* ارتفاع sidebar و main مستقیماً محاسبه می‌شود: کل صفحه منهای topbar و mob-nav */
+  .sidebar, .main {
+    height: calc(100dvh - 50px - 62px) !important;
+    overflow: hidden !important;
+  }
+
+  /* Hide desktop sidebar tab‑bar (we navigate via bottom nav) */
+  .sidebar-tabs { display: none; }
+
+  /* Mobile schedule header */
+  .mob-sched-header {
+    padding: 12px 16px 8px; flex-shrink: 0;
+    display: flex !important; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--b0);
+  }
+  .mob-sched-title { font-size: .95rem; font-weight: 800; }
+
+  /* Main fills properly on mobile */
+  .main { padding: 0; gap: 0; background: var(--s1); }
+  .timetable-container { border-radius: 0; border: none; border-top: 1px solid var(--b0); flex: 1; min-height: 0; padding: 10px; }
+
+  /* Larger touch targets in course cards */
+  .course-card { padding: 14px 14px 10px; }
+  .course-card-name { font-size: .95rem; }
+
+  /* Timetable slot: taller on mobile */
+  .timetable-inner { min-height: 360px; }
+  .slot { min-height: 68px; }
+
+  /* Main header compact */
+  .main-header  { display: none; }   /* hidden — title replaced by bottom‑nav label */
+  .faculty-legend { display: none; }
+
+  /* ── Topbar: compact ── */
+  .app-topbar {
+    height: 50px; padding: 0 14px; gap: 10px;
+  }
+  .topbar-center, .brand-badge { display: none; }
+  .topbar-actions .btn { padding: 6px 10px; font-size: .76rem; }
+  /* hide print / admin / professor on mobile — accessible via menu */
+  .topbar-actions .btn:not(#themeBtn):not(.mob-exam-btn) { display: none; }
+
+  /* mobile unit pill inside topbar */
+  .mob-unit-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--blue-dim); border: 1px solid rgba(59,130,246,.3);
+    border-radius: 20px; padding: 4px 12px 4px 8px;
+    font-size: .78rem; font-weight: 700; color: var(--blue);
+  }
+  .mob-unit-pill.over { background: var(--red-dim); border-color: rgba(239,68,68,.4); color: var(--red); }
+  .mob-unit-num { font-size: .95rem; font-weight: 800; }
+
+  /* ── Bottom Navigation ── */
+  .mob-nav {
+    display: flex; flex-shrink: 0;
+    height: 62px;
+    background: var(--s1);
+    border-top: 1px solid var(--b0);
+    safe-area-inset-bottom: env(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .mob-nav-btn {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--t3); font-family: inherit; font-size: .65rem; font-weight: 600;
+    transition: color .15s, background .15s;
+    position: relative; padding: 6px 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mob-nav-btn:active { background: var(--b0); }
+  .mob-nav-icon { font-size: 1.35rem; line-height: 1; }
+  .mob-nav-btn.active { color: var(--blue); }
+  .mob-nav-btn.active .mob-nav-icon-wrap {
+    background: var(--blue-dim); border-radius: 12px;
+    padding: 4px 18px; margin-bottom: 1px;
+  }
+
+  /* badge for schedule button */
+  .mob-nav-badge {
+    position: absolute; top: 6px; right: calc(50% - 22px);
+    background: var(--blue); color: #fff;
+    border-radius: 10px; font-size: .6rem; font-weight: 800;
+    padding: 1px 5px; min-width: 16px; text-align: center;
+    border: 2px solid var(--s1);
+  }
+
+  /* cur‑scroll bottom padding so last card isn't behind nav */
+  .cur-scroll  { padding-bottom: 16px; }
+  .course-list { padding-bottom: 16px; }
+}
+
+/* iPhone safe area (notch) */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (max-width: 768px) {
+    .mob-nav { padding-bottom: env(safe-area-inset-bottom); height: calc(62px + env(safe-area-inset-bottom)); }
+  }
+}
 </style>
 </head>
 <body>
@@ -110,10 +251,16 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     </div>
   </div>
 
+  <!-- unit pill فقط روی موبایل نمایش داده می‌شود -->
+  <div class="mob-unit-pill" id="mobUnitPill">
+    <span class="mob-unit-num" id="mobUnitNum">۰</span>
+    <span style="color:var(--t3);font-weight:500">/ ۲۰ واحد</span>
+  </div>
+
   <div class="topbar-actions">
     <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="onToggleTheme()" title="تغییر تم">🌗</button>
-    <button class="btn btn-ghost btn-sm" onclick="window.print()" title="چاپ برنامه">🖨️</button>
-    <button class="btn btn-ghost btn-sm" style="background:rgba(245,158,11,.15);color:var(--yellow);border-color:rgba(245,158,11,.3)" onclick="openExamModal()">📅 امتحانات</button>
+    <button class="btn btn-ghost btn-sm mob-exam-btn" style="background:rgba(245,158,11,.15);color:var(--yellow);border-color:rgba(245,158,11,.3)" onclick="openExamModal()">📅 امتحانات</button>
+    <button class="btn btn-ghost btn-sm" onclick="window.print()" title="چاپ">🖨️</button>
     <a href="professor.html" class="btn btn-ghost btn-sm" style="background:var(--violet-dim);color:var(--violet);border-color:rgba(139,92,246,.3);text-decoration:none">👨‍🏫 استاد</a>
     <a href="admin.html" class="btn btn-ghost btn-sm" style="text-decoration:none">⚙️</a>
   </div>
@@ -178,6 +325,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 
   <!-- ── Main ────────────────────────────────────────────────────────────── -->
   <main class="main">
+    <!-- Desktop header -->
     <div class="main-header">
       <div>
         <h1 class="main-title">برنامه هفتگی</h1>
@@ -186,12 +334,41 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       <div id="facultyLegend" class="faculty-legend"></div>
     </div>
 
+    <!-- Mobile header (only shown on mobile) -->
+    <div class="mob-sched-header" style="display:none" id="mobSchedHeader">
+      <span class="mob-sched-title">📅 برنامه هفتگی</span>
+      <span id="mobSelectedInfo" style="font-size:.75rem;color:var(--t3)"></span>
+    </div>
+
     <div class="timetable-container">
       <div class="timetable-inner" id="timetable"></div>
     </div>
   </main>
 
 </div>
+
+<!-- ── Mobile bottom nav ──────────────────────────────────────────────────── -->
+<nav class="mob-nav no-print" role="tablist">
+  <button class="mob-nav-btn active" id="mnSearch" onclick="setMobView('search')" aria-label="جستجوی درس">
+    <div class="mob-nav-icon-wrap">
+      <span class="mob-nav-icon">🔍</span>
+    </div>
+    <span>جستجو</span>
+  </button>
+  <button class="mob-nav-btn" id="mnSchedule" onclick="setMobView('schedule')" aria-label="برنامه هفتگی">
+    <div class="mob-nav-icon-wrap" style="position:relative">
+      <span class="mob-nav-icon">📅</span>
+      <span class="mob-nav-badge" id="mobBadge" style="display:none"></span>
+    </div>
+    <span>برنامه</span>
+  </button>
+  <button class="mob-nav-btn" id="mnCurriculum" onclick="setMobView('curriculum')" aria-label="نقشه درسی">
+    <div class="mob-nav-icon-wrap">
+      <span class="mob-nav-icon">🗺️</span>
+    </div>
+    <span>نقشه</span>
+  </button>
+</nav>
 
 <!-- ── Import file input ───────────────────────────────────────────────────── -->
 <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importGolestanFile(this)">

@@ -576,77 +576,37 @@ body {
   .sidebar { width: 320px; min-width: 300px; }
 }
 
-/* Mobile: تغییر کامل layout */
+/* Mobile: shared tweaks — layout overrides are page-specific */
 @media (max-width: 768px) {
-  /* اجازه scroll کامل روی موبایل */
-  body { height: auto !important; overflow: auto !important; }
-
-  /* app layout: عمودی */
-  .app { flex-direction: column; overflow: visible !important; height: auto; }
-
-  /* sidebar: تمام عرض، ارتفاع محدود */
-  .sidebar {
-    width: 100% !important; min-width: unset !important;
-    border-left: none; border-bottom: 1px solid var(--b0);
-    max-height: 55vh; flex-shrink: 0;
-  }
-
-  /* main: بعد از sidebar */
-  .main {
-    overflow: visible !important; min-height: unset;
-    padding: 12px; gap: 8px;
-  }
-
-  /* timetable: اجازه horizontal scroll */
-  .timetable-container {
-    flex: none; min-height: 320px; overflow: auto;
-  }
-
-  /* topbar */
-  .app-topbar { padding: 0 12px; gap: 8px; height: 48px; }
-  .topbar-center { display: none; }
-  .brand-badge  { display: none; }
-  .brand-name   { font-size: 0.82rem; }
-  .topbar-actions { gap: 4px; }
-  .topbar-actions .btn { padding: 5px 8px; font-size: 0.72rem; }
-
-  /* فقط نمایش آیکون برای دکمه‌های کمتر مهم */
-  .topbar-actions .hide-on-sm { display: none; }
-
-  /* professor page */
-  .page-layout {
-    flex-direction: column !important;
-    overflow: visible !important;
-    max-height: none !important;
-    padding: 12px !important;
-    min-height: unset !important;
-  }
-  .tt-panel { flex: none; min-height: 320px; }
-  .timetable-box { overflow: auto; min-height: 280px; max-height: 50vh; }
-  .conflict-panel { width: 100% !important; min-width: unset !important; max-height: 50vh; }
-  .conflict-list { max-height: 45vh; }
-
-  /* summary cards: 2 ستون */
-  .summary-bar { gap: 8px; padding: 10px 14px; }
+  /* Summary cards: 2 columns */
+  .summary-bar  { gap: 8px; padding: 10px 14px; }
   .summary-card { min-width: calc(50% - 8px); padding: 10px 14px; }
   .summary-card-value { font-size: 1.3rem; }
 
-  /* controls bar */
+  /* Controls / topbar shared */
   .controls-bar { gap: 10px; padding: 10px 14px; }
 
-  /* admin */
-  .tab-panel { padding: 14px; }
-  .form-row { gap: 8px; }
+  /* Admin panel */
+  .form-row     { gap: 8px; }
   .form-row .fg { min-width: 100%; }
-  .cur-table-wrap { margin: 0 -14px; padding: 0 14px; }
+
+  /* professor.html: stack layout */
+  .page-layout {
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: none;
+    padding: 12px;
+  }
+  .tt-panel       { flex: none; min-height: 280px; }
+  .timetable-box  { overflow: auto; min-height: 260px; max-height: 45vh; }
+  .conflict-panel { width: 100% !important; min-width: unset !important; }
+  .conflict-list  { max-height: 50vh; }
 }
 
 /* Extra small */
 @media (max-width: 480px) {
   .main-title { font-size: 0.95rem; }
   .timetable-inner { min-width: 500px; }
-  .sidebar { max-height: 50vh; }
-  .topbar-actions a:not(:first-child) { display: none; }
 }
 
 /* Desktop: hide mobile helpers */

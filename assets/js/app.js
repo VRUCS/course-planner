@@ -220,20 +220,25 @@ function toggleCourse(id) {
 // ═══════════════════════════════════════════════════════════════════════════
 // UNIT DISPLAY
 // ═══════════════════════════════════════════════════════════════════════════
-function updateUnitDisplay() {
+function getSelectedUnits() {
     let total = 0;
     state.selected.forEach(id => {
         const c = courses.find(x => x.id === id);
         if (c) total += c.units || 0;
     });
+    return total;
+}
 
-    const pct  = Math.min(100, Math.round(total / MAX_UNITS * 100));
-    const fill = document.getElementById('unitBarFill');
+function updateUnitDisplay() {
+    const total = getSelectedUnits();
+    const pct   = Math.min(100, Math.round(total / MAX_UNITS * 100));
+
+    // ── desktop unit bar ──
+    const fill    = document.getElementById('unitBarFill');
     const countEl = document.getElementById('unitCount');
     const display = document.getElementById('unitDisplay');
-    const info  = document.getElementById('selectedInfo');
-
-    if (countEl)  countEl.textContent = toPersianNum(total);
+    const info    = document.getElementById('selectedInfo');
+    if (countEl) countEl.textContent = toPersianNum(total);
     if (fill) {
         fill.style.width = `${pct}%`;
         fill.style.background = total > MAX_UNITS ? 'var(--red)' : total > MAX_UNITS * 0.8 ? 'var(--yellow)' : 'var(--blue)';
@@ -243,13 +248,29 @@ function updateUnitDisplay() {
         display.classList.toggle('danger',  total > MAX_UNITS);
     }
     if (info) {
+        info.style.display = state.selected.size > 0 ? 'block' : 'none';
         if (state.selected.size > 0) {
-            info.style.display = 'block';
-            info.textContent = `${toPersianNum(state.selected.size)} درس انتخاب‌شده — ${toPersianNum(total)} واحد${total > MAX_UNITS ? ' (بیشتر از حد مجاز)' : ''}`;
+            info.textContent = `${toPersianNum(state.selected.size)} درس — ${toPersianNum(total)} واحد${total > MAX_UNITS ? ' ⚠️' : ''}`;
             info.style.color = total > MAX_UNITS ? 'var(--red)' : 'var(--t3)';
-        } else {
-            info.style.display = 'none';
         }
+    }
+
+    // ── mobile pill + badge + schedule header ──
+    const pill    = document.getElementById('mobUnitPill');
+    const mNum    = document.getElementById('mobUnitNum');
+    const badge   = document.getElementById('mobBadge');
+    const mobInfo = document.getElementById('mobSelectedInfo');
+    if (mNum)  mNum.textContent = toPersianNum(total);
+    if (pill)  pill.classList.toggle('over', total > MAX_UNITS);
+    if (badge) {
+        const n = state.selected.size;
+        badge.textContent = toPersianNum(n);
+        badge.style.display = n > 0 ? 'block' : 'none';
+    }
+    if (mobInfo) {
+        mobInfo.textContent = state.selected.size > 0
+            ? `${toPersianNum(state.selected.size)} درس · ${toPersianNum(total)} واحد`
+            : '';
     }
 }
 
@@ -590,6 +611,50 @@ function importGolestanFile(input) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// MOBILE NAV
+// ═══════════════════════════════════════════════════════════════════════════
+const isMobile = () => window.innerWidth <= 768;
+
+function setMobView(view) {
+    if (!isMobile()) return;
+    document.body.setAttribute('data-mob', view);
+
+    // sync desktop sidebar tabs
+    if (view === 'search')     switchTab('search');
+    if (view === 'curriculum') switchTab('curriculum');
+
+    // update bottom‑nav active state
+    ['Search', 'Schedule', 'Curriculum'].forEach(v => {
+        document.getElementById('mn' + v)
+            ?.classList.toggle('active', v.toLowerCase() === view);
+        const wrap = document.getElementById('mn' + v)?.querySelector('.mob-nav-icon-wrap');
+        if (wrap) wrap.style.background = v.toLowerCase() === view ? 'var(--blue-dim)' : '';
+    });
+}
+
+// initialise mobile state
+function initMobile() {
+    if (isMobile()) {
+        document.body.setAttribute('data-mob', 'search');
+        // patch switchTab so it also updates mob view from desktop tabs
+        const origSwitch = switchTab;
+        window.switchTab = (tab) => {
+            origSwitch(tab);
+            if (isMobile()) {
+                if (tab === 'search')     setMobView('search');
+                if (tab === 'curriculum') setMobView('curriculum');
+            }
+        };
+    }
+    // keep data‑mob in sync on resize
+    window.addEventListener('resize', () => {
+        if (!isMobile()) document.body.removeAttribute('data-mob');
+        else if (!document.body.getAttribute('data-mob')) setMobView('search');
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // BOOTSTRAP
 // ═══════════════════════════════════════════════════════════════════════════
 init();
+initMobile();
