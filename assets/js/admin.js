@@ -4,10 +4,76 @@
 const allCourses = (typeof UNIVERSITY_DATA !== 'undefined') ? UNIVERSITY_DATA : [];
 
 // ─── Tab switching ────────────────────────────────────────────────────────
+const TAB_IDS = ['rules', 'curriculum', 'ai'];
 function switchAdminTab(t) {
-    document.querySelectorAll('.page-tab').forEach((el, i) => el.classList.toggle('active', i === (t === 'rules' ? 0 : 1)));
+    document.querySelectorAll('.page-tab').forEach((el, i) => el.classList.toggle('active', TAB_IDS[i] === t));
     document.getElementById('panelRules').classList.toggle('active', t === 'rules');
     document.getElementById('panelCurriculum').classList.toggle('active', t === 'curriculum');
+    document.getElementById('panelAi').classList.toggle('active', t === 'ai');
+}
+
+// ─── AI Settings ──────────────────────────────────────────────────────────
+function initAiSettings() {
+    // پر کردن مدل‌ها
+    const sel = document.getElementById('aiModelSelect');
+    if (!sel || typeof AI === 'undefined') return;
+    AI.MODELS.forEach(m => sel.add(new Option(m.label, m.id)));
+
+    // بارگذاری تنظیمات ذخیره‌شده
+    const { key, model } = AI.getSettings();
+    if (key) document.getElementById('aiKeyInput').value = key;
+    if (model) sel.value = model;
+}
+
+function toggleKeyVisibility() {
+    const inp = document.getElementById('aiKeyInput');
+    const btn = document.getElementById('eyeBtn');
+    if (inp.type === 'password') { inp.type = 'text';     btn.textContent = '🙈'; }
+    else                         { inp.type = 'password'; btn.textContent = '👁️'; }
+}
+
+function saveAiSettings() {
+    const key   = document.getElementById('aiKeyInput').value.trim();
+    const model = document.getElementById('aiModelSelect').value;
+    AI.saveSettings(key, model);
+    Toast.success('تنظیمات AI ذخیره شد.', 2500);
+}
+
+function clearAiSettings() {
+    AI.saveSettings('', AI.MODELS[0].id);
+    document.getElementById('aiKeyInput').value = '';
+    document.getElementById('aiModelSelect').value = AI.MODELS[0].id;
+    Toast.info('کلید API حذف شد.', 2500);
+}
+
+async function testAiConnection() {
+    const key = document.getElementById('aiKeyInput').value.trim();
+    if (!key) { Toast.warning('ابتدا کلید API را وارد کنید.'); return; }
+    AI.saveSettings(key, document.getElementById('aiModelSelect').value);
+
+    const btn = document.getElementById('testBtn');
+    const res = document.getElementById('aiTestResult');
+    btn.disabled = true;
+    btn.textContent = '⏳ در حال تست...';
+    res.style.display = 'none';
+
+    try {
+        const reply = await AI.testConnection();
+        res.style.display = 'block';
+        res.style.borderColor = 'var(--green)';
+        res.style.background  = 'var(--green-dim)';
+        res.textContent = `✓ اتصال موفق! پاسخ: ${reply}`;
+        Toast.success('اتصال به OpenRouter برقرار شد.', 3000);
+    } catch (e) {
+        res.style.display = 'block';
+        res.style.borderColor = 'var(--red)';
+        res.style.background  = 'var(--red-dim)';
+        res.textContent = `✗ خطا: ${e.message}`;
+        Toast.error(e.message, 5000);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🔌 تست اتصال';
+    }
 }
 
 // ─── Rules editor ─────────────────────────────────────────────────────────
@@ -274,4 +340,5 @@ document.addEventListener('DOMContentLoaded', () => {
     rfInitFaculties();
     cfUpdateHeaders();
     document.getElementById('cfCohorts').addEventListener('input', cfUpdateHeaders);
+    initAiSettings();
 });

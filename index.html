@@ -328,6 +328,9 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       <div id="facultyLegend" class="faculty-legend"></div>
     </div>
 
+    <!-- Load analyzer badge (فقط وقتی AI فعال است) -->
+    <div id="loadBadge" class="load-badge ok" style="display:none"></div>
+
     <!-- Mobile header (only shown on mobile) -->
     <div class="mob-sched-header" style="display:none" id="mobSchedHeader">
       <span class="mob-sched-title">📅 برنامه هفتگی</span>
@@ -383,10 +386,73 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   </div>
 </div>
 
+<!-- ── AI Chat FAB + Panel ────────────────────────────────────────────────── -->
+<button class="ai-fab no-print" onclick="Advisor.toggle()" title="دستیار مشاور AI">
+  🤖
+  <span class="ai-fab-dot" id="aiFabDot" style="display:none"></span>
+</button>
+
+<div class="ai-panel no-print" id="aiPanel">
+  <div class="ai-header">
+    <div class="ai-header-title">
+      <span>🤖</span>
+      <span>دستیار مشاور</span>
+    </div>
+    <div class="ai-header-actions">
+      <button class="ai-header-btn" onclick="Advisor.clearHistory()" title="شروع مجدد">🔄</button>
+      <button class="ai-header-btn" onclick="Advisor.close()" title="بستن">✕</button>
+    </div>
+  </div>
+
+  <div class="ai-messages" id="aiMessages"></div>
+
+  <div class="ai-quick-prompts" id="aiQuickPrompts">
+    <!-- توسط JS پر می‌شود -->
+  </div>
+
+  <div class="ai-input-area">
+    <textarea class="ai-input" id="aiInput" rows="1"
+      placeholder="سوالت را بپرس..."
+      onkeydown="aiHandleKey(event)"
+      oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+    <button class="ai-send-btn" onclick="aiSendFromInput()" title="ارسال">➤</button>
+  </div>
+</div>
+
+<!-- ── Load badge modal ───────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="loadModal" onclick="if(event.target===this)closeLoadModal()">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-header">
+      <h3 class="modal-title" id="loadModalTitle">تحلیل بار درسی</h3>
+      <button class="modal-close" onclick="closeLoadModal()">×</button>
+    </div>
+    <div class="modal-body" style="padding-top:10px">
+      <p id="loadModalText" style="font-size:.88rem;line-height:1.7;color:var(--t1)"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Path Planner Modal ─────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="pathModal" onclick="if(event.target===this)closePathModal()">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-header">
+      <h3 class="modal-title" id="pathModalTitle">🗺️ مسیر رسیدن به درس</h3>
+      <button class="modal-close" onclick="closePathModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="pathModalContent" class="path-modal-body" style="min-height:80px">
+        <div class="empty-state"><div class="spinner" style="width:24px;height:24px;border-width:3px;margin:auto"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Scripts ─────────────────────────────────────────────────────────────── -->
 <script src="assets/js/data.js"></script>
 <script src="assets/js/curriculum_cs.js"></script>
 <script src="assets/js/utils.js"></script>
+<script src="assets/js/ai.js"></script>
+<script src="assets/js/ai-advisor.js"></script>
 <script src="assets/js/app.js"></script>
 </body>
 </html>

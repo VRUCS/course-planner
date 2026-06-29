@@ -242,6 +242,7 @@ function toggleCourse(id) {
     updateTimetable();
     updateUnitDisplay();
     if (state.activeSidebarTab === 'curriculum') renderCurriculumTab();
+    scheduleLoadAnalysis();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -522,14 +523,20 @@ function renderCurriculumTab() {
             const offeredDot = (offered && st !== 'passed' && st !== 'taking')
                 ? `<span class="offered-dot" title="این ترم ارائه می‌شود"></span>` : '';
 
+            // درس‌های قفل: کلیک → مسیریاب AI | بقیه: toggle وضعیت
+            const clickFn = st === 'locked'
+                ? `showPathPlan('${c.id}')`
+                : `toggleCurriculumCourse('${c.id}')`;
+
             html += `
-                <div class="cur-card ${st}" onclick="toggleCurriculumCourse('${c.id}')"
+                <div class="cur-card ${st}" onclick="${clickFn}"
                      title="${statusTooltip[st] || ''}">
                     <div class="cur-card-name">${c.name}</div>
                     <div class="cur-card-footer">
                         <span class="cur-card-units">${toPersianNum(c.units)} واحد</span>
                         <div style="display:flex;align-items:center;gap:4px;">
                             ${offeredDot}
+                            ${st === 'locked' ? '<span style="font-size:.65rem" title="کلیک برای مسیریاب">🗺️</span>' : ''}
                             <span class="cur-status-dot"></span>
                         </div>
                     </div>
@@ -638,6 +645,31 @@ function importGolestanFile(input) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// AI FEATURES INIT
+// ═══════════════════════════════════════════════════════════════════════════
+function initAIFeatures() {
+    // FAB dot: نشان می‌دهد AI فعال است
+    const dot = document.getElementById('aiFabDot');
+    if (dot && typeof AI !== 'undefined' && AI.isConfigured()) dot.style.display = 'block';
+
+    // Quick prompts
+    const qEl = document.getElementById('aiQuickPrompts');
+    if (qEl && typeof Advisor !== 'undefined') {
+        Advisor.QUICK_PROMPTS.forEach(p => {
+            const btn = document.createElement('button');
+            btn.className = 'ai-quick-btn';
+            btn.textContent = p;
+            btn.onclick = () => aiQuickPrompt(p);
+            qEl.appendChild(btn);
+        });
+    }
+}
+
+// ─── Load Modal helpers ──────────────────────────────────────────────────
+function closeLoadModal() { document.getElementById('loadModal').classList.remove('open'); }
+function closePathModal()  { document.getElementById('pathModal').classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════════════════════════════
 // MOBILE NAV
 // ═══════════════════════════════════════════════════════════════════════════
 const isMobile = () => window.innerWidth <= 768;
@@ -681,7 +713,133 @@ function initMobile() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// LOAD ANALYZER
+// ═══════════════════════════════════════════════════════════════════════════
+const _analyzeLoadDebounced = debounce(runLoadAnalysis, 3000);
+
+function scheduleLoadAnalysis() {
+    if (typeof AI === 'undefined' || !AI.isConfigured()) return;
+    if (state.selected.size < 2) { clearLoadBadge(); return; }
+    _analyzeLoadDebounced();
+}
+
+function clearLoadBadge() {
+    const badge = document.getElementById('loadBadge');
+    if (badge) badge.style.display = 'none';
+}
+
+async function runLoadAnalysis() {
+    if (typeof AI === 'undefined' || !AI.isConfigured()) return;
+    if (state.selected.size < 2) { clearLoadBadge(); return; }
+
+    const selCourses = [...state.selected].map(id => {
+        const c = courses.find(x => x.id === id);
+        return c ? { name: c.name, units: c.units, exam: c.exam_text ? 'دارد' : 'ندارد' } : null;
+    }).filter(Boolean);
+
+    const units = getSelectedUnits();
+
+    try {
+        const result = await AI.complete([{
+            role: 'user',
+            content: `این برنامه درسی دانشجو را ارزیابی کن و JSON برگردان:
+درس‌ها: ${JSON.stringify(selCourses)}
+کل واحد: ${units}
+
+خروجی دقیقاً به این شکل:
+{"status":"ok","fa":"متن کوتاه فارسی حداکثر ۳۰ کلمه"}
+status باید یکی از: ok، warning، danger باشد.
+ok: برنامه مناسب
+warning: یک نکته مهم دارد
+danger: مشکل جدی دارد (امتحانات متوالی، واحد زیاد، درس‌های سنگین)`,
+        }], { jsonMode: true });
+
+        showLoadBadge(result);
+    } catch (e) { /* بی‌صدا شکست بخورد */ }
+}
+
+function showLoadBadge(result) {
+    let badge = document.getElementById('loadBadge');
+    if (!badge) return;
+
+    const status = result?.status || 'ok';
+    const text   = result?.fa     || '';
+    const icons  = { ok: '🟢', warning: '🟡', danger: '🔴' };
+
+    badge.className = `load-badge ${status}`;
+    badge.textContent = `${icons[status]} ${text}`;
+    badge.style.display = 'inline-flex';
+    badge.title = 'کلیک برای جزئیات';
+    badge.onclick = () => {
+        document.getElementById('loadModalTitle').textContent =
+            status === 'danger' ? '🔴 هشدار بار درسی' :
+            status === 'warning' ? '🟡 نکته مهم' : '🟢 برنامه متعادل';
+        document.getElementById('loadModalText').textContent = text;
+        document.getElementById('loadModal').classList.add('open');
+    };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PREREQUISITE PATH PLANNER
+// ═══════════════════════════════════════════════════════════════════════════
+async function showPathPlan(courseId) {
+    if (typeof AI === 'undefined' || !AI.isConfigured()) {
+        Toast.warning('برای استفاده از مسیریاب، کلید API را در پنل ادمین وارد کنید.');
+        return;
+    }
+
+    const data = getCurrentCurriculum();
+    if (!data) return;
+    const target = data.courses.find(c => c.id === courseId);
+    if (!target) return;
+
+    // باز کردن modal با loading
+    const modal = document.getElementById('pathModal');
+    document.getElementById('pathModalTitle').textContent = `🗺️ مسیر رسیدن به «${target.name}»`;
+    document.getElementById('pathModalContent').innerHTML =
+        '<div class="empty-state" style="padding:30px 0"><div class="empty-state-desc">در حال محاسبه مسیر...</div></div>';
+    modal.classList.add('open');
+
+    // ساخت گراف پیش‌نیاز
+    function buildPrereqChain(id, visited = new Set()) {
+        if (visited.has(id)) return [];
+        visited.add(id);
+        const course = data.courses.find(c => c.id === id);
+        if (!course) return [];
+        const chain = [];
+        for (const preId of (course.prereqs || [])) {
+            chain.push(...buildPrereqChain(preId, visited));
+        }
+        chain.push(course);
+        return chain;
+    }
+
+    const chain = buildPrereqChain(courseId);
+    const passedNames = [...state.curriculum.passed]
+        .map(id => data.courses.find(c => c.id === id)?.name).filter(Boolean);
+
+    try {
+        const response = await AI.complete([{
+            role: 'user',
+            content: `دانشجو می‌خواهد درس «${target.name}» را بگذراند.
+درس‌های پاس‌شده: ${passedNames.join('، ') || 'هیچ'}
+زنجیره پیش‌نیاز تا این درس: ${chain.map(c => `${c.name} (ترم ${c.semester})`).join(' → ')}
+
+یک برنامه ترم‌بندی کوتاه و واقعی به فارسی بنویس که نشان دهد از وضعیت فعلی تا رسیدن به «${target.name}» چند ترم طول می‌کشد و چه درس‌هایی باید بگذرد.
+حداکثر ۱۰۰ کلمه، ساده و مستقیم.`,
+        }]);
+
+        document.getElementById('pathModalContent').innerHTML =
+            `<p class="path-modal-body">${response.replace(/\n/g, '<br>')}</p>`;
+    } catch (e) {
+        document.getElementById('pathModalContent').innerHTML =
+            `<p style="color:var(--red)">خطا: ${e.message}</p>`;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // BOOTSTRAP
 // ═══════════════════════════════════════════════════════════════════════════
 init();
 initMobile();
+initAIFeatures();

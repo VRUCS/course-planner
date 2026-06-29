@@ -171,10 +171,12 @@ function buildConflictList(conflicts) {
             .map(t => `<span class="time-chip">${t}</span>`).join('');
         const sections = overlaps.map(o => `${o.secA} ↔ ${o.secB}`)
             .map(s => `<div style="font-size:.68rem;color:var(--t2);margin-top:2px">${s}</div>`).join('');
+        const ruleJson = JSON.stringify({ a: rule.a, nameA: rule.nameA, b: rule.b, nameB: rule.nameB, reason: rule.reason }).replace(/'/g, '&apos;');
         return `
             <div class="conflict-card ${type}">
                 <div class="conflict-header">
                     <span class="conflict-severity ${type}">${type === 'hard' ? '⛔ سخت' : '⚠️ نرم'}</span>
+                    <button class="ai-explain-btn" onclick='explainConflict(${ruleJson},"${type}")' title="توضیح AI">✨ توضیح</button>
                 </div>
                 <div class="conflict-pair">${rule.nameA} ↔ ${rule.nameB}</div>
                 <div class="conflict-sections">${sections}</div>
@@ -182,6 +184,28 @@ function buildConflictList(conflicts) {
                 <div class="conflict-times">${timePills}</div>
             </div>`;
     }).join('');
+}
+
+// ─── Conflict Explainer ───────────────────────────────────────────────────
+async function explainConflict(rule, type) {
+    if (typeof AI === 'undefined' || !AI.isConfigured()) {
+        Toast.warning('کلید API تنظیم نشده. به پنل ادمین بروید.');
+        return;
+    }
+    Toast.info('در حال تهیه توضیح...', 2000);
+    try {
+        const explanation = await AI.complete([{
+            role: 'user',
+            content: `دو درس «${rule.nameA}» و «${rule.nameB}» در برنامه هفتگی گروه آموزشی تداخل دارند.
+نوع تداخل: ${type === 'hard' ? 'سخت (اجباری)' : 'نرم (توصیه‌شده)'}
+دلیل قانون: ${rule.reason}
+
+به فارسی ساده (حداکثر ۸۰ کلمه) توضیح بده چرا این تداخل مشکل‌ساز است و چه راه‌حلی پیشنهاد می‌دهی.`
+        }]);
+        Toast.info(explanation, 8000);
+    } catch (e) {
+        Toast.error('خطا: ' + e.message);
+    }
 }
 
 function setSummary(total, hard, soft, ok) {

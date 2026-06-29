@@ -180,6 +180,80 @@ def validate_data(data: dict) -> list[str]:
                     warnings.append(f"پیش‌نیاز '{pid}' در درس '{c.get('id', i)}' هنوز تعریف نشده (ممکن است بعداً بیاید)")
     return warnings
 
+# ─── Auto conflict rules generator ───────────────────────────────────────────
+CONFLICT_RULES_PROMPT = """چارت درسی زیر را بررسی کن و قوانین تداخل برنامه هفتگی را استخراج کن.
+
+قوانین:
+- mustNotConflict: درس‌هایی که در یک ترم مشابه هستند و دانشجو باید هر دو را هم‌زمان بگذراند.
+- shouldNotConflict: درس‌هایی از ترم‌های هم‌تراز (هر دو فرد یا هر دو زوج) که دانشجوی عقب‌افتاده ممکن است هم‌زمان بگیرد.
+
+خروجی دقیقاً JSON زیر:
+{
+  "mustNotConflict": [
+    {"a": "کد_پایه_درس_الف", "nameA": "نام درس الف", "b": "کد_پایه_درس_ب", "nameB": "نام درس ب", "reason": "دلیل فارسی"}
+  ],
+  "shouldNotConflict": [
+    {"a": "کد_پایه_درس_الف", "nameA": "نام درس الف", "b": "کد_پایه_درس_ب", "nameB": "نام درس ب", "reason": "دلیل فارسی"}
+  ]
+}
+
+فقط کدهایی را بگذار که در codes وجود دارند (از codes["*"] یا codes[ورودی] استفاده کن).
+"""
+
+def generate_conflict_rules(curriculum_data: dict, api_key: str, model: str) -> dict:
+    from openai import OpenAI
+    client = OpenAI(api_key=api_key, base_url=OPENROUTER_BASE_URL,
+                    default_headers={'HTTP-Referer': 'https://github.com/entekhab-vahed', 'X-Title': 'Entekhab Vahed'})
+
+    # خلاصه‌سازی درس‌ها برای prompt
+    courses_summary = []
+    for c in curriculum_data.get('courses', []):
+        # پیدا کردن کد واقعی
+        codes = c.get('codes', {})
+        code = codes.get('*') or next(iter(codes.values()), None)
+        if code:
+            courses_summary.append({
+                'id': c['id'], 'name': c['name'],
+                'semester': c.get('semester', '?'),
+                'code': code, 'type': c.get('type', 'core')
+            })
+
+    prompt = CONFLICT_RULES_PROMPT + f"\n\nدرس‌های چارت:\n{json.dumps(courses_summary, ensure_ascii=False, indent=2)}"
+
+    print("🤖 در حال تولید قوانین تداخل...")
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{'role': 'user', 'content': prompt}],
+        temperature=0.2,
+        max_tokens=3000,
+        response_format={'type': 'json_object'}
+    )
+    raw = response.choices[0].message.content
+    return json.loads(raw)
+
+
+def append_conflict_rules(rules: dict, field_key: str, output_path: Path):
+    """قوانین تولیدشده را به conflict_rules.js اضافه یا به‌روز می‌کند."""
+    from datetime import datetime
+    js_snippet = f"""
+    // تولید خودکار توسط ai_extract.py — {datetime.now().strftime('%Y-%m-%d')}
+    "{field_key}": {json.dumps(rules, ensure_ascii=False, indent=8)},"""
+
+    print(f"\n📋 قوانین تولیدشده:")
+    print(f"   mustNotConflict: {len(rules.get('mustNotConflict', []))} قانون")
+    print(f"   shouldNotConflict: {len(rules.get('shouldNotConflict', []))} قانون")
+    print(f"\n{'='*60}")
+    print("کد زیر را در assets/js/conflict_rules.js داخل CONFLICT_RULES اضافه کنید:")
+    print('='*60)
+    print(js_snippet)
+    print('='*60)
+
+    # اگر output path مشخص شده، ذخیره کن
+    if output_path:
+        output_path.write_text(js_snippet, encoding='utf-8')
+        print(f"\n✅ قطعه کد در {output_path} ذخیره شد.")
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(
@@ -191,6 +265,9 @@ def main():
   deepseek/deepseek-r1
   google/gemini-2.5-pro
   openai/gpt-4o-mini
+
+مثال تولید قوانین تداخل:
+  python ai_extract.py --generate-rules --field cs --key YOUR_KEY
         """
     )
     parser.add_argument('--field', default='cs', help='کلید رشته (مثال: cs، electrical)')
@@ -199,6 +276,8 @@ def main():
     parser.add_argument('--output', default=None, help='فایل خروجی JS (پیش‌فرض: assets/js/curriculum_{field}.js)')
     parser.add_argument('--key', default=None, help='کلید OpenRouter API (پیش‌فرض: متغیر محیطی OPENROUTER_API_KEY)')
     parser.add_argument('--model', default=DEFAULT_MODEL, help=f'مدل OpenRouter (پیش‌فرض: {DEFAULT_MODEL})')
+    parser.add_argument('--generate-rules', action='store_true',
+                        help='به جای استخراج درسنامه، قوانین تداخل تولید کن')
     args = parser.parse_args()
 
     api_key = args.key or os.environ.get('OPENROUTER_API_KEY')
@@ -207,9 +286,49 @@ def main():
         print("   از --key استفاده کنید یا متغیر محیطی OPENROUTER_API_KEY را تنظیم کنید.")
         sys.exit(1)
 
-    input_dir = Path(args.input) if args.input else Path(f'raw_data/curriculum/{args.field}')
+    input_dir   = Path(args.input)  if args.input  else Path(f'raw_data/curriculum/{args.field}')
     output_path = Path(args.output) if args.output else Path(f'assets/js/curriculum_{args.field}.js')
 
+    # ── حالت تولید قوانین تداخل ──────────────────────────────────────────────
+    if args.generate_rules:
+        # بارگذاری curriculum_cs.js فعلی
+        cur_js = Path(f'assets/js/curriculum_{args.field}.js')
+        if not cur_js.exists():
+            print(f"❌ فایل {cur_js} یافت نشد. ابتدا درسنامه را استخراج کنید.")
+            sys.exit(1)
+
+        # اجرای JS برای خواندن داده (از طریق json)
+        import re
+        content = cur_js.read_text(encoding='utf-8')
+        # استخراج JSON از داخل CURRICULUM_REGISTRY یا CURRICULUM_CS
+        match = re.search(r'=\s*(\{[\s\S]+\});?\s*$', content)
+        if not match:
+            print("❌ ساختار فایل JS قابل parse نیست.")
+            sys.exit(1)
+        try:
+            registry = json.loads(match.group(1))
+        except json.JSONDecodeError as e:
+            print(f"❌ خطای JSON: {e}")
+            sys.exit(1)
+
+        # پیدا کردن curriculum data
+        if isinstance(registry, dict) and any('>>' in k for k in registry.keys()):
+            # CURRICULUM_REGISTRY
+            curriculum_data = next(iter(registry.values()))
+            field_key = next(iter(registry.keys()))
+        else:
+            curriculum_data = registry
+            field_key = f"{args.field_name}"
+
+        print(f"\n⚡ تولید قوانین تداخل برای: {field_key}")
+        print(f"🤖 مدل: {args.model}")
+
+        rules = generate_conflict_rules(curriculum_data, api_key, args.model)
+        rules_output = Path(args.output) if args.output else None
+        append_conflict_rules(rules, field_key, rules_output)
+        sys.exit(0)
+
+    # ── حالت استخراج درسنامه (پیش‌فرض) ──────────────────────────────────────
     if not input_dir.exists():
         print(f"❌ پوشه ورودی وجود ندارد: {input_dir}")
         print(f"   لطفاً پوشه را بسازید و فایل‌های PDF/TXT برنامه درسی را داخل آن بریزید.")
