@@ -14,6 +14,8 @@ const KEYS = {
     schedule: 'uni_schedule_v2',
     curriculum: 'uni_curriculum_v2',
     cohort: 'selectedCohort',
+    faculty: 'uni_faculty',
+    group: 'uni_group',
 };
 const MAX_UNITS = 20;
 
@@ -32,11 +34,17 @@ function init() {
     updateTimetable();
     updateUnitDisplay();
 
+    // Restore saved faculty/group
+    restoreFacultyGroup();
+
     // Event listeners
     document.getElementById('searchInput').addEventListener('input', debounce(renderCourseList, 280));
-    document.getElementById('facultyFilter').addEventListener('change', () => { rebuildGroupFilter(); renderCourseList(); syncCurriculumTab(); });
-    document.getElementById('groupFilter').addEventListener('change', () => { renderCourseList(); syncCurriculumTab(); });
-    document.getElementById('genderFilter').addEventListener('change', renderCourseList);
+    document.getElementById('facultyFilter').addEventListener('change', () => {
+        rebuildGroupFilter(); renderCourseList(); syncCurriculumTab(); saveFacultyGroup();
+    });
+    document.getElementById('groupFilter').addEventListener('change', () => {
+        renderCourseList(); syncCurriculumTab(); saveFacultyGroup();
+    });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -115,6 +123,27 @@ function setupFilters() {
     faculties.forEach(f => sel.add(new Option(f, f)));
 }
 
+function saveFacultyGroup() {
+    localStorage.setItem(KEYS.faculty, document.getElementById('facultyFilter').value);
+    localStorage.setItem(KEYS.group,   document.getElementById('groupFilter').value);
+}
+
+function restoreFacultyGroup() {
+    const savedFac = localStorage.getItem(KEYS.faculty) || '';
+    const savedGrp = localStorage.getItem(KEYS.group)   || '';
+    if (!savedFac) return;
+
+    const facSel = document.getElementById('facultyFilter');
+    if ([...facSel.options].some(o => o.value === savedFac)) {
+        facSel.value = savedFac;
+        rebuildGroupFilter();
+        if (savedGrp) {
+            const grpSel = document.getElementById('groupFilter');
+            if ([...grpSel.options].some(o => o.value === savedGrp)) grpSel.value = savedGrp;
+        }
+    }
+}
+
 function rebuildGroupFilter() {
     const fac = document.getElementById('facultyFilter').value;
     const sel = document.getElementById('groupFilter');
@@ -127,7 +156,6 @@ function renderCourseList() {
     const term = normalizeStr(document.getElementById('searchInput').value).toLowerCase();
     const fac  = document.getElementById('facultyFilter').value;
     const grp  = document.getElementById('groupFilter').value;
-    const gen  = document.getElementById('genderFilter').value;
 
     const filtered = courses.filter(c => {
         const nm = normalizeStr(c.name).toLowerCase();
@@ -135,7 +163,6 @@ function renderCourseList() {
         const id = normalizeStr(c.id);
         return (!fac  || c.faculty === fac) &&
                (!grp  || c.group  === grp) &&
-               (!gen  || c.gender.includes(gen)) &&
                (!term || nm.includes(term) || id.includes(term) || pr.includes(term));
     });
 
