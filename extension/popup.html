@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>استخراج دروس گلستان</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Tahoma,'Segoe UI',sans-serif;width:320px;background:#0f172a;color:#f1f5f9;font-size:13px;direction:rtl;}
+
+.header{background:#1e293b;border-bottom:1px solid #334155;padding:12px 14px;display:flex;align-items:center;gap:9px;}
+.header-icon{font-size:1.3rem;}
+.header-title{font-size:.9rem;font-weight:700;}
+.header-sub{font-size:.68rem;color:#64748b;margin-top:1px;}
+
+.body{padding:14px;}
+
+.status-card{border-radius:8px;border:1px solid;padding:10px 12px;margin-bottom:12px;}
+.status-card.detected{background:rgba(52,211,153,.08);border-color:#34d399;}
+.status-card.unknown{background:rgba(71,85,105,.15);border-color:#334155;}
+.status-card.error{background:rgba(248,113,113,.08);border-color:#f87171;}
+.status-label{font-size:.68rem;font-weight:700;color:#64748b;margin-bottom:3px;letter-spacing:.5px;}
+.status-type{font-size:.88rem;font-weight:700;}
+.status-type.green{color:#34d399;} .status-type.gray{color:#94a3b8;}
+.status-hint{font-size:.72rem;color:#64748b;margin-top:4px;line-height:1.5;}
+
+.section-title{font-size:.72rem;font-weight:700;color:#64748b;margin-bottom:7px;border-bottom:1px solid #1e293b;padding-bottom:5px;}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:9px 12px;border-radius:7px;border:none;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit;transition:all .15s;margin-bottom:7px;}
+.btn:hover{opacity:.85;transform:translateY(-1px);}
+.btn-primary{background:#60a5fa;color:#0f172a;}
+.btn-success{background:#34d399;color:#0f172a;}
+.btn-outline{background:transparent;border:1px solid #334155;color:#94a3b8;font-size:.75rem;padding:6px 10px;}
+.btn-outline:hover{color:#f1f5f9;border-color:#475569;}
+
+.progress{display:none;align-items:center;gap:8px;padding:9px 12px;background:#1e293b;border-radius:7px;margin-bottom:9px;font-size:.78rem;color:#64748b;}
+.spinner{width:15px;height:15px;border:2px solid #334155;border-top-color:#60a5fa;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.result-box{display:none;background:#1e293b;border-radius:7px;padding:10px 12px;margin-bottom:10px;font-size:.77rem;}
+.result-stat{display:flex;justify-content:space-between;margin-bottom:3px;}
+.result-stat .val{font-weight:700;color:#60a5fa;}
+
+.sep{height:1px;background:#1e293b;margin:10px 0;}
+.error-msg{color:#f87171;font-size:.75rem;margin-top:6px;}
+
+.info-box{font-size:.72rem;color:#94a3b8;line-height:1.8;background:#1e293b;border-radius:7px;padding:10px 12px;margin-bottom:12px;}
+.info-box strong{color:#f1f5f9;}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-icon">📚</div>
+    <div>
+        <div class="header-title">استخراج دروس گلستان</div>
+        <div class="header-sub">انتخاب واحد هوشمند</div>
+    </div>
+</div>
+
+<div class="body">
+
+    <div id="statusCard" class="status-card unknown">
+        <div class="status-label">وضعیت صفحه</div>
+        <div id="statusType" class="status-type gray">در حال بررسی...</div>
+        <div id="statusHint" class="status-hint"></div>
+    </div>
+
+    <div class="progress" id="progressBar">
+        <div class="spinner"></div>
+        <span id="progressText">در حال استخراج...</span>
+    </div>
+
+    <div class="result-box" id="resultBox">
+        <div id="resultStats"></div>
+    </div>
+
+    <!-- دروس ارائه‌شده -->
+    <div id="actionsOffered" style="display:none">
+        <div class="section-title">📋 دروس ارائه‌شده در ترم جاری</div>
+        <button class="btn btn-primary" id="btnExtractOffered">⬇️ استخراج و دانلود data.js</button>
+        <button class="btn btn-outline" id="btnCopyOffered">📋 کپی JSON</button>
+    </div>
+
+    <!-- چارت درسی -->
+    <div id="actionsChart" style="display:none">
+        <div class="section-title">📚 چارت درسی رشته (تطبیق دروس)</div>
+        <button class="btn btn-success" id="btnExtractChart">⬇️ استخراج چارت و دانلود JSON</button>
+        <button class="btn btn-outline" id="btnCopyChart">📋 کپی JSON</button>
+    </div>
+
+    <!-- راهنما -->
+    <div id="actionsUnknown" style="display:none">
+        <div class="info-box">
+            به یکی از این صفحات در گلستان بروید:<br>
+            <strong>دروس ارائه‌شده:</strong> منو «انتخاب واحد» → «دروس ارائه‌شده در ترم»<br>
+            <strong>چارت رشته:</strong> منو «پیشرفت تحصیلی» → «تطبیق دروس»
+        </div>
+    </div>
+
+    <div id="errorMsg" class="error-msg" style="display:none"></div>
+
+    <div class="sep"></div>
+    <div style="font-size:.68rem;color:#334155;text-align:center;">
+        پس از دانلود، فایل را در پروژه جایگزین کنید.
+    </div>
+
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>

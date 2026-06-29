@@ -3,492 +3,173 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>پنل ادمین — ویرایشگر قوانین و چارت</title>
+<title>پنل ادمین — انتخاب واحد هوشمند</title>
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/css/main.css">
 <style>
-:root {
-    --bg-body:#0f172a; --bg-card:#1e293b; --text-main:#f1f5f9; --text-muted:#94a3b8;
-    --border:#334155; --primary:#60a5fa; --primary-dim:rgba(96,165,250,.15);
-    --danger:#f87171; --danger-dim:rgba(248,113,113,.15);
-    --success:#34d399; --warning:#fb923c;
-    --scroll-thumb:#475569;
+body { min-height: 100vh; }
+
+/* Page tabs */
+.page-tabs { display: flex; border-bottom: 1px solid var(--b0); background: var(--s1); }
+.page-tab  {
+  padding: 12px 24px; cursor: pointer; font-weight: 600; font-size: .875rem;
+  color: var(--t2); border-bottom: 2px solid transparent; transition: all var(--fast);
 }
-[data-theme="light"] {
-    --bg-body:#f8fafc; --bg-card:#fff; --text-main:#0f172a; --text-muted:#64748b;
-    --border:#e2e8f0; --primary:#2563eb; --primary-dim:rgba(37,99,235,.1);
-    --danger:#dc2626; --danger-dim:rgba(220,38,38,.1); --success:#059669;
-    --warning:#ea580c; --scroll-thumb:#cbd5e1;
+.page-tab:hover  { color: var(--t1); }
+.page-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+.tab-panel        { display: none; padding: 24px; max-width: 1100px; margin: 0 auto; }
+.tab-panel.active { display: block; }
+
+/* Section */
+.section-hd {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border-radius:3px}
-body{font-family:'Vazirmatn',sans-serif;background:var(--bg-body);color:var(--text-main);min-height:100vh;font-size:14px;}
-
-.topbar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:50;}
-.topbar-title{font-size:1rem;font-weight:700;}
-.back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-muted);text-decoration:none;font-size:.85rem;padding:6px 12px;border-radius:8px;border:1px solid var(--border);}
-.back-link:hover{color:var(--primary);border-color:var(--primary);}
-.btn{padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-weight:600;font-size:.82rem;display:inline-flex;align-items:center;gap:6px;transition:all .15s;white-space:nowrap;}
-.btn:hover{opacity:.85;}
-.btn-primary{background:var(--primary);color:#fff;}
-.btn-danger{background:var(--danger);color:#fff;}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-main);}
-.btn-success{background:var(--success);color:#fff;}
-.btn-sm{padding:4px 10px;font-size:.75rem;}
-
-/* Tabs */
-.page-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--bg-card);}
-.page-tab{padding:12px 24px;cursor:pointer;font-weight:600;font-size:.9rem;color:var(--text-muted);border-bottom:2px solid transparent;transition:all .15s;}
-.page-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
-
-.tab-panel{display:none;padding:24px;max-width:1200px;margin:0 auto;}
-.tab-panel.active{display:block;}
-
-/* Form elements */
-select,input[type=text],input[type=number],textarea{
-    width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;
-    background:var(--bg-body);color:var(--text-main);font-family:inherit;font-size:.875rem;
-}
-select:focus,input:focus,textarea:focus{border-color:var(--primary);outline:none;}
-textarea{resize:vertical;min-height:60px;}
-label{font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:4px;}
-.form-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;}
-.form-row .fg{flex:1;min-width:150px;}
-.form-row .fg label{margin-bottom:4px;}
+.section-title { font-size: .875rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 
 /* Rule table */
-.rules-section{margin-bottom:24px;}
-.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
-.section-title{font-size:.95rem;font-weight:700;display:flex;align-items:center;gap:8px;}
-.badge-hard{background:var(--danger);color:#fff;font-size:.7rem;padding:2px 8px;border-radius:20px;}
-.badge-soft{background:var(--warning);color:#fff;font-size:.7rem;padding:2px 8px;border-radius:20px;}
-
-table.rule-table{width:100%;border-collapse:collapse;}
-table.rule-table th{text-align:right;padding:8px 10px;font-size:.78rem;color:var(--text-muted);background:var(--bg-card);border-bottom:1px solid var(--border);}
-table.rule-table td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
-table.rule-table tr:last-child td{border-bottom:none;}
-
-/* Course autocomplete */
-.ac-wrap{position:relative;}
-.ac-input{width:100%;}
-.ac-drop{position:absolute;top:calc(100% + 2px);right:0;left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;max-height:200px;overflow-y:auto;z-index:100;display:none;}
-.ac-item{padding:8px 12px;cursor:pointer;font-size:.82rem;display:flex;justify-content:space-between;gap:8px;}
-.ac-item:hover{background:var(--primary-dim);}
-.ac-item .ac-code{color:var(--text-muted);font-size:.72rem;flex-shrink:0;}
-.ac-selected{background:var(--primary-dim);border:1px solid var(--primary);border-radius:6px;padding:4px 8px;font-size:.8rem;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-.ac-selected .ac-tag{background:var(--primary);color:#fff;border-radius:4px;padding:2px 6px;font-size:.72rem;}
-.ac-clear{cursor:pointer;color:var(--danger);font-size:1rem;line-height:1;}
+table.rule-table { width: 100%; border-collapse: collapse; }
+table.rule-table th { text-align: right; padding: 8px 10px; font-size: .74rem; color: var(--t2); font-weight: 600; border-bottom: 1px solid var(--b1); }
+table.rule-table td { padding: 5px 8px; border-bottom: 1px solid var(--b0); vertical-align: top; }
+table.rule-table tr:last-child td { border-bottom: none; }
 
 /* Curriculum table */
-.cur-table-wrap{overflow-x:auto;}
-table.cur-table{width:100%;border-collapse:collapse;min-width:900px;}
-table.cur-table th{text-align:right;padding:8px 10px;font-size:.78rem;color:var(--text-muted);background:var(--bg-card);border-bottom:1px solid var(--border);white-space:nowrap;}
-table.cur-table td{padding:4px 6px;border-bottom:1px solid var(--border);vertical-align:middle;}
-table.cur-table td input,table.cur-table td select{padding:5px 8px;font-size:.8rem;}
+.cur-table-wrap { overflow-x: auto; }
+table.cur-table { width: 100%; border-collapse: collapse; min-width: 860px; }
+table.cur-table th { text-align: right; padding: 8px 10px; font-size: .74rem; color: var(--t2); font-weight: 600; background: var(--s2); border-bottom: 1px solid var(--b1); white-space: nowrap; }
+table.cur-table td { padding: 4px 6px; border-bottom: 1px solid var(--b0); vertical-align: middle; }
+table.cur-table td input, table.cur-table td select { padding: 5px 8px; font-size: .8rem; }
 
-/* Output modal */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;justify-content:center;align-items:center;backdrop-filter:blur(4px);}
-.modal{background:var(--bg-card);width:95%;max-width:760px;border-radius:16px;padding:24px;border:1px solid var(--border);display:flex;flex-direction:column;gap:16px;max-height:90vh;}
-.modal-header{display:flex;justify-content:space-between;align-items:center;}
-.modal-title{font-size:1.05rem;font-weight:700;}
-.modal-close{background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;line-height:1;}
-.code-area{flex:1;overflow:auto;}
-.code-area textarea{font-family:monospace;font-size:.78rem;background:var(--bg-body);min-height:300px;resize:none;}
-.copy-success{color:var(--success);font-size:.8rem;}
+/* Output modal code area */
+.code-area textarea { font-family: monospace; font-size: .78rem; background: var(--s0); min-height: 300px; resize: none; border-radius: var(--r2); }
 
-.info-box{background:var(--primary-dim);border:1px solid var(--primary);border-radius:8px;padding:12px 16px;font-size:.82rem;margin-bottom:20px;line-height:1.7;}
+label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; margin-bottom: 4px; }
+.form-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; }
+.form-row .fg { flex: 1; min-width: 140px; }
 </style>
 </head>
 <body>
 
-<div class="topbar">
-    <span class="topbar-title">⚙️ پنل ادمین — ویرایشگر قوانین و چارت</span>
-    <div style="display:flex;gap:10px;">
-        <button class="btn btn-outline" onclick="toggleTheme()">🌗 تم</button>
-        <a href="index.html" class="back-link">← انتخاب واحد</a>
-    </div>
-</div>
+<header class="app-topbar">
+  <div class="topbar-brand">
+    <div style="width:32px;height:32px;border-radius:var(--r1);background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:1rem;">⚙️</div>
+    <div class="topbar-brand-name">پنل ادمین</div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost btn-sm" onclick="Theme.toggle()">🌗</button>
+    <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none">← انتخاب واحد</a>
+  </div>
+</header>
 
 <div class="page-tabs">
-    <div class="page-tab active" onclick="switchTab('rules')">📋 قوانین تداخل</div>
-    <div class="page-tab" onclick="switchTab('curriculum')">📚 چارت درسی</div>
+  <div class="page-tab active" onclick="switchAdminTab('rules')">📋 قوانین تداخل</div>
+  <div class="page-tab" onclick="switchAdminTab('curriculum')">📚 چارت درسی</div>
 </div>
 
-<!-- ===== TAB: قوانین تداخل ===== -->
+<!-- ── Tab: Rules ──────────────────────────────────────────────────────── -->
 <div class="tab-panel active" id="panelRules">
-    <div class="info-box">
-        ✏️ در این بخش می‌توانید قوانین تداخل سخت/نرم برای یک گروه آموزشی وارد کنید.
-        پس از اتمام، روی <strong>«صادر کردن کد»</strong> کلیک کنید و کد را برای اضافه شدن به conflict_rules.js بفرستید.
-    </div>
 
-    <div class="form-row">
-        <div class="fg">
-            <label>دانشکده:</label>
-            <select id="rfFaculty" onchange="rfOnFacultyChange()">
-                <option value="">انتخاب دانشکده...</option>
-            </select>
-        </div>
-        <div class="fg">
-            <label>گروه آموزشی:</label>
-            <select id="rfGroup">
-                <option value="">انتخاب گروه...</option>
-            </select>
-        </div>
-        <div>
-            <label>&nbsp;</label>
-            <button class="btn btn-outline" onclick="rfLoadExisting()">📥 بارگذاری قوانین موجود</button>
-        </div>
-    </div>
+  <div class="info-box" style="margin-bottom:20px">
+    ✏️ قوانین تداخل سخت/نرم را وارد کنید. پس از اتمام، کد تولیدشده را در <code>conflict_rules.js</code> اضافه کنید.
+  </div>
 
-    <!-- Hard rules -->
-    <div class="rules-section">
-        <div class="section-header">
-            <span class="section-title"><span class="badge-hard">⛔ سخت</span> تداخل‌های اجباری (هم‌ترم در چارت)</span>
-            <button class="btn btn-sm btn-outline" onclick="rfAddRow('hard')">+ افزودن قانون</button>
-        </div>
-        <table class="rule-table">
-            <thead><tr>
-                <th style="width:30%">درس الف</th>
-                <th style="width:30%">درس ب</th>
-                <th>دلیل</th>
-                <th style="width:40px"></th>
-            </tr></thead>
-            <tbody id="hardRules"></tbody>
-        </table>
+  <div class="form-row">
+    <div class="fg"><label>دانشکده</label><select id="rfFaculty" onchange="rfOnFacultyChange()"><option value="">انتخاب...</option></select></div>
+    <div class="fg"><label>گروه آموزشی</label><select id="rfGroup"><option value="">انتخاب...</option></select></div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="rfLoadExisting()">📥 بارگذاری موجود</button>
     </div>
+  </div>
 
-    <!-- Soft rules -->
-    <div class="rules-section">
-        <div class="section-header">
-            <span class="section-title"><span class="badge-soft">⚠️ نرم</span> تداخل‌های توصیه‌شده (هم‌تراز ترم)</span>
-            <button class="btn btn-sm btn-outline" onclick="rfAddRow('soft')">+ افزودن قانون</button>
-        </div>
-        <table class="rule-table">
-            <thead><tr>
-                <th style="width:30%">درس الف</th>
-                <th style="width:30%">درس ب</th>
-                <th>دلیل</th>
-                <th style="width:40px"></th>
-            </tr></thead>
-            <tbody id="softRules"></tbody>
-        </table>
+  <!-- Hard rules -->
+  <div class="card" style="padding:var(--sp4);margin-bottom:var(--sp4)">
+    <div class="section-hd">
+      <span class="section-title"><span class="badge badge-danger">⛔ سخت</span> تداخل اجباری (درس‌های هم‌ترم)</span>
+      <button class="btn btn-ghost btn-sm" onclick="rfAddRow('hard')">+ افزودن</button>
     </div>
-
-    <div style="display:flex;gap:10px;">
-        <button class="btn btn-primary" onclick="rfExport()">📤 صادر کردن کد JS</button>
-        <button class="btn btn-outline" onclick="rfClear()">🗑️ پاک کردن همه</button>
-    </div>
-</div>
-
-<!-- ===== TAB: چارت درسی ===== -->
-<div class="tab-panel" id="panelCurriculum">
-    <div class="info-box">
-        ✏️ در این بخش می‌توانید چارت درسی یک رشته را وارد کنید.
-        پس از اتمام، کد تولید‌شده را برای اضافه شدن به curriculum_cs.js بفرستید.
-    </div>
-
-    <div class="form-row">
-        <div class="fg"><label>نام رشته (فارسی):</label><input type="text" id="cfFieldName" placeholder="مثال: علوم کامپیوتر"></div>
-        <div class="fg"><label>دانشکده:</label><input type="text" id="cfFaculty" placeholder="علوم ریاضی و کامپیوتر"></div>
-        <div class="fg"><label>گروه آموزشی:</label><input type="text" id="cfGroup" placeholder="علوم کامپیوتر"></div>
-    </div>
-    <div class="form-row">
-        <div class="fg"><label>ورودی‌ها (با ویرگول):</label><input type="text" id="cfCohorts" placeholder="۱۴۰۰, ۱۴۰۱"></div>
-        <div class="fg"><label>کل واحد:</label><input type="number" id="cfTotalUnits" value="140" style="width:120px"></div>
-        <div>
-            <label>&nbsp;</label>
-            <button class="btn btn-sm btn-outline" onclick="cfAddRow()">+ افزودن درس</button>
-        </div>
-    </div>
-
-    <div class="cur-table-wrap">
-    <table class="cur-table">
-        <thead><tr>
-            <th>ترم</th>
-            <th>شناسه</th>
-            <th>نام درس</th>
-            <th>واحد</th>
-            <th>نوع</th>
-            <th>پیش‌نیاز (شناسه‌ها با ویرگول)</th>
-            <th id="cfCodeHeader1">کد ورودی ۱</th>
-            <th id="cfCodeHeader2">کد ورودی ۲</th>
-            <th></th>
-        </tr></thead>
-        <tbody id="cfRows"></tbody>
+    <table class="rule-table">
+      <thead><tr><th style="width:30%">درس الف</th><th style="width:30%">درس ب</th><th>دلیل</th><th style="width:40px"></th></tr></thead>
+      <tbody id="hardRules"></tbody>
     </table>
+  </div>
+
+  <!-- Soft rules -->
+  <div class="card" style="padding:var(--sp4);margin-bottom:var(--sp4)">
+    <div class="section-hd">
+      <span class="section-title"><span class="badge badge-warning">⚠️ نرم</span> تداخل توصیه‌شده (هم‌تراز ترم)</span>
+      <button class="btn btn-ghost btn-sm" onclick="rfAddRow('soft')">+ افزودن</button>
     </div>
-    <br>
-    <div style="display:flex;gap:10px;">
-        <button class="btn btn-primary" onclick="cfExport()">📤 صادر کردن کد JS</button>
-        <button class="btn btn-outline" onclick="cfClear()">🗑️ پاک کردن همه</button>
-    </div>
+    <table class="rule-table">
+      <thead><tr><th style="width:30%">درس الف</th><th style="width:30%">درس ب</th><th>دلیل</th><th style="width:40px"></th></tr></thead>
+      <tbody id="softRules"></tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-primary" onclick="rfExport()">📤 صادر کردن کد JS</button>
+    <button class="btn btn-ghost" onclick="rfClear()">🗑️ پاک کردن همه</button>
+  </div>
 </div>
 
-<!-- ===== OUTPUT MODAL ===== -->
-<div class="modal-overlay" id="outputModal" style="display:none" onclick="if(event.target===this)closeModal()">
-    <div class="modal">
-        <div class="modal-header">
-            <span class="modal-title" id="modalTitle">کد تولید‌شده</span>
-            <button class="modal-close" onclick="closeModal()">&times;</button>
-        </div>
-        <div class="code-area">
-            <textarea id="outputCode" readonly></textarea>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center;">
-            <button class="btn btn-success" onclick="copyCode()">📋 کپی کردن</button>
-            <span class="copy-success" id="copyMsg" style="display:none">✓ کپی شد!</span>
-            <span style="font-size:.8rem;color:var(--text-muted);">این کد را در فایل مربوطه اضافه کنید و بفرستید.</span>
-        </div>
+<!-- ── Tab: Curriculum ─────────────────────────────────────────────────── -->
+<div class="tab-panel" id="panelCurriculum">
+
+  <div class="info-box" style="margin-bottom:20px">
+    ✏️ چارت درسی رشته را وارد کنید. کد خروجی را در <code>curriculum_cs.js</code> داخل <code>CURRICULUM_REGISTRY</code> اضافه کنید.
+  </div>
+
+  <div class="form-row">
+    <div class="fg"><label>نام رشته (فارسی)</label><input type="text" id="cfFieldName" placeholder="مثال: علوم کامپیوتر"></div>
+    <div class="fg"><label>دانشکده</label><input type="text" id="cfFaculty" placeholder="علوم ریاضی و کامپیوتر"></div>
+    <div class="fg"><label>گروه</label><input type="text" id="cfGroup" placeholder="علوم کامپیوتر"></div>
+  </div>
+  <div class="form-row">
+    <div class="fg"><label>ورودی‌ها (با ویرگول)</label><input type="text" id="cfCohorts" value="۱۴۰۰, ۱۴۰۱"></div>
+    <div style="flex:0 0 120px"><label>کل واحد</label><input type="number" id="cfTotalUnits" value="140"></div>
+    <button class="btn btn-ghost btn-sm" onclick="cfAddRow()" style="align-self:flex-end">+ افزودن درس</button>
+  </div>
+
+  <div class="cur-table-wrap">
+    <table class="cur-table">
+      <thead><tr>
+        <th>ترم</th><th>شناسه</th><th>نام درس</th><th>واحد</th><th>نوع</th>
+        <th>پیش‌نیاز (شناسه‌ها)</th>
+        <th id="cfCodeHeader1">کد ورودی ۱</th>
+        <th id="cfCodeHeader2">کد ورودی ۲</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="cfRows"></tbody>
+    </table>
+  </div>
+  <br>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-primary" onclick="cfExport()">📤 صادر کردن کد JS</button>
+    <button class="btn btn-ghost" onclick="cfClear()">🗑️ پاک کردن همه</button>
+  </div>
+</div>
+
+<!-- ── Output Modal ────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="outputModal" onclick="if(event.target===this)closeOutput()">
+  <div class="modal-box" style="max-width:780px">
+    <div class="modal-header">
+      <h3 class="modal-title" id="outputTitle">کد تولیدشده</h3>
+      <button class="modal-close" onclick="closeOutput()">×</button>
     </div>
+    <div class="modal-body code-area">
+      <textarea id="outputCode" readonly></textarea>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:16px">
+      <button class="btn btn-success" onclick="copyOutput()">📋 کپی</button>
+      <span id="copyMsg" style="display:none;color:var(--green);font-size:.8rem">✓ کپی شد!</span>
+      <span style="font-size:.76rem;color:var(--t3)">این کد را در فایل مربوطه paste کنید.</span>
+    </div>
+  </div>
 </div>
 
 <script src="assets/js/data.js"></script>
 <script src="assets/js/conflict_rules.js"></script>
-<script src="assets/js/curriculum_cs.js"></script>
-<script>
-// ===== THEME =====
-(function(){ const s=localStorage.getItem('theme')||'dark'; document.documentElement.setAttribute('data-theme',s); })();
-function toggleTheme(){const h=document.documentElement,n=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',n);localStorage.setItem('theme',n);}
-
-// ===== TABS =====
-function switchTab(t){
-    document.querySelectorAll('.page-tab').forEach((el,i)=>el.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(el=>el.classList.remove('active'));
-    if(t==='rules'){document.querySelectorAll('.page-tab')[0].classList.add('active');document.getElementById('panelRules').classList.add('active');}
-    else{document.querySelectorAll('.page-tab')[1].classList.add('active');document.getElementById('panelCurriculum').classList.add('active');}
-}
-
-// ===== DATA =====
-const allCourses = (typeof UNIVERSITY_DATA!=='undefined')?UNIVERSITY_DATA:[];
-const normalizeStr = s => !s?'':s.replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/[۰-۹]/g,d=>d.charCodeAt(0)-1776).replace(/\s+/g,' ').trim();
-
-// ===== RULES EDITOR =====
-let hardRows = [], softRows = [];
-let rfRowCounter = 0;
-
-function rfInitFaculties(){
-    const sel = document.getElementById('rfFaculty');
-    const faculties = [...new Set(allCourses.map(c=>c.faculty))].sort();
-    faculties.forEach(f=>sel.add(new Option(f,f)));
-}
-
-function rfOnFacultyChange(){
-    const fac = document.getElementById('rfFaculty').value;
-    const grp = document.getElementById('rfGroup');
-    grp.innerHTML = '<option value="">انتخاب گروه...</option>';
-    const groups = [...new Set(allCourses.filter(c=>c.faculty===fac).map(c=>c.group))].sort();
-    groups.forEach(g=>grp.add(new Option(g,g)));
-}
-
-function rfAddRow(type){
-    const id = ++rfRowCounter;
-    const tbody = document.getElementById(type==='hard'?'hardRules':'softRules');
-    const tr = document.createElement('tr');
-    tr.id = `row-${type}-${id}`;
-    tr.innerHTML = `
-        <td>${buildAC(`ac-${type}-a-${id}`)}</td>
-        <td>${buildAC(`ac-${type}-b-${id}`)}</td>
-        <td><input type="text" placeholder="دلیل قانون..." id="reason-${type}-${id}" style="width:100%"></td>
-        <td><button class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">×</button></td>
-    `;
-    tbody.appendChild(tr);
-    initAC(`ac-${type}-a-${id}`);
-    initAC(`ac-${type}-b-${id}`);
-}
-
-function buildAC(id){
-    return `<div class="ac-wrap" id="wrap-${id}">
-        <div class="ac-selected" id="sel-${id}" style="display:none;">
-            <span class="ac-tag" id="tag-code-${id}"></span>
-            <span id="tag-name-${id}"></span>
-            <span class="ac-clear" onclick="acClear('${id}')">×</span>
-        </div>
-        <input type="text" class="ac-input" id="inp-${id}" placeholder="جستجو (کد یا نام درس)..." autocomplete="off" style="display:block;">
-        <div class="ac-drop" id="drop-${id}"></div>
-        <input type="hidden" id="code-${id}">
-        <input type="hidden" id="name-${id}">
-    </div>`;
-}
-
-function initAC(id){
-    const inp = document.getElementById(`inp-${id}`);
-    if(!inp) return;
-    inp.addEventListener('input', ()=>acSearch(id));
-    inp.addEventListener('focus', ()=>acSearch(id));
-    document.addEventListener('click', e=>{ if(!document.getElementById(`wrap-${id}`).contains(e.target)) document.getElementById(`drop-${id}`).style.display='none'; });
-}
-
-function acSearch(id){
-    const inp = document.getElementById(`inp-${id}`);
-    const term = normalizeStr(inp.value).toLowerCase();
-    const fac = document.getElementById('rfFaculty').value;
-    const grp = document.getElementById('rfGroup').value;
-    const drop = document.getElementById(`drop-${id}`);
-
-    let filtered = allCourses;
-    if(fac) filtered = filtered.filter(c=>c.faculty===fac);
-    if(grp) filtered = filtered.filter(c=>c.group===grp);
-    if(term) filtered = filtered.filter(c=>normalizeStr(c.name).toLowerCase().includes(term)||normalizeStr(c.id).includes(term));
-    filtered = [...new Map(filtered.map(c=>[c.id.split('_')[0],c])).values()]; // dedupe by base code
-    filtered = filtered.slice(0,30);
-
-    if(!filtered.length){ drop.style.display='none'; return; }
-    drop.innerHTML = filtered.map(c=>{
-        const base = c.id.split('_')[0];
-        return `<div class="ac-item" onclick="acSelect('${id}','${base}','${c.name.replace(/'/g,"\\'")}')">
-            <span>${c.name}</span>
-            <span class="ac-code">${base}</span>
-        </div>`;
-    }).join('');
-    drop.style.display='block';
-}
-
-function acSelect(id, code, name){
-    document.getElementById(`code-${id}`).value = code;
-    document.getElementById(`name-${id}`).value = name;
-    document.getElementById(`tag-code-${id}`).textContent = code;
-    document.getElementById(`tag-name-${id}`).textContent = name;
-    document.getElementById(`sel-${id}`).style.display='flex';
-    document.getElementById(`inp-${id}`).style.display='none';
-    document.getElementById(`drop-${id}`).style.display='none';
-}
-
-function acClear(id){
-    document.getElementById(`code-${id}`).value='';
-    document.getElementById(`name-${id}`).value='';
-    document.getElementById(`sel-${id}`).style.display='none';
-    document.getElementById(`inp-${id}`).style.display='block';
-    document.getElementById(`inp-${id}`).value='';
-}
-
-function rfCollectRows(type){
-    const rows = [];
-    document.getElementById(type==='hard'?'hardRules':'softRules').querySelectorAll('tr').forEach(tr=>{
-        const inputs = tr.querySelectorAll('input[type=hidden]');
-        if(inputs.length<4) return;
-        const a=inputs[0].value, na=inputs[1].value, b=inputs[2].value, nb=inputs[3].value;
-        const reason = tr.querySelector('input[type=text][id^="reason"]')?.value || '';
-        if(a && b) rows.push({a,nameA:na,b,nameB:nb,reason});
-    });
-    return rows;
-}
-
-function rfLoadExisting(){
-    const fac = document.getElementById('rfFaculty').value;
-    const grp = document.getElementById('rfGroup').value;
-    if(!fac||!grp){ alert('ابتدا دانشکده و گروه را انتخاب کنید'); return; }
-    const key = `${fac} >> ${grp}`;
-    if(typeof CONFLICT_RULES==='undefined'||!CONFLICT_RULES[key]){ alert('قوانینی برای این گروه در conflict_rules.js یافت نشد'); return; }
-    const r = CONFLICT_RULES[key];
-    document.getElementById('hardRules').innerHTML='';
-    document.getElementById('softRules').innerHTML='';
-    (r.mustNotConflict||[]).forEach(rule=>{ rfAddRow('hard'); const id=rfRowCounter; acSelect(`ac-hard-a-${id}`,rule.a,rule.nameA); acSelect(`ac-hard-b-${id}`,rule.b,rule.nameB); document.getElementById(`reason-hard-${id}`).value=rule.reason||''; });
-    (r.shouldNotConflict||[]).forEach(rule=>{ rfAddRow('soft'); const id=rfRowCounter; acSelect(`ac-soft-a-${id}`,rule.a,rule.nameA); acSelect(`ac-soft-b-${id}`,rule.b,rule.nameB); document.getElementById(`reason-soft-${id}`).value=rule.reason||''; });
-}
-
-function rfExport(){
-    const fac = document.getElementById('rfFaculty').value;
-    const grp = document.getElementById('rfGroup').value;
-    if(!fac||!grp){ alert('دانشکده و گروه را انتخاب کنید'); return; }
-    const hardData = rfCollectRows('hard');
-    const softData = rfCollectRows('soft');
-    const key = `${fac} >> ${grp}`;
-    const mustStr = hardData.map(r=>`        { a: "${r.a}", nameA: "${r.nameA}",\n          b: "${r.b}", nameB: "${r.nameB}",\n          reason: "${r.reason}" }`).join(',\n');
-    const shouldStr = softData.map(r=>`        { a: "${r.a}", nameA: "${r.nameA}",\n          b: "${r.b}", nameB: "${r.nameB}",\n          reason: "${r.reason}" }`).join(',\n');
-    const code = `// اضافه کنید داخل شیء CONFLICT_RULES در conflict_rules.js\n"${key}": {\n    mustNotConflict: [\n${mustStr}\n    ],\n    shouldNotConflict: [\n${shouldStr}\n    ]\n},`;
-    openModal('کد قوانین تداخل — conflict_rules.js', code);
-}
-
-function rfClear(){ document.getElementById('hardRules').innerHTML=''; document.getElementById('softRules').innerHTML=''; }
-
-// ===== CURRICULUM EDITOR =====
-let cfRowCounter = 0;
-let cfCohorts = ['۱۴۰۰','۱۴۰۱'];
-
-function cfUpdateHeaders(){
-    cfCohorts = (document.getElementById('cfCohorts').value||'').split(',').map(s=>s.trim()).filter(Boolean);
-    document.getElementById('cfCodeHeader1').textContent = cfCohorts[0] ? `کد ورودی ${cfCohorts[0]}` : 'کد ورودی ۱';
-    document.getElementById('cfCodeHeader2').textContent = cfCohorts[1] ? `کد ورودی ${cfCohorts[1]}` : 'کد ورودی ۲';
-}
-document.getElementById('cfCohorts').addEventListener('input', cfUpdateHeaders);
-
-function cfAddRow(data={}){
-    const id = ++cfRowCounter;
-    const tbody = document.getElementById('cfRows');
-    const autoId = data.id || `c_${id}`;
-    const tr = document.createElement('tr');
-    tr.id = `cf-row-${id}`;
-    tr.innerHTML = `
-        <td><input type="number" value="${data.semester||''}" min="1" max="8" style="width:55px" placeholder="۱-۸"></td>
-        <td><input type="text" value="${data.id||autoId}" placeholder="شناسه" style="width:110px" id="cfid-${id}"></td>
-        <td><input type="text" value="${data.name||''}" placeholder="نام درس" style="min-width:140px"></td>
-        <td><input type="number" value="${data.units||3}" min="1" max="6" style="width:50px"></td>
-        <td><select style="width:90px">
-            <option value="core" ${data.type==='core'?'selected':''}>اصلی</option>
-            <option value="general" ${data.type==='general'?'selected':''}>عمومی</option>
-            <option value="elective" ${data.type==='elective'?'selected':''}>اختیاری</option>
-            <option value="lab" ${data.type==='lab'?'selected':''}>آزمایشگاه</option>
-        </select></td>
-        <td><input type="text" value="${(data.prereqs||[]).join(', ')}" placeholder="id1, id2" style="min-width:120px"></td>
-        <td><input type="text" value="${data.codes?.(cfCohorts[0])||data.codes?.['*']||''}" placeholder="مثلاً 1314701" style="width:110px"></td>
-        <td><input type="text" value="${data.codes?.(cfCohorts[1])||''}" placeholder="مثلاً 1314801" style="width:110px"></td>
-        <td><button class="btn btn-sm btn-danger" onclick="document.getElementById('cf-row-${id}').remove()">×</button></td>
-    `;
-    tbody.appendChild(tr);
-}
-
-function cfCollect(){
-    const rows = [];
-    document.getElementById('cfRows').querySelectorAll('tr').forEach(tr=>{
-        const inputs = tr.querySelectorAll('input');
-        const sel = tr.querySelector('select');
-        if(!inputs[2].value) return;
-        const prereqRaw = inputs[5].value.split(',').map(s=>s.trim()).filter(Boolean);
-        const code1 = inputs[6].value.trim();
-        const code2 = inputs[7].value.trim();
-        const codes = {};
-        if(code1 && cfCohorts[0]) codes[cfCohorts[0]] = code1;
-        if(code2 && cfCohorts[1]) codes[cfCohorts[1]] = code2;
-        // اگر هر دو یکی هستند، از wildcard استفاده کن
-        if(code1 && code1===code2) { delete codes[cfCohorts[0]]; delete codes[cfCohorts[1]]; codes['*']=code1; }
-        rows.push({
-            id: inputs[1].value.trim()||`c_${rows.length+1}`,
-            semester: parseInt(inputs[0].value)||1,
-            name: inputs[2].value.trim(),
-            units: parseInt(inputs[3].value)||3,
-            type: sel.value,
-            prereqs: prereqRaw,
-            codes
-        });
-    });
-    return rows;
-}
-
-function cfExport(){
-    const fieldName = document.getElementById('cfFieldName').value.trim()||'نام رشته';
-    const faculty = document.getElementById('cfFaculty').value.trim();
-    const group = document.getElementById('cfGroup').value.trim();
-    const totalUnits = parseInt(document.getElementById('cfTotalUnits').value)||140;
-    cfUpdateHeaders();
-    if(!faculty||!group){ alert('دانشکده و گروه را وارد کنید'); return; }
-    const key = `${faculty} >> ${group}`;
-    const courses = cfCollect();
-    const cohortsStr = JSON.stringify(cfCohorts);
-    const coursesStr = courses.map(c=>`        { id: "${c.id}", name: "${c.name}", units: ${c.units}, semester: ${c.semester}, prereqs: ${JSON.stringify(c.prereqs)}, type: "${c.type}",\n          codes: ${JSON.stringify(c.codes)} }`).join(',\n');
-    const code = `// اضافه کنید داخل شیء CURRICULUM_REGISTRY در curriculum_cs.js\n"${key}": {\n    fieldName: "${fieldName}",\n    totalUnits: ${totalUnits},\n    cohorts: ${cohortsStr},\n    courses: [\n${coursesStr}\n    ]\n},`;
-    openModal('کد چارت درسی — curriculum_cs.js', code);
-}
-
-function cfClear(){ document.getElementById('cfRows').innerHTML=''; cfRowCounter=0; }
-
-// ===== MODAL =====
-function openModal(title, code){ document.getElementById('modalTitle').textContent=title; document.getElementById('outputCode').value=code; document.getElementById('copyMsg').style.display='none'; document.getElementById('outputModal').style.display='flex'; }
-function closeModal(){ document.getElementById('outputModal').style.display='none'; }
-function copyCode(){ const ta=document.getElementById('outputCode'); ta.select(); document.execCommand('copy'); document.getElementById('copyMsg').style.display='inline'; }
-
-// ===== INIT =====
-rfInitFaculties();
-cfUpdateHeaders();
-</script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/admin.js"></script>
 </body>
 </html>

@@ -1,281 +1,278 @@
-// ===== STATE =====
-let selectedCourses = new Set();
+// ═══════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════
 const courses = (typeof UNIVERSITY_DATA !== 'undefined') ? UNIVERSITY_DATA : [];
-const STORAGE_KEY = 'uni_schedule_data';
-const CURRICULUM_KEY = 'uni_curriculum_state';
-const EXPIRY_DAYS = 60;
 
-let curriculumState = {
-    passedCourses: new Set(),
-    failedCourses: new Set()
+const state = {
+    selected: new Set(),           // IDs of selected courses
+    activeSidebarTab: 'search',
+    cohort: localStorage.getItem('selectedCohort') || '',
+    curriculum: { passed: new Set(), failed: new Set() },
 };
-let selectedCohort = localStorage.getItem('selectedCohort') || '';
 
-let activeSidebarTab = 'search';
+const KEYS = {
+    schedule: 'uni_schedule_v2',
+    curriculum: 'uni_curriculum_v2',
+    cohort: 'selectedCohort',
+};
+const MAX_UNITS = 20;
 
-// Faculty → CSS color (assigned at runtime)
-const FACULTY_PALETTE = [
-    '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6',
-    '#ef4444', '#06b6d4', '#ec4899', '#f97316',
-    '#84cc16', '#14b8a6'
-];
-let facultyColorMap = {}; // faculty name → hex color
+// Faculty → color mapping (built at init)
+const facultyColors = {};
 
-// ===== INIT =====
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
 function init() {
-    setupFacultyColors();
-    loadFromStorage();
-    loadCurriculumState();
+    buildFacultyColors();
+    loadState();
     setupFilters();
-    renderTimetableGrid();
-    renderList();
-    updateTimetable(); // renderFacultyLegend داخل updateTimetable صدا می‌شه
-    updateUnitCounter();
+    buildTimetableGrid();
+    renderCourseList();
+    updateTimetable();
+    updateUnitDisplay();
 
-    document.getElementById('facultyFilter').addEventListener('change', () => {
-        populateGroups(); renderList();
-        if (activeSidebarTab === 'curriculum') renderCurriculumTab();
-    });
-    document.getElementById('groupFilter').addEventListener('change', () => {
-        renderList();
-        if (activeSidebarTab === 'curriculum') renderCurriculumTab();
-    });
-    document.getElementById('genderFilter').addEventListener('change', renderList);
-    document.getElementById('searchInput').addEventListener('input', renderList);
+    // Event listeners
+    document.getElementById('searchInput').addEventListener('input', debounce(renderCourseList, 280));
+    document.getElementById('facultyFilter').addEventListener('change', () => { rebuildGroupFilter(); renderCourseList(); syncCurriculumTab(); });
+    document.getElementById('groupFilter').addEventListener('change', () => { renderCourseList(); syncCurriculumTab(); });
+    document.getElementById('genderFilter').addEventListener('change', renderCourseList);
 }
 
-// ===== FACULTY COLORS =====
-function setupFacultyColors() {
-    const faculties = [...new Set(courses.map(c => c.faculty))].sort();
-    faculties.forEach((f, i) => {
-        facultyColorMap[f] = FACULTY_PALETTE[i % FACULTY_PALETTE.length];
+// ═══════════════════════════════════════════════════════════════════════════
+// FACULTY COLORS
+// ═══════════════════════════════════════════════════════════════════════════
+function buildFacultyColors() {
+    [...new Set(courses.map(c => c.faculty))].sort().forEach((f, i) => {
+        facultyColors[f] = FACULTY_PALETTE[i % FACULTY_PALETTE.length];
     });
 }
 
-function getFacultyColor(facultyName) {
-    return facultyColorMap[facultyName] || '#60a5fa';
+function getFacultyColor(faculty) {
+    return facultyColors[faculty] || '#3b82f6';
 }
 
-function renderFacultyLegend() {
-    const legend = document.getElementById('facultyLegend');
-    if (!legend) return;
-    // فقط دانشکده‌هایی که درس‌های انتخاب‌شده دارند
-    const usedFaculties = new Set();
-    selectedCourses.forEach(id => {
-        const c = courses.find(x => x.id === id);
-        if (c) usedFaculties.add(c.faculty);
-    });
-    if (usedFaculties.size <= 1) { legend.innerHTML = ''; return; }
-    legend.innerHTML = [...usedFaculties].map(f =>
-        `<span class="legend-item">
-            <span class="legend-dot" style="background:${getFacultyColor(f)}"></span>
-            ${f}
-        </span>`
-    ).join('');
-}
-
-// ===== UNIT COUNTER =====
-function getSelectedUnits() {
-    let total = 0;
-    selectedCourses.forEach(id => {
-        const c = courses.find(x => x.id === id);
-        if (c) total += (c.units || 0);
-    });
-    return total;
-}
-
-function updateUnitCounter() {
-    const units = getSelectedUnits();
-    const badge = document.getElementById('unitBadge');
-    const countEl = document.getElementById('unitCount');
-    const headerEl = document.getElementById('selectedCountHeader');
-
-    countEl.textContent = toPersianNum(units);
-    if (badge) {
-        badge.classList.toggle('over-limit', units > 20);
-        badge.title = units > 20 ? 'بیشتر از حد مجاز (۲۰ واحد)' : '';
-    }
-    if (headerEl) {
-        const n = selectedCourses.size;
-        headerEl.textContent = n > 0
-            ? `${toPersianNum(n)} درس — ${toPersianNum(units)} واحد${units > 20 ? ' ⚠️' : ''}`
-            : 'هیچ درسی انتخاب نشده';
-    }
-}
-
-function toPersianNum(n) {
-    return String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
-}
-
-// ===== TAB SWITCHING =====
-function switchTab(tab) {
-    activeSidebarTab = tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.getElementById(`tabBtn${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
-    document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
-    if (tab === 'curriculum') renderCurriculumTab();
-}
-
-// ===== STORAGE =====
-function saveToStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        selected: Array.from(selectedCourses),
-        timestamp: Date.now()
+// ═══════════════════════════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════════════════════════
+function saveState() {
+    localStorage.setItem(KEYS.schedule, JSON.stringify({
+        selected: [...state.selected],
+        ts: Date.now()
     }));
 }
 
-function loadFromStorage() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
+function loadState() {
     try {
-        const data = JSON.parse(raw);
-        if ((Date.now() - data.timestamp) / 86400000 > EXPIRY_DAYS) {
-            localStorage.removeItem(STORAGE_KEY);
-            return;
+        const raw = localStorage.getItem(KEYS.schedule);
+        if (raw) {
+            const d = JSON.parse(raw);
+            const age = (Date.now() - d.ts) / 86400000;
+            if (age < 60) d.selected.forEach(id => { if (courses.some(c => c.id === id)) state.selected.add(id); });
         }
-        data.selected.forEach(id => {
-            if (courses.some(c => c.id === id)) selectedCourses.add(id);
-        });
-    } catch (e) { console.error(e); }
+    } catch (e) { /* ignore */ }
+    try {
+        const raw = localStorage.getItem(KEYS.curriculum);
+        if (raw) {
+            const d = JSON.parse(raw);
+            state.curriculum.passed = new Set(d.passed || []);
+            state.curriculum.failed = new Set(d.failed || []);
+        }
+    } catch (e) { /* ignore */ }
 }
 
 function saveCurriculumState() {
-    localStorage.setItem(CURRICULUM_KEY, JSON.stringify({
-        passed: Array.from(curriculumState.passedCourses),
-        failed: Array.from(curriculumState.failedCourses),
-        timestamp: Date.now()
+    localStorage.setItem(KEYS.curriculum, JSON.stringify({
+        passed: [...state.curriculum.passed],
+        failed: [...state.curriculum.failed],
     }));
 }
 
-function loadCurriculumState() {
-    const raw = localStorage.getItem(CURRICULUM_KEY);
-    if (!raw) return;
-    try {
-        const data = JSON.parse(raw);
-        curriculumState.passedCourses = new Set(data.passed || []);
-        curriculumState.failedCourses = new Set(data.failed || []);
-    } catch (e) { console.error(e); }
+// ═══════════════════════════════════════════════════════════════════════════
+// SIDEBAR TABS
+// ═══════════════════════════════════════════════════════════════════════════
+function switchTab(tab) {
+    state.activeSidebarTab = tab;
+    ['search', 'curriculum'].forEach(t => {
+        document.getElementById(`tabBtn${t[0].toUpperCase() + t.slice(1)}`)
+            .classList.toggle('active', t === tab);
+        document.getElementById(`tab${t[0].toUpperCase() + t.slice(1)}`)
+            .classList.toggle('active', t === tab);
+    });
+    if (tab === 'curriculum') renderCurriculumTab();
 }
 
-// ===== HELPERS =====
-function normalizeStr(str) {
-    if (!str) return '';
-    return str
-        .replace(/ي/g, 'ی').replace(/ك/g, 'ک')
-        .replace(/[۰-۹]/g, d => d.charCodeAt(0) - 1776)
-        .replace(/\s+/g, ' ').trim();
+function syncCurriculumTab() {
+    if (state.activeSidebarTab === 'curriculum') renderCurriculumTab();
 }
 
-// ===== FILTERS & COURSE LIST =====
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTERS & COURSE LIST
+// ═══════════════════════════════════════════════════════════════════════════
 function setupFilters() {
-    const fEl = document.getElementById('facultyFilter');
-    while (fEl.options.length > 1) fEl.remove(1);
+    const sel = document.getElementById('facultyFilter');
     const faculties = [...new Set(courses.map(c => c.faculty))].sort();
-    faculties.forEach(f => fEl.add(new Option(f, f)));
+    faculties.forEach(f => sel.add(new Option(f, f)));
 }
 
-function populateGroups() {
+function rebuildGroupFilter() {
     const fac = document.getElementById('facultyFilter').value;
-    const gEl = document.getElementById('groupFilter');
-    gEl.innerHTML = '<option value="">همه گروه‌ها</option>';
+    const sel = document.getElementById('groupFilter');
+    sel.innerHTML = '<option value="">همه گروه‌ها</option>';
     const subset = fac ? courses.filter(c => c.faculty === fac) : courses;
-    [...new Set(subset.map(c => c.group))].sort().forEach(g => gEl.add(new Option(g, g)));
+    [...new Set(subset.map(c => c.group))].sort().forEach(g => sel.add(new Option(g, g)));
 }
 
-function renderList() {
+function renderCourseList() {
     const term = normalizeStr(document.getElementById('searchInput').value).toLowerCase();
-    const fac = document.getElementById('facultyFilter').value;
-    const grp = document.getElementById('groupFilter').value;
-    const gen = document.getElementById('genderFilter').value;
+    const fac  = document.getElementById('facultyFilter').value;
+    const grp  = document.getElementById('groupFilter').value;
+    const gen  = document.getElementById('genderFilter').value;
 
     const filtered = courses.filter(c => {
         const nm = normalizeStr(c.name).toLowerCase();
         const pr = normalizeStr(c.prof).toLowerCase();
         const id = normalizeStr(c.id);
-        return (!fac || c.faculty === fac) &&
-               (!grp || c.group === grp) &&
-               (!gen || c.gender.includes(gen)) &&
+        return (!fac  || c.faculty === fac) &&
+               (!grp  || c.group  === grp) &&
+               (!gen  || c.gender.includes(gen)) &&
                (!term || nm.includes(term) || id.includes(term) || pr.includes(term));
     });
 
-    document.getElementById('stats').textContent = `${toPersianNum(filtered.length)} درس یافت شد`;
+    document.getElementById('courseCount').textContent =
+        `${toPersianNum(filtered.length)} درس`;
+    document.getElementById('selectedStat').textContent =
+        state.selected.size ? `${toPersianNum(state.selected.size)} انتخاب‌شده` : '';
+
     const list = document.getElementById('courseList');
     list.innerHTML = '';
 
-    if (filtered.length === 0) {
-        list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">نتیجه‌ای یافت نشد</div></div>`;
+    if (!filtered.length) {
+        list.innerHTML = `<div class="empty-state" style="padding:40px 0">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-title">نتیجه‌ای یافت نشد</div>
+        </div>`;
         return;
     }
 
+    const frag = document.createDocumentFragment();
     filtered.slice(0, 100).forEach(c => {
-        const isSelected = selectedCourses.has(c.id);
-        let badgeClass = 'mixed';
-        if (c.gender.includes('مرد') || c.gender.includes('برادر')) badgeClass = 'male';
-        if (c.gender.includes('زن') || c.gender.includes('خواهر')) badgeClass = 'female';
+        const isSelected = state.selected.has(c.id);
+        const color  = getFacultyColor(c.faculty);
+        const cap    = c.capacity || 0;
+        const enr    = c.enrolled || 0;
+        const capPct = cap > 0 ? Math.min(100, Math.round(enr / cap * 100)) : 0;
+        const capClass = capPct >= 90 ? 'full' : capPct >= 60 ? 'half' : '';
 
-        const capacityPct = c.capacity > 0 ? Math.round((c.enrolled / c.capacity) * 100) : 0;
-        const capacityText = c.capacity > 0 ? `${toPersianNum(c.enrolled)}/${toPersianNum(c.capacity)}` : '';
+        let gClass = 'badge-mixed';
+        if (c.gender.includes('مرد') || c.gender.includes('برادر')) gClass = 'badge-male';
+        if (c.gender.includes('زن')  || c.gender.includes('خواهر')) gClass = 'badge-female';
 
-        const div = document.createElement('div');
-        div.className = `course-card ${isSelected ? 'selected' : ''}`;
-        div.onclick = () => toggleCourse(c.id);
-        div.innerHTML = `
-            <div class="card-top">
-                <span class="card-name">${c.name}</span>
-                <span class="badge ${badgeClass}">${c.gender}</span>
-            </div>
-            <div class="card-meta">
-                <div class="card-meta-left">
-                    <span>${c.id}</span>
-                    ${c.units ? `<span class="card-units">${toPersianNum(c.units)} واحد</span>` : ''}
+        const el = document.createElement('div');
+        el.className = `course-card${isSelected ? ' selected' : ''}`;
+        el.style.setProperty('--fc', color);
+        el.onclick = () => toggleCourse(c.id);
+        el.innerHTML = `
+            <div class="course-card-name">${c.name}</div>
+            <div class="course-card-meta">
+                <span class="course-card-id">${c.id}</span>
+                <div style="display:flex;gap:4px;align-items:center">
+                    ${c.units ? `<span class="badge badge-unit">${toPersianNum(c.units)}و</span>` : ''}
+                    <span class="badge ${gClass}">${c.gender}</span>
                 </div>
-                <span title="ظرفیت/ثبت‌نام">${capacityText}</span>
             </div>
-            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; display:flex; align-items:center; gap:4px;">
-                <span>👤</span><span style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${c.prof}</span>
-            </div>
+            <div class="course-card-prof">${c.prof}</div>
+            ${cap > 0 ? `
+            <div class="capacity-bar" title="ظرفیت: ${toPersianNum(enr)}/${toPersianNum(cap)}">
+                <div class="capacity-bar-fill ${capClass}" style="width:${capPct}%"></div>
+            </div>` : ''}
         `;
-        list.appendChild(div);
+        frag.appendChild(el);
     });
 
     if (filtered.length > 100) {
-        const note = document.createElement('div');
-        note.style.cssText = 'text-align:center; font-size:0.75rem; color:var(--text-muted); padding:8px;';
-        note.textContent = `... و ${toPersianNum(filtered.length - 100)} درس دیگر. جستجو را محدودتر کنید.`;
-        list.appendChild(note);
+        const note = document.createElement('p');
+        note.style.cssText = 'text-align:center;font-size:.72rem;color:var(--t3);padding:10px 0;';
+        note.textContent = `... و ${toPersianNum(filtered.length - 100)} درس دیگر. جستجو را دقیق‌تر کنید.`;
+        frag.appendChild(note);
+    }
+    list.appendChild(frag);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TOGGLE COURSE SELECTION
+// ═══════════════════════════════════════════════════════════════════════════
+function toggleCourse(id) {
+    if (state.selected.has(id)) {
+        state.selected.delete(id);
+    } else {
+        state.selected.add(id);
+        const c = courses.find(x => x.id === id);
+        if (c) Toast.info(`${c.name} اضافه شد`, 2000);
+    }
+    saveState();
+    renderCourseList();
+    updateTimetable();
+    updateUnitDisplay();
+    if (state.activeSidebarTab === 'curriculum') renderCurriculumTab();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UNIT DISPLAY
+// ═══════════════════════════════════════════════════════════════════════════
+function updateUnitDisplay() {
+    let total = 0;
+    state.selected.forEach(id => {
+        const c = courses.find(x => x.id === id);
+        if (c) total += c.units || 0;
+    });
+
+    const pct  = Math.min(100, Math.round(total / MAX_UNITS * 100));
+    const fill = document.getElementById('unitBarFill');
+    const countEl = document.getElementById('unitCount');
+    const display = document.getElementById('unitDisplay');
+    const info  = document.getElementById('selectedInfo');
+
+    if (countEl)  countEl.textContent = toPersianNum(total);
+    if (fill) {
+        fill.style.width = `${pct}%`;
+        fill.style.background = total > MAX_UNITS ? 'var(--red)' : total > MAX_UNITS * 0.8 ? 'var(--yellow)' : 'var(--blue)';
+    }
+    if (display) {
+        display.classList.toggle('warning', total > MAX_UNITS * 0.8 && total <= MAX_UNITS);
+        display.classList.toggle('danger',  total > MAX_UNITS);
+    }
+    if (info) {
+        if (state.selected.size > 0) {
+            info.style.display = 'block';
+            info.textContent = `${toPersianNum(state.selected.size)} درس انتخاب‌شده — ${toPersianNum(total)} واحد${total > MAX_UNITS ? ' (بیشتر از حد مجاز)' : ''}`;
+            info.style.color = total > MAX_UNITS ? 'var(--red)' : 'var(--t3)';
+        } else {
+            info.style.display = 'none';
+        }
     }
 }
 
-function toggleCourse(id) {
-    if (selectedCourses.has(id)) selectedCourses.delete(id);
-    else selectedCourses.add(id);
-    saveToStorage();
-    renderList();
-    updateTimetable();
-    updateUnitCounter();
-    // sync: if curriculum tab is open, re-render so "در حال اخذ" status updates
-    if (activeSidebarTab === 'curriculum') renderCurriculumTab();
-}
-
-// ===== TIMETABLE =====
-function renderTimetableGrid() {
+// ═══════════════════════════════════════════════════════════════════════════
+// TIMETABLE
+// ═══════════════════════════════════════════════════════════════════════════
+function buildTimetableGrid() {
     const tbl = document.getElementById('timetable');
     tbl.innerHTML = '';
     const days = ['ساعت', 'شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه'];
     days.forEach(d => {
-        const div = document.createElement('div');
-        div.className = 'cell header';
-        div.textContent = d;
-        tbl.appendChild(div);
+        const el = document.createElement('div');
+        el.className = d === 'ساعت' ? 'timetable-header' : 'timetable-header';
+        el.textContent = d;
+        if (d === 'ساعت') el.style.cssText = 'background:transparent;color:var(--t3);font-size:.7rem;';
+        tbl.appendChild(el);
     });
-    const slots = ['08', '10', '13', '15', '17'];
     const labels = ['۸–۱۰', '۱۰–۱۲', '۱۳–۱۵', '۱۵–۱۷', '۱۷–۱۹'];
-    slots.forEach((t, i) => {
-        const tDiv = document.createElement('div');
-        tDiv.className = 'cell time-label';
-        tDiv.textContent = labels[i];
-        tbl.appendChild(tDiv);
+    TIME_SLOTS.forEach((t, i) => {
+        const label = document.createElement('div');
+        label.className = 'time-label';
+        label.textContent = labels[i];
+        tbl.appendChild(label);
         for (let d = 0; d < 5; d++) {
             const slot = document.createElement('div');
             slot.className = 'slot';
@@ -285,110 +282,68 @@ function renderTimetableGrid() {
     });
 }
 
-function getDayIndex(text) {
-    const t = normalizeStr(text);
-    if (t.includes('پنج شنبه') || t.includes('پنجشنبه')) return -1;
-    if (t.includes('چهار شنبه') || t.includes('چهارشنبه')) return 4;
-    if (t.includes('سه شنبه') || t.includes('سهشنبه')) return 3;
-    if (t.includes('دو شنبه') || t.includes('دوشنبه')) return 2;
-    if (t.includes('یک شنبه') || t.includes('یکشنبه')) return 1;
-    if (t.includes('شنبه')) return 0;
-    return -1;
-}
-
-function parseSchedule(html) {
-    const sessions = [];
-    html.split(/<br\s*\/?>/i).forEach(line => {
-        const text = normalizeStr(line);
-        if (!text || text.includes('امتحان')) return;
-        const day = getDayIndex(text);
-        if (day === -1) return;
-        const m = text.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
-        if (!m) return;
-        const locM = text.match(/مکان:\s*(.+?)(?:\s*$)/);
-        const location = locM ? locM[1].trim() : '';
-        const h = parseInt(m[1]);
-        let slot = null;
-        if (h >= 7 && h < 10) slot = '08';
-        else if (h >= 10 && h < 12) slot = '10';
-        else if (h >= 13 && h < 15) slot = '13';
-        else if (h >= 15 && h < 17) slot = '15';
-        else if (h >= 17) slot = '17';
-        if (slot) sessions.push({ day, slot, isTA: text.includes('حل تمرین'), location });
-    });
-    return sessions;
-}
-
 function updateTimetable() {
     document.querySelectorAll('.slot').forEach(el => el.innerHTML = '');
     const slotMap = {};
 
-    selectedCourses.forEach(id => {
-        const course = courses.find(c => c.id === id);
-        if (!course) return;
-        parseSchedule(course.time_html).forEach(sess => {
+    state.selected.forEach(id => {
+        const c = courses.find(x => x.id === id);
+        if (!c) return;
+        parseSchedule(c.time_html).forEach(sess => {
             const key = `${sess.day}-${sess.slot}`;
-            if (!slotMap[key]) slotMap[key] = [];
-            slotMap[key].push({ courseId: id, name: course.name, prof: course.prof, faculty: course.faculty, isTA: sess.isTA, location: sess.location });
+            (slotMap[key] ??= []).push({ id, name: c.name, prof: c.prof, faculty: c.faculty, isTA: sess.isTA, location: sess.location });
         });
     });
 
-    renderFacultyLegend();
     Object.entries(slotMap).forEach(([key, blocks]) => {
-        const slotEl = document.getElementById(`slot-${key}`);
-        if (!slotEl) return;
-        const uniqueIds = new Set(blocks.map(b => b.courseId));
-        const isConflict = uniqueIds.size > 1;
+        const el = document.getElementById(`slot-${key}`);
+        if (!el) return;
+        const uniqueIds = new Set(blocks.map(b => b.id));
+        const hasConflict = uniqueIds.size > 1;
 
         blocks.forEach(b => {
-            const color = isConflict ? null : getFacultyColor(b.faculty);
+            const color = hasConflict ? null : getFacultyColor(b.faculty);
             const div = document.createElement('div');
-            div.className = `class-block${isConflict ? ' conflict' : ''}`;
-            if (color) div.style.background = color;
-            div.title = `${b.name}\n${b.prof}`;
+            div.className = `class-block${hasConflict ? ' conflict' : ''}`;
+            if (color) { div.style.background = color; div.style.backgroundImage = `linear-gradient(160deg, ${color}dd, ${color}99)`; }
+            div.title = `${b.name}\n${b.prof}${b.location ? '\n📍 ' + b.location : ''}`;
 
-            const close = document.createElement('div');
-            close.className = 'remove-btn';
-            close.innerHTML = '&times;';
-            close.onclick = e => { e.stopPropagation(); toggleCourse(b.courseId); };
-            div.appendChild(close);
+            const rm = document.createElement('div');
+            rm.className = 'remove-btn'; rm.innerHTML = '×';
+            rm.onclick = e => { e.stopPropagation(); toggleCourse(b.id); };
+            div.appendChild(rm);
 
             const content = document.createElement('div');
             content.innerHTML = `
-                <div class="class-block-name">${b.name}${b.isTA ? ' (ت)' : ''}</div>
+                <div class="class-block-name">${b.name}${b.isTA ? ' <small>(ت)</small>' : ''}</div>
                 <div class="class-block-prof">${b.prof}</div>
-                ${b.location ? `<div class="class-block-loc">📍 ${b.location}</div>` : ''}
+                ${b.location ? `<div class="class-block-loc">${b.location}</div>` : ''}
             `;
             div.appendChild(content);
-            slotEl.appendChild(div);
+            el.appendChild(div);
         });
     });
+
+    updateFacultyLegend(slotMap);
 }
 
-// ===== CURRICULUM TRACKER =====
-
-// کد گلستان یک درس برای ورودی انتخاب‌شده
-function getCodeForCohort(cur) {
-    if (!cur.codes) return null;
-    return cur.codes[selectedCohort] || cur.codes['*'] || null;
+function updateFacultyLegend(slotMap) {
+    const used = new Set();
+    Object.values(slotMap).flat().forEach(b => used.add(b.faculty));
+    const legend = document.getElementById('facultyLegend');
+    if (!legend) return;
+    if (used.size <= 1) { legend.innerHTML = ''; return; }
+    legend.innerHTML = [...used].map(f => `
+        <span class="faculty-legend-item">
+            <span class="faculty-legend-dot" style="background:${getFacultyColor(f)}"></span>
+            ${f}
+        </span>`).join('');
 }
 
-// آیا این درس این ترم ارائه می‌شود؟
-function isOfferedThisSemester(cur) {
-    const code = getCodeForCohort(cur);
-    if (!code) return false;
-    return courses.some(c => c.id.startsWith(code + '_'));
-}
-
-// آیا این درس الان در برنامه هفتگی دانشجو انتخاب شده؟
-function isTakingThisSemester(cur) {
-    const code = getCodeForCohort(cur);
-    if (!code) return false;
-    return courses.some(c => c.id.startsWith(code + '_') && selectedCourses.has(c.id));
-}
-
-// پیدا کردن درسنامه برای دانشکده + گروه فعلی
-function getCurriculumForCurrentGroup() {
+// ═══════════════════════════════════════════════════════════════════════════
+// CURRICULUM TRACKER
+// ═══════════════════════════════════════════════════════════════════════════
+function getCurrentCurriculum() {
     if (typeof CURRICULUM_REGISTRY === 'undefined') return null;
     const fac = document.getElementById('facultyFilter').value;
     const grp = document.getElementById('groupFilter').value;
@@ -396,163 +351,162 @@ function getCurriculumForCurrentGroup() {
     return CURRICULUM_REGISTRY[`${fac} >> ${grp}`] || null;
 }
 
-function onCohortChange() {
-    selectedCohort = document.getElementById('cohortSelect').value;
-    localStorage.setItem('selectedCohort', selectedCohort);
-    renderCurriculumTab();
+function getCodeForCohort(cur) {
+    if (!cur.codes) return null;
+    return cur.codes[state.cohort] || cur.codes['*'] || null;
 }
 
-function getCourseStatus(courseId, data) {
-    const cur = data ? data.courses.find(c => c.id === courseId) : null;
+function isOfferedThisSemester(cur) {
+    const code = getCodeForCohort(cur);
+    return code ? courses.some(c => c.id.startsWith(code + '_')) : false;
+}
 
+function isTakingThisSemester(cur) {
+    const code = getCodeForCohort(cur);
+    return code ? courses.some(c => c.id.startsWith(code + '_') && state.selected.has(c.id)) : false;
+}
+
+function getCourseStatus(id, data) {
+    const cur = data?.courses.find(c => c.id === id);
     if (cur && isTakingThisSemester(cur)) return 'taking';
-    if (curriculumState.passedCourses.has(courseId)) return 'passed';
-    if (curriculumState.failedCourses.has(courseId)) return 'failed';
-
-    if (!cur || !cur.prereqs || cur.prereqs.length === 0) return 'available';
-    const allPrereqsPassed = cur.prereqs.every(pid => curriculumState.passedCourses.has(pid));
-    return allPrereqsPassed ? 'available' : 'locked';
+    if (state.curriculum.passed.has(id)) return 'passed';
+    if (state.curriculum.failed.has(id)) return 'failed';
+    if (!cur?.prereqs?.length) return 'available';
+    return cur.prereqs.every(pid => state.curriculum.passed.has(pid)) ? 'available' : 'locked';
 }
 
-function toggleCurriculumCourse(courseId) {
-    const data = getCurriculumForCurrentGroup();
-    const status = getCourseStatus(courseId, data);
-    if (status === 'locked') return;
-
-    if (curriculumState.passedCourses.has(courseId)) {
-        // passed → failed
-        curriculumState.passedCourses.delete(courseId);
-        curriculumState.failedCourses.add(courseId);
-    } else if (curriculumState.failedCourses.has(courseId)) {
-        // failed → neutral
-        curriculumState.failedCourses.delete(courseId);
+function toggleCurriculumCourse(id) {
+    const data = getCurrentCurriculum();
+    const st = getCourseStatus(id, data);
+    if (st === 'locked') return;
+    if (state.curriculum.passed.has(id)) {
+        state.curriculum.passed.delete(id); state.curriculum.failed.add(id);
+    } else if (state.curriculum.failed.has(id)) {
+        state.curriculum.failed.delete(id);
     } else {
-        // neutral/available → passed
-        curriculumState.passedCourses.add(courseId);
+        state.curriculum.passed.add(id);
     }
     saveCurriculumState();
     renderCurriculumTab();
 }
 
+function onCohortChange() {
+    state.cohort = document.getElementById('cohortSelect').value;
+    localStorage.setItem(KEYS.cohort, state.cohort);
+    renderCurriculumTab();
+}
+
 function renderCurriculumTab() {
     const container = document.getElementById('curriculumScroll');
-    const controlsEl = document.getElementById('curriculumControls');
+    const controls  = document.getElementById('curriculumControls');
     const fac = document.getElementById('facultyFilter').value;
     const grp = document.getElementById('groupFilter').value;
 
-    // هیچ گروهی انتخاب نشده
     if (!fac || !grp) {
-        controlsEl.style.display = 'none';
+        controls.style.display = 'none';
         container.innerHTML = `<div class="empty-state">
-            <div class="empty-icon">🗺️</div>
-            <div class="empty-text">از تب «جستجوی درس» ابتدا یک دانشکده و گروه آموزشی انتخاب کنید.</div>
+            <div class="empty-state-icon">🗺️</div>
+            <div class="empty-state-title">نقشه درسی</div>
+            <div class="empty-state-desc">از تب جستجو، یک دانشکده و گروه انتخاب کنید.</div>
         </div>`;
         return;
     }
 
-    const data = getCurriculumForCurrentGroup();
-
-    // گروه انتخاب شده ولی درسنامه‌ای ندارد
+    const data = getCurrentCurriculum();
     if (!data) {
-        controlsEl.style.display = 'none';
+        controls.style.display = 'none';
         container.innerHTML = `<div class="empty-state">
-            <div class="empty-icon">🚧</div>
-            <div class="empty-text">
-                نقشه درسی <strong>${grp}</strong> هنوز اضافه نشده.<br>
-                <span style="font-size:0.8rem;color:var(--text-muted);">می‌توانید با <code>ai_extract.py</code> آن را بسازید.</span>
-            </div>
+            <div class="empty-state-icon">🚧</div>
+            <div class="empty-state-title">هنوز اضافه نشده</div>
+            <div class="empty-state-desc">نقشه درسی «${grp}» موجود نیست. از پنل ادمین وارد کنید.</div>
         </div>`;
         return;
     }
 
-    // درسنامه موجود است — ورودی سلکتور را آپدیت کن
-    controlsEl.style.display = 'block';
+    // Setup cohort selector
+    controls.style.display = 'block';
     const cohortEl = document.getElementById('cohortSelect');
-    if (cohortEl.dataset.group !== `${fac}|${grp}`) {
+    if (cohortEl.dataset.forGroup !== `${fac}|${grp}`) {
         cohortEl.innerHTML = '';
         (data.cohorts || []).forEach(c => cohortEl.add(new Option(`ورودی ${c}`, c)));
-        cohortEl.dataset.group = `${fac}|${grp}`;
-        // اگر ورودی ذخیره‌شده در لیست هست، انتخابش کن
-        if (selectedCohort && data.cohorts.includes(selectedCohort)) {
-            cohortEl.value = selectedCohort;
+        cohortEl.dataset.forGroup = `${fac}|${grp}`;
+        if (state.cohort && data.cohorts?.includes(state.cohort)) {
+            cohortEl.value = state.cohort;
         } else {
-            selectedCohort = data.cohorts[data.cohorts.length - 1]; // آخرین ورودی پیش‌فرض
-            cohortEl.value = selectedCohort;
-            localStorage.setItem('selectedCohort', selectedCohort);
+            state.cohort = data.cohorts?.[data.cohorts.length - 1] || '';
+            cohortEl.value = state.cohort;
+            localStorage.setItem(KEYS.cohort, state.cohort);
         }
     }
 
-    // Group by semester
+    // Build semester map
     const semMap = {};
-    data.courses.forEach(c => {
-        if (!semMap[c.semester]) semMap[c.semester] = [];
-        semMap[c.semester].push(c);
-    });
+    data.courses.forEach(c => (semMap[c.semester] ??= []).push(c));
+    const semNames = ['اول','دوم','سوم','چهارم','پنجم','ششم','هفتم','هشتم'];
 
-    const semesters = Object.keys(semMap).map(Number).sort((a, b) => a - b);
+    const recs = data.courses.filter(c => {
+        const st = getCourseStatus(c.id, data);
+        return st === 'available' && isOfferedThisSemester(c);
+    }).sort((a, b) => a.semester - b.semester);
+
+    const statusTooltip = {
+        taking:    'در حال اخذ — کلیک برای علامت‌گذاری پاس',
+        passed:    'پاس شده — کلیک: تبدیل به افتاده',
+        failed:    'افتاده — کلیک: حذف علامت',
+        available: 'در دسترس — کلیک برای علامت‌گذاری پاس',
+        locked:    'قفل: پیش‌نیاز لازم است',
+    };
 
     let html = '';
-    const semNames = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم'];
-    semesters.forEach(sem => {
-        const semLabel = semNames[sem - 1] || `ترم ${sem}`;
-        html += `<div class="semester-block">
-            <div class="semester-title">ترم ${semLabel}</div>
-            <div class="curriculum-grid">`;
+    Object.keys(semMap).map(Number).sort((a, b) => a - b).forEach(sem => {
+        const semCourses = semMap[sem];
+        const semUnits = semCourses.reduce((acc, c) => acc + (c.units || 0), 0);
+        html += `<div class="sem-block">
+            <div class="sem-title">
+                ترم ${semNames[sem - 1] || sem}
+                <span class="sem-units">${toPersianNum(semUnits)} واحد</span>
+            </div>
+            <div class="cur-grid">`;
 
-        semMap[sem].forEach(c => {
-            const status = getCourseStatus(c.id, data);
+        semCourses.forEach(c => {
+            const st = getCourseStatus(c.id, data);
             const offered = isOfferedThisSemester(c);
-            const tooltipMap = {
-                taking:    'در حال اخذ این ترم — کلیک برای علامت‌گذاری پاس',
-                passed:    'پاس شده — کلیک: به افتاده تبدیل شود',
-                failed:    'افتاده — کلیک: حذف علامت',
-                available: offered ? 'در دسترس و این ترم ارائه می‌شود — کلیک برای علامت‌گذاری' : 'در دسترس اما این ترم ارائه نمی‌شود',
-                locked:    `قفل — پیش‌نیاز: ${(c.prereqs || []).map(pid => { const p = data.courses.find(x => x.id === pid); return p ? p.name : pid; }).join('، ')}`
-            };
-            const offeredDot = (offered && status !== 'passed' && status !== 'taking')
-                ? `<span style="width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0;" title="این ترم ارائه می‌شود"></span>` : '';
+            const offeredDot = (offered && st !== 'passed' && st !== 'taking')
+                ? `<span class="offered-dot" title="این ترم ارائه می‌شود"></span>` : '';
 
             html += `
-                <div class="cur-card ${status}" onclick="toggleCurriculumCourse('${c.id}')"
-                     title="${tooltipMap[status] || ''}">
+                <div class="cur-card ${st}" onclick="toggleCurriculumCourse('${c.id}')"
+                     title="${statusTooltip[st] || ''}">
                     <div class="cur-card-name">${c.name}</div>
-                    <div class="cur-card-meta">
-                        <span>${toPersianNum(c.units)} واحد</span>
-                        <div style="display:flex;align-items:center;gap:4px;">${offeredDot}<span class="cur-card-status"></span></div>
+                    <div class="cur-card-footer">
+                        <span class="cur-card-units">${toPersianNum(c.units)} واحد</span>
+                        <div style="display:flex;align-items:center;gap:4px;">
+                            ${offeredDot}
+                            <span class="cur-status-dot"></span>
+                        </div>
                     </div>
                 </div>`;
         });
-        html += `</div></div>`;
+        html += '</div></div>';
     });
 
-    // Recommendations
-    const recs = getRecommendations(data);
-    if (recs.length > 0) {
-        html += `<div class="recommendations">
-            <div class="rec-title">💡 پیشنهاد این ترم</div>`;
+    if (recs.length) {
+        html += `<div class="rec-section">
+            <div class="rec-title">💡 پیشنهاد این ترم (${toPersianNum(recs.length)} درس)</div>`;
         recs.slice(0, 6).forEach(c => {
-            html += `
-                <div class="rec-item" onclick="filterToSearchCourse('${c.id}')" title="کلیک برای جستجو در لیست درس‌ها">
-                    <span>${c.name}</span>
-                    <span class="rec-item-units">${toPersianNum(c.units)} واحد</span>
-                </div>`;
+            html += `<div class="rec-item" onclick="jumpToSearch('${c.id}')">
+                <span>${c.name}</span>
+                <span class="badge badge-unit">${toPersianNum(c.units)}و</span>
+            </div>`;
         });
-        html += `</div>`;
+        html += '</div>';
     }
 
     container.innerHTML = html;
 }
 
-function getRecommendations(data) {
-    if (!data) return [];
-    return data.courses.filter(c => {
-        const status = getCourseStatus(c.id, data);
-        return status === 'available' && isOfferedThisSemester(c);
-    }).sort((a, b) => a.semester - b.semester);
-}
-
-function filterToSearchCourse(courseId) {
-    const data = getCurriculumForCurrentGroup();
+function jumpToSearch(courseId) {
+    const data = getCurrentCurriculum();
     if (!data) return;
     const cur = data.courses.find(c => c.id === courseId);
     if (!cur) return;
@@ -560,65 +514,82 @@ function filterToSearchCourse(courseId) {
     if (!code) return;
     switchTab('search');
     document.getElementById('searchInput').value = code;
-    renderList();
+    renderCourseList();
 }
 
-// ===== THEME =====
-function toggleTheme() {
-    const html = document.documentElement;
-    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    html.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
+// ═══════════════════════════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════════════════════════
+function onToggleTheme() {
+    const next = Theme.toggle();
     const btn = document.getElementById('themeBtn');
-    if (btn) btn.textContent = next === 'light' ? '🌗 تم' : '☀️ تم';
+    if (btn) btn.textContent = next === 'light' ? '🌙' : '🌗';
 }
 
-// Apply saved theme
-(function applyTheme() {
-    const saved = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', saved);
-    const btn = document.getElementById('themeBtn');
-    if (btn) btn.textContent = saved === 'light' ? '🌗 تم' : '☀️ تم';
-})();
-
-// ===== EXAMS =====
+// ═══════════════════════════════════════════════════════════════════════════
+// EXAMS
+// ═══════════════════════════════════════════════════════════════════════════
 function openExamModal() {
     const body = document.getElementById('examBody');
     body.innerHTML = '';
-    const list = [...selectedCourses].map(id => courses.find(c => c.id === id)).filter(Boolean);
 
-    list.sort((a, b) => {
-        const da = extractDate(a.exam_text), db = extractDate(b.exam_text);
-        if (da === '-') return 1; if (db === '-') return -1;
-        return da.localeCompare(db);
-    });
+    const list = [...state.selected]
+        .map(id => courses.find(c => c.id === id)).filter(Boolean)
+        .sort((a, b) => {
+            const da = extractDate(a.exam_text), db = extractDate(b.exam_text);
+            if (da === '—') return 1; if (db === '—') return -1;
+            return da.localeCompare(db);
+        });
 
-    const dateCounts = {};
-    list.forEach(c => { const d = extractDate(c.exam_text); if (d !== '-') dateCounts[d] = (dateCounts[d] || 0) + 1; });
-
-    list.forEach(c => {
-        const date = extractDate(c.exam_text), time = extractTime(c.exam_text);
-        const row = document.createElement('tr');
-        if (date !== '-' && dateCounts[date] > 1) row.className = 'exam-conflict';
-        row.innerHTML = `<td>${c.name}</td><td>${date}</td><td>${time}</td>`;
-        body.appendChild(row);
-    });
-
-    if (list.length === 0) {
-        body.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:20px;">هیچ درسی انتخاب نشده است</td></tr>';
+    if (!list.length) {
+        body.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--t3);padding:24px">هیچ درسی انتخاب نشده</td></tr>`;
+    } else {
+        const dateCounts = {};
+        list.forEach(c => { const d = extractDate(c.exam_text); if (d !== '—') dateCounts[d] = (dateCounts[d] || 0) + 1; });
+        list.forEach(c => {
+            const date = extractDate(c.exam_text), time = extractTime(c.exam_text);
+            const tr = document.createElement('tr');
+            if (date !== '—' && dateCounts[date] > 1) tr.className = 'row-danger';
+            tr.innerHTML = `<td>${c.name}</td><td>${date}</td><td>${time}</td>`;
+            body.appendChild(tr);
+        });
     }
-    document.getElementById('examModal').style.display = 'flex';
+    document.getElementById('examModal').classList.add('open');
 }
 
-function closeExamModal() { document.getElementById('examModal').style.display = 'none'; }
+function closeExamModal() { document.getElementById('examModal').classList.remove('open'); }
 
 function extractDate(txt) {
-    const m = txt.match(/امتحان.*?\((\d{4}[\/\.]\d{1,2}[\/\.]\d{1,2})\)/);
-    return m ? m[1] : '-';
+    const m = txt?.match(/امتحان.*?\((\d{4}[\/\.]\d{1,2}[\/\.]\d{1,2})\)/);
+    return m ? m[1] : '—';
 }
 function extractTime(txt) {
-    const m = txt.match(/امتحان.*?ساعت\s*:\s*(\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})/);
-    return m ? m[1] : '-';
+    const m = txt?.match(/امتحان.*?ساعت\s*:\s*(\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})/);
+    return m ? m[1] : '—';
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// IMPORT FROM GOLESTAN EXTENSION
+// ═══════════════════════════════════════════════════════════════════════════
+function importGolestanFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.type === 'offered_courses') {
+                Toast.info(`${toPersianNum(data.courses?.length || 0)} درس استخراج‌شده. فایل data.js را جایگزین کنید.`, 6000);
+            } else {
+                Toast.error('فرمت فایل شناخته نشد.');
+            }
+        } catch (err) { Toast.error('خطا در خواندن فایل: ' + err.message); }
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════════
 init();

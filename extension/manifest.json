@@ -1,0 +1,23 @@
+{
+    "manifest_version": 3,
+    "name": "استخراج دروس گلستان",
+    "version": "1.0.0",
+    "description": "استخراج اطلاعات دروس و پیشرفت تحصیلی از سامانه گلستان برای انتخاب واحد هوشمند",
+
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "downloads",
+        "storage"
+    ],
+
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16":  "icons/icon16.png",
+            "48":  "icons/icon48.png",
+            "128": "icons/icon128.png"
+        },
+        "default_title": "استخراج دروس گلستان"
+    }
+}
