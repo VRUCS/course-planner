@@ -387,9 +387,10 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 </div>
 
 <!-- ── AI Chat FAB + Panel ────────────────────────────────────────────────── -->
-<button class="ai-fab no-print" onclick="Advisor.toggle()" title="دستیار مشاور AI">
+<!-- پنهان تا AI_INTERACTIVE_ENABLED=true در backend تنظیم شود -->
+<button class="ai-fab no-print" id="aiFab" onclick="Advisor.toggle()" title="دستیار مشاور AI" style="display:none">
   🤖
-  <span class="ai-fab-dot" id="aiFabDot" style="display:none"></span>
+  <span class="ai-fab-dot" id="aiFabDot"></span>
 </button>
 
 <div class="ai-panel no-print" id="aiPanel">

@@ -154,44 +154,43 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
 <div class="tab-panel" id="panelAi">
 
   <div class="info-box" style="margin-bottom:20px">
-    🤖 برای استفاده از ویژگی‌های هوش مصنوعی (دستیار مشاور، تحلیل بار درسی، مسیریاب) کلید API خود را از
-    <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--blue)">openrouter.ai/keys</a>
-    وارد کنید. کلید فقط در مرورگر شما ذخیره می‌شود.
+    🤖 ویژگی‌های AI از طریق backend سرور مدیریت می‌شوند.
+    کلید API و تنظیمات روی سرور نگه‌داری می‌شوند (فایل <code>backend/.env</code>).
   </div>
 
   <div class="card" style="padding:var(--sp6);max-width:560px">
+    <div style="font-size:.875rem;font-weight:700;margin-bottom:14px">وضعیت سرور AI</div>
 
-    <div style="margin-bottom:20px">
-      <label>کلید API (OpenRouter)</label>
-      <div style="display:flex;gap:8px;margin-top:4px">
-        <input type="password" id="aiKeyInput" placeholder="sk-or-v1-..." style="flex:1;font-family:monospace;font-size:.82rem">
-        <button class="btn btn-ghost btn-sm" onclick="toggleKeyVisibility()" id="eyeBtn" title="نمایش/پنهان">👁️</button>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px">
+      <button class="btn btn-ghost" onclick="checkBackendStatus()" id="backendTestBtn">🔌 بررسی وضعیت</button>
+      <span id="backendStatus" style="font-size:.8rem;color:var(--t3)">بررسی نشده</span>
+    </div>
+
+    <div id="backendInfo" style="display:none;font-size:.82rem;line-height:1.8;background:var(--s1);padding:12px;border-radius:var(--r2)"></div>
+
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--b0)">
+      <div style="font-size:.8rem;font-weight:700;margin-bottom:10px">برای فعال‌سازی:</div>
+      <div style="font-family:monospace;font-size:.75rem;background:var(--s0);padding:10px 14px;border-radius:var(--r1);color:var(--cyan);line-height:1.8">
+        cp backend/.env.example backend/.env<br>
+        # ویرایش OPENROUTER_API_KEY و AI_INTERACTIVE_ENABLED=true<br>
+        pip install -r backend/requirements.txt<br>
+        uvicorn backend.main:app --port 8000
       </div>
-      <p style="font-size:.72rem;color:var(--t3);margin-top:6px">این کلید فقط در localStorage مرورگر شما ذخیره می‌شود و به هیچ سروری ارسال نمی‌گردد.</p>
     </div>
-
-    <div style="margin-bottom:20px">
-      <label>مدل هوش مصنوعی</label>
-      <select id="aiModelSelect" style="margin-top:4px"></select>
-    </div>
-
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="saveAiSettings()">💾 ذخیره تنظیمات</button>
-      <button class="btn btn-ghost" onclick="testAiConnection()" id="testBtn">🔌 تست اتصال</button>
-      <button class="btn btn-ghost btn-sm" onclick="clearAiSettings()" style="color:var(--red)">🗑️ حذف کلید</button>
-    </div>
-
-    <div id="aiTestResult" style="margin-top:14px;font-size:.82rem;display:none;padding:10px 14px;border-radius:var(--r2);border:1px solid"></div>
-
   </div>
 
   <div style="margin-top:24px;max-width:560px">
-    <div style="font-size:.8rem;font-weight:700;margin-bottom:10px;color:var(--t1)">ویژگی‌های فعال‌شده</div>
-    <div style="display:flex;flex-direction:column;gap:8px;font-size:.82rem">
-      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✓</span> دستیار مشاور — چت فارسی با context کامل</div>
-      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✓</span> تحلیل بار درسی — هشدار بعد از انتخاب هر درس</div>
-      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✓</span> مسیریاب پیش‌نیاز — برای درس‌های قفل‌شده در نقشه درسی</div>
-      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✓</span> توضیح تداخل — در داشبورد استاد</div>
+    <div style="font-size:.8rem;font-weight:700;margin-bottom:10px;color:var(--t1)">ویژگی‌ها (batch — همیشه فعال)</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✓</span> تولید قوانین تداخل — از پنل ادمین</div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✓</span> استخراج درسنامه — <code>ai_extract.py</code></div>
+    </div>
+    <div style="font-size:.8rem;font-weight:700;margin-bottom:10px;color:var(--t2)">ویژگی‌ها (interactive — نیاز به AI_INTERACTIVE_ENABLED=true)</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;color:var(--t2)">
+      <div style="display:flex;align-items:center;gap:8px"><span>○</span> دستیار مشاور — چت فارسی با context دانشجو</div>
+      <div style="display:flex;align-items:center;gap:8px"><span>○</span> تحلیل بار درسی — هشدار بعد از انتخاب درس</div>
+      <div style="display:flex;align-items:center;gap:8px"><span>○</span> مسیریاب پیش‌نیاز — برای درس‌های قفل‌شده</div>
+      <div style="display:flex;align-items:center;gap:8px"><span>○</span> توضیح تداخل — در داشبورد استاد</div>
     </div>
   </div>
 </div>

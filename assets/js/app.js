@@ -718,7 +718,7 @@ function initMobile() {
 const _analyzeLoadDebounced = debounce(runLoadAnalysis, 3000);
 
 function scheduleLoadAnalysis() {
-    if (typeof AI === 'undefined' || !AI.isConfigured()) return;
+    if (typeof AI === 'undefined' || !AI.isInteractiveEnabled()) return;
     if (state.selected.size < 2) { clearLoadBadge(); return; }
     _analyzeLoadDebounced();
 }
@@ -729,7 +729,7 @@ function clearLoadBadge() {
 }
 
 async function runLoadAnalysis() {
-    if (typeof AI === 'undefined' || !AI.isConfigured()) return;
+    if (typeof AI === 'undefined' || !AI.isInteractiveEnabled()) return;
     if (state.selected.size < 2) { clearLoadBadge(); return; }
 
     const selCourses = [...state.selected].map(id => {
@@ -783,8 +783,8 @@ function showLoadBadge(result) {
 // PREREQUISITE PATH PLANNER
 // ═══════════════════════════════════════════════════════════════════════════
 async function showPathPlan(courseId) {
-    if (typeof AI === 'undefined' || !AI.isConfigured()) {
-        Toast.warning('برای استفاده از مسیریاب، کلید API را در پنل ادمین وارد کنید.');
+    if (typeof AI === 'undefined' || !AI.isInteractiveEnabled()) {
+        Toast.info('برای مشاهده پیش‌نیازها، نقشه درسی را ببینید.');
         return;
     }
 

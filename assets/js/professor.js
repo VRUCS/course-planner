@@ -188,8 +188,8 @@ function buildConflictList(conflicts) {
 
 // ─── Conflict Explainer ───────────────────────────────────────────────────
 async function explainConflict(rule, type) {
-    if (typeof AI === 'undefined' || !AI.isConfigured()) {
-        Toast.warning('کلید API تنظیم نشده. به پنل ادمین بروید.');
+    if (typeof AI === 'undefined' || !AI.isInteractiveEnabled()) {
+        Toast.info('فیچر توضیح AI هنوز فعال نشده.');
         return;
     }
     Toast.info('در حال تهیه توضیح...', 2000);

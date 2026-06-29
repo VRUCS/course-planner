@@ -108,9 +108,9 @@ ${ctx || 'اطلاعاتی در دسترس نیست.'}
         text = text.trim();
         if (!text || isTyping) return;
 
-        if (!AI.isConfigured()) {
+        if (!AI.isInteractiveEnabled()) {
             open();
-            Toast.warning('کلید API تنظیم نشده. به پنل ادمین بروید.');
+            Toast.warning('فیچر چت هنوز فعال نشده. با مدیر سیستم تماس بگیرید.');
             return;
         }
 

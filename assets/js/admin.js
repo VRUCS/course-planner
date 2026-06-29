@@ -14,65 +14,41 @@ function switchAdminTab(t) {
 
 // ─── AI Settings ──────────────────────────────────────────────────────────
 function initAiSettings() {
-    // پر کردن مدل‌ها
-    const sel = document.getElementById('aiModelSelect');
-    if (!sel || typeof AI === 'undefined') return;
-    AI.MODELS.forEach(m => sel.add(new Option(m.label, m.id)));
-
-    // بارگذاری تنظیمات ذخیره‌شده
-    const { key, model } = AI.getSettings();
-    if (key) document.getElementById('aiKeyInput').value = key;
-    if (model) sel.value = model;
+    // init هنگام بارگذاری — backend status را بررسی می‌کند
+    checkBackendStatus();
 }
 
-function toggleKeyVisibility() {
-    const inp = document.getElementById('aiKeyInput');
-    const btn = document.getElementById('eyeBtn');
-    if (inp.type === 'password') { inp.type = 'text';     btn.textContent = '🙈'; }
-    else                         { inp.type = 'password'; btn.textContent = '👁️'; }
-}
+async function checkBackendStatus() {
+    const btn    = document.getElementById('backendTestBtn');
+    const status = document.getElementById('backendStatus');
+    const info   = document.getElementById('backendInfo');
+    if (!btn) return;
 
-function saveAiSettings() {
-    const key   = document.getElementById('aiKeyInput').value.trim();
-    const model = document.getElementById('aiModelSelect').value;
-    AI.saveSettings(key, model);
-    Toast.success('تنظیمات AI ذخیره شد.', 2500);
-}
+    btn.disabled = true; btn.textContent = '⏳ در حال بررسی...';
+    status.textContent = '';
 
-function clearAiSettings() {
-    AI.saveSettings('', AI.MODELS[0].id);
-    document.getElementById('aiKeyInput').value = '';
-    document.getElementById('aiModelSelect').value = AI.MODELS[0].id;
-    Toast.info('کلید API حذف شد.', 2500);
-}
-
-async function testAiConnection() {
-    const key = document.getElementById('aiKeyInput').value.trim();
-    if (!key) { Toast.warning('ابتدا کلید API را وارد کنید.'); return; }
-    AI.saveSettings(key, document.getElementById('aiModelSelect').value);
-
-    const btn = document.getElementById('testBtn');
-    const res = document.getElementById('aiTestResult');
-    btn.disabled = true;
-    btn.textContent = '⏳ در حال تست...';
-    res.style.display = 'none';
-
+    const backendUrl = (typeof AI !== 'undefined') ? AI.BACKEND_URL : 'http://localhost:8000';
     try {
-        const reply = await AI.testConnection();
-        res.style.display = 'block';
-        res.style.borderColor = 'var(--green)';
-        res.style.background  = 'var(--green-dim)';
-        res.textContent = `✓ اتصال موفق! پاسخ: ${reply}`;
-        Toast.success('اتصال به OpenRouter برقرار شد.', 3000);
+        const res = await fetch(`${backendUrl}/health`, { signal: AbortSignal.timeout(4000) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        status.textContent = '✓ سرور متصل است';
+        status.style.color = 'var(--green)';
+        info.style.display = 'block';
+        info.innerHTML = `
+            <strong>مدل:</strong> ${data.model}<br>
+            <strong>API Key:</strong> ${data.api_key_set ? '✓ تنظیم شده' : '✗ تنظیم نشده'}<br>
+            <strong>Interactive AI:</strong> ${data.ai_interactive_enabled ? '✓ فعال' : '○ غیرفعال (batch-only)'}
+        `;
+        Toast.success('سرور AI در دسترس است.', 2500);
     } catch (e) {
-        res.style.display = 'block';
-        res.style.borderColor = 'var(--red)';
-        res.style.background  = 'var(--red-dim)';
-        res.textContent = `✗ خطا: ${e.message}`;
-        Toast.error(e.message, 5000);
+        status.textContent = `✗ سرور در دسترس نیست (${e.message})`;
+        status.style.color = 'var(--red)';
+        info.style.display = 'none';
+        Toast.warning('سرور backend اجرا نیست. راهنمای فعال‌سازی را ببینید.', 4000);
     } finally {
-        btn.disabled = false;
-        btn.textContent = '🔌 تست اتصال';
+        btn.disabled = false; btn.textContent = '🔌 بررسی وضعیت';
     }
 }
 
