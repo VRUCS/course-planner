@@ -4,56 +4,11 @@
 const allCourses = (typeof UNIVERSITY_DATA !== 'undefined') ? UNIVERSITY_DATA : [];
 
 // ─── Tab switching ────────────────────────────────────────────────────────
-const TAB_IDS = ['rules', 'curriculum', 'ai'];
+const TAB_IDS = ['rules', 'curriculum'];
 function switchAdminTab(t) {
     document.querySelectorAll('.page-tab').forEach((el, i) => el.classList.toggle('active', TAB_IDS[i] === t));
     document.getElementById('panelRules').classList.toggle('active', t === 'rules');
     document.getElementById('panelCurriculum').classList.toggle('active', t === 'curriculum');
-    document.getElementById('panelAi').classList.toggle('active', t === 'ai');
-}
-
-// ─── AI Settings ──────────────────────────────────────────────────────────
-function initAiSettings() {
-    checkBackendStatus();
-}
-
-async function checkBackendStatus() {
-    const btn    = document.getElementById('backendTestBtn');
-    const status = document.getElementById('backendStatus');
-    const info   = document.getElementById('backendInfo');
-    if (!btn) return;
-
-    btn.disabled = true; btn.textContent = '⏳ در حال بررسی...';
-    status.textContent = '';
-
-    const backendUrl = (typeof AI !== 'undefined') ? AI.BACKEND_URL : 'http://localhost:8000';
-    try {
-        const res = await fetch(`${backendUrl}/health`, { signal: AbortSignal.timeout(4000) });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        status.textContent = '✓ سرور متصل است';
-        status.style.color = 'var(--green)';
-        info.style.display = 'block';
-        info.replaceChildren();
-        [
-            ['مدل', data.model],
-            ['API Key', data.api_key_set ? '✓ تنظیم شده' : '✗ تنظیم نشده'],
-            ['Interactive AI', data.ai_interactive_enabled ? '✓ فعال برای همه' : '○ غیرفعال'],
-        ].forEach(([label, value]) => {
-            const strong = document.createElement('strong');
-            strong.textContent = `${label}: `;
-            info.append(strong, document.createTextNode(String(value)), document.createElement('br'));
-        });
-        Toast.success('سرور AI در دسترس است.', 2500);
-    } catch (e) {
-        status.textContent = `✗ سرور در دسترس نیست (${e.message})`;
-        status.style.color = 'var(--red)';
-        info.style.display = 'none';
-        Toast.warning('سرور backend اجرا نیست. راهنمای فعال‌سازی را ببینید.', 4000);
-    } finally {
-        btn.disabled = false; btn.textContent = '🔌 بررسی وضعیت';
-    }
 }
 
 // ─── Rules editor ─────────────────────────────────────────────────────────
@@ -327,5 +282,4 @@ document.addEventListener('DOMContentLoaded', () => {
     rfInitFaculties();
     cfUpdateHeaders();
     document.getElementById('cfCohorts').addEventListener('input', cfUpdateHeaders);
-    initAiSettings();
 });

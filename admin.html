@@ -67,7 +67,6 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
 <div class="page-tabs">
   <div class="page-tab active" onclick="switchAdminTab('rules')">📋 قوانین تداخل</div>
   <div class="page-tab" onclick="switchAdminTab('curriculum')">📚 چارت درسی</div>
-  <div class="page-tab" onclick="switchAdminTab('ai')">🤖 تنظیمات AI</div>
 </div>
 
 <!-- ── Tab: Rules ──────────────────────────────────────────────────────── -->
@@ -152,56 +151,6 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
   </div>
 </div>
 
-<!-- ── Tab: AI Settings ────────────────────────────────────────────────── -->
-<div class="tab-panel" id="panelAi">
-
-  <div class="info-box" style="margin-bottom:20px">
-    🤖 ویژگی‌های AI از طریق backend سرور مدیریت می‌شوند.
-    کلید API و تنظیمات روی سرور نگه‌داری می‌شوند (فایل <code>backend/.env</code>).
-  </div>
-
-  <div class="card" style="padding:var(--sp6);max-width:560px">
-    <div style="font-size:.875rem;font-weight:700;margin-bottom:14px">وضعیت سرور AI</div>
-
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px">
-      <button class="btn btn-ghost" onclick="checkBackendStatus()" id="backendTestBtn">🔌 بررسی وضعیت</button>
-      <span id="backendStatus" style="font-size:.8rem;color:var(--t3)">بررسی نشده</span>
-    </div>
-
-    <div id="backendInfo" style="display:none;font-size:.82rem;line-height:1.8;background:var(--s1);padding:12px;border-radius:var(--r2)"></div>
-
-    <div style="margin-top:16px;font-size:.78rem;color:var(--t3);line-height:1.7">
-      هیچ توکنی در مرورگر وارد نمی‌شود. فعال یا غیرفعال بودن AI فقط با
-      <code>AI_INTERACTIVE_ENABLED</code> روی سرور تعیین می‌شود؛ وقتی فعال باشد
-      برای همه کاربران کار می‌کند (با rate limit).
-    </div>
-
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--b0)">
-      <div style="font-size:.8rem;font-weight:700;margin-bottom:10px">برای فعال‌سازی:</div>
-      <div style="font-family:monospace;font-size:.75rem;background:var(--s0);padding:10px 14px;border-radius:var(--r1);color:var(--cyan);line-height:1.8">
-        cp backend/.env.example backend/.env<br>
-        # ویرایش OPENROUTER_API_KEY و AI_INTERACTIVE_ENABLED=true<br>
-        pip install -r backend/requirements.txt<br>
-        uvicorn backend.main:app --port 8000
-      </div>
-    </div>
-  </div>
-
-  <div style="margin-top:24px;max-width:560px">
-    <div style="font-size:.8rem;font-weight:700;margin-bottom:10px;color:var(--t1)">ابزار محلی (بدون backend)</div>
-    <div style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✓</span> استخراج درسنامه و قوانین تداخل — <code>ai_extract.py</code> (کلید در همان دستگاه)</div>
-    </div>
-    <div style="font-size:.8rem;font-weight:700;margin-bottom:10px;color:var(--t2)">ویژگی‌ها (interactive — نیاز به AI_INTERACTIVE_ENABLED=true)</div>
-    <div style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;color:var(--t2)">
-      <div style="display:flex;align-items:center;gap:8px"><span>○</span> دستیار مشاور — چت فارسی با context دانشجو</div>
-      <div style="display:flex;align-items:center;gap:8px"><span>○</span> تحلیل بار درسی — هشدار بعد از انتخاب درس</div>
-      <div style="display:flex;align-items:center;gap:8px"><span>○</span> مسیریاب پیش‌نیاز — برای درس‌های قفل‌شده</div>
-      <div style="display:flex;align-items:center;gap:8px"><span>○</span> توضیح تداخل — در داشبورد استاد</div>
-    </div>
-  </div>
-</div>
-
 <!-- ── Output Modal ────────────────────────────────────────────────────── -->
 <div class="modal-backdrop" id="outputModal" onclick="if(event.target===this)closeOutput()">
   <div class="modal-box" style="max-width:780px">
@@ -220,12 +169,10 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
   </div>
 </div>
 
-<script src="assets/js/config.js"></script>
 <script src="assets/js/data.js"></script>
 <script src="assets/js/conflict_rules.js"></script>
 <script src="assets/js/domain.js"></script>
 <script src="assets/js/utils.js"></script>
-<script src="assets/js/ai.js"></script>
 <script src="assets/js/admin.js"></script>
 </body>
 </html>
