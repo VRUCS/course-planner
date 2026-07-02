@@ -12,23 +12,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-          cache: pip
+          enable-cache: true
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
-      - run: pip install -r requirements-dev.txt
+      - run: uv sync --locked
       - run: npm ci
-      - run: ruff check .
+      - run: uv run ruff check .
       - run: npx eslint
-      - run: python -m pytest -q
+      - run: uv run python -m pytest -q
+      - run: uv run python scripts/curriculum_pipeline.py check
       - run: node tests/js/domain.test.js
-      - run: python -m compileall -q backend scripts ai_extract.py convert.py
+      - run: uv run python -m compileall -q backend scripts ai_extract.py convert.py
       - name: Check JavaScript syntax
         run: find assets/js extension -name '*.js' -print0 | xargs -0 -n1 node --check
-      - run: python scripts/build_static.py
+      - run: uv run python scripts/build_static.py
       - name: Ensure private/source directories are not deployed
         run: test ! -e _site/raw_data && test ! -e _site/backend && test -e _site/index.html

@@ -173,8 +173,8 @@ function rfExport() {
     const softData = rfCollect('soft');
     const key = `${fac} >> ${grp}`;
     const payload = { mustNotConflict: hardData, shouldNotConflict: softData };
-    const code = `// اضافه کنید به CONFLICT_RULES در conflict_rules.js\n${JSON.stringify(key)}: ${JSON.stringify(payload, null, 4)},`;
-    openOutput('کد قوانین تداخل — conflict_rules.js', code);
+    const code = `${JSON.stringify(key)}: ${JSON.stringify(payload, null, 4)}`;
+    openOutput('پیش‌نمایش قوانین (غیرمرجع)', code);
 }
 
 function rfClear() {
@@ -252,10 +252,11 @@ function cfExport() {
     const key = `${faculty} >> ${group}`;
     const coursesArr = cfCollect();
     const payload = {
-        fieldName, totalUnits, cohorts: cfCohorts, courses: coursesArr,
+        fieldName, reviewStatus: 'draft', totalUnits, cohorts: cfCohorts,
+        sourceFiles: [], courses: coursesArr,
     };
-    const code = `// اضافه کنید به CURRICULUM_REGISTRY در curriculum_cs.js\n${JSON.stringify(key)}: ${JSON.stringify(payload, null, 4)},`;
-    openOutput('کد چارت درسی — curriculum_cs.js', code);
+    const code = `${JSON.stringify(key)}: ${JSON.stringify(payload, null, 4)}`;
+    openOutput('قطعه JSON چارت — curricula.json', code);
 }
 
 function cfClear() { document.getElementById('cfRows').innerHTML = ''; cfRowCounter = 0; }

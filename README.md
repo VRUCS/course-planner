@@ -56,10 +56,8 @@ python -m http.server 3000
 ## تولید مجدد داده
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-dev.txt
-python convert.py
+uv sync
+uv run python convert.py
 ```
 
 این دستور هر دو فایل زیر را به شکل مرتب و deterministic می‌سازد:
@@ -75,8 +73,8 @@ python convert.py
 ```bash
 cp backend/.env.example backend/.env
 # OPENROUTER_API_KEY را تنظیم و AI_INTERACTIVE_ENABLED=true کنید
-pip install -r backend/requirements.txt
-uvicorn backend.main:app --reload --port 8000
+uv sync
+uv run uvicorn backend.main:app --reload --port 8000
 ```
 
 برای اتصال نسخه Pages، `backendUrl` را در `assets/js/config.js` به URL عمومی API
@@ -94,13 +92,43 @@ uvicorn backend.main:app --reload --port 8000
 برای سرویس عمومی پرمصرف، rate limit درون‌حافظه‌ای را با Redis و در صورت نیاز
 quota هر کاربر را با یک identity provider اضافه کنید.
 
+## استخراج چارت درسی با AI
+
+AI فقط یک پیش‌نویس ساختاریافته می‌سازد و مستقیماً قوانین اجرایی تولید نمی‌کند:
+
+```bash
+export OPENROUTER_API_KEY=...
+uv run --extra ai-extract python ai_extract.py \
+  --input raw_data/curriculum/cs/cs-chart-1403-and-later.pdf \
+  --field cs --field-name 'علوم کامپیوتر' --cohorts ۱۴۰۳
+```
+
+PDF به‌صورت متن و تصویر صفحه و فایل‌های JPG/PNG به مدل vision ارسال می‌شوند.
+پس از مقایسه `temp/curriculum_cs.draft.json` با منبع، دقیقاً همان فایل بازبینی‌شده
+را بدون فراخوانی دوباره AI تأیید کنید:
+
+```bash
+uv run --extra ai-extract python ai_extract.py \
+  --approve-draft temp/curriculum_cs.draft.json \
+  --faculty 'علوم ریاضی و کامپیوتر' --group 'علوم کامپیوتر'
+```
+
+تأیید، `assets/data/curricula.json` را به‌روز می‌کند و قوانین تداخل و wrapperهای
+JavaScript را به‌شکل deterministic بازسازی می‌کند.
+
+برای اعتبارسنجی داده مرجع و بررسی drift فایل‌های تولیدی:
+
+```bash
+uv run python scripts/curriculum_pipeline.py check
+```
+
 ## تست
 
 ```bash
-pip install -r requirements-dev.txt
-python -m pytest -q
+uv sync
+uv run python -m pytest -q
 node tests/js/domain.test.js
-python -m compileall -q backend scripts ai_extract.py convert.py
+uv run python -m compileall -q backend scripts ai_extract.py convert.py
 find assets/js extension -name '*.js' -print0 | xargs -0 -n1 node --check
 ```
 

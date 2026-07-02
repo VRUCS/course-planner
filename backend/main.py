@@ -2,9 +2,9 @@
 main.py — FastAPI application entry point
 
 راه‌اندازی:
-    pip install -r backend/requirements.txt
+    uv sync
     cp backend/.env.example backend/.env   # سپس .env را پر کنید
-    uvicorn backend.main:app --reload --port 8000
+    uv run uvicorn backend.main:app --reload --port 8000
 """
 from contextlib import asynccontextmanager
 
