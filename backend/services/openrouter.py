@@ -2,12 +2,9 @@
 services/openrouter.py — OpenRouter async client
 همه درخواست‌ها به OpenRouter از اینجا عبور می‌کنند.
 """
-import json
 import httpx
 from typing import AsyncGenerator
 from backend.config import get_settings
-
-settings = get_settings()
 
 HEADERS = {
     "HTTP-Referer": "https://github.com/entekhab-vahed",
@@ -19,7 +16,7 @@ HEADERS = {
 def _build_payload(messages: list, model: str | None, max_tokens: int,
                    stream: bool = False, json_mode: bool = False) -> dict:
     payload: dict = {
-        "model":      model or settings.default_model,
+        "model":      model,
         "messages":   messages,
         "max_tokens": max_tokens,
         "temperature": 0.4,
@@ -38,6 +35,7 @@ async def complete(
     json_mode: bool = False,
 ) -> dict:
     """پاسخ کامل را یک‌بار برمی‌گرداند (برای batch و interactive)."""
+    settings = get_settings()
     mt = max_tokens or settings.max_tokens_interactive
     payload = _build_payload(messages, model, mt, stream=False, json_mode=json_mode)
 
@@ -61,6 +59,7 @@ async def stream_chunks(
     SSE chunks را yield می‌کند.
     هر chunk: یک خط 'data: {...}' طبق OpenAI streaming format.
     """
+    settings = get_settings()
     mt = max_tokens or settings.max_tokens_interactive
     payload = _build_payload(messages, model, mt, stream=True)
 

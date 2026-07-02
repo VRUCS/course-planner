@@ -11,4 +11,5 @@ async def health():
         "ai_interactive_enabled": s.ai_interactive_enabled,
         "model": s.default_model,
         "api_key_set": bool(s.openrouter_api_key),
+        "authentication_required": not s.allow_anonymous_ai,
     }

@@ -6,8 +6,10 @@ main.py — FastAPI application entry point
     cp backend/.env.example backend/.env   # سپس .env را پر کنید
     uvicorn backend.main:app --reload --port 8000
 """
-from fastapi import FastAPI
+import httpx
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from backend.config import get_settings
@@ -31,14 +33,37 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
+@app.exception_handler(httpx.TimeoutException)
+async def provider_timeout(_: Request, __: httpx.TimeoutException):
+    return JSONResponse(
+        status_code=504,
+        content={"detail": "سرویس مدل در مهلت مقرر پاسخ نداد."},
+    )
+
+
+@app.exception_handler(httpx.HTTPStatusError)
+async def provider_http_error(_: Request, __: httpx.HTTPStatusError):
+    return JSONResponse(
+        status_code=502,
+        content={"detail": "سرویس مدل پاسخ نامعتبر برگرداند."},
+    )
+
+
+@app.exception_handler(httpx.RequestError)
+async def provider_connection_error(_: Request, __: httpx.RequestError):
+    return JSONResponse(
+        status_code=502,
+        content={"detail": "ارتباط با سرویس مدل برقرار نشد."},
+    )
+
 # CORS — فقط frontend مجاز است
 settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_origin, "http://localhost:3000",
-                   "http://127.0.0.1:3000", "http://localhost:8080"],
+    allow_origins=settings.cors_origins,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "X-API-Token"],
 )
 
 app.include_router(health.router)
