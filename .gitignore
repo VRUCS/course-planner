@@ -1,0 +1,28 @@
+# Secrets
+.env
+backend/.env
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# JavaScript / editors / OS
+node_modules/
+.DS_Store
+.idea/
+.vscode/
+
+# Local exports from Golestan may contain personal information
+temp/
+exports/
+
+# Generated scratch files
+*.tmp
+coverage/
+_site/
