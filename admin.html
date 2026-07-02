@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data:; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>پنل ادمین — انتخاب واحد هوشمند</title>
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
 <link rel="stylesheet" href="assets/css/main.css">
@@ -168,11 +170,20 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
 
     <div id="backendInfo" style="display:none;font-size:.82rem;line-height:1.8;background:var(--s1);padding:12px;border-radius:var(--r2)"></div>
 
+    <div style="margin-top:16px">
+      <label for="aiAccessToken" style="display:block;font-size:.78rem;font-weight:700;margin-bottom:6px">توکن دسترسی backend (فقط این نشست)</label>
+      <div style="display:flex;gap:8px">
+        <input id="aiAccessToken" type="password" autocomplete="off" placeholder="AI_API_TOKEN" style="flex:1">
+        <button class="btn btn-ghost" type="button" onclick="saveAiAccessToken()">ذخیره موقت</button>
+      </div>
+      <div style="font-size:.7rem;color:var(--t3);margin-top:5px">در sessionStorage مرورگر نگه‌داری می‌شود و با بستن تب حذف می‌شود. این روش برای مدیریت شخصی است، نه انتشار توکن در سایت عمومی.</div>
+    </div>
+
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--b0)">
       <div style="font-size:.8rem;font-weight:700;margin-bottom:10px">برای فعال‌سازی:</div>
       <div style="font-family:monospace;font-size:.75rem;background:var(--s0);padding:10px 14px;border-radius:var(--r1);color:var(--cyan);line-height:1.8">
         cp backend/.env.example backend/.env<br>
-        # ویرایش OPENROUTER_API_KEY و AI_INTERACTIVE_ENABLED=true<br>
+        # ویرایش OPENROUTER_API_KEY، AI_API_TOKEN و AI_INTERACTIVE_ENABLED=true<br>
         pip install -r backend/requirements.txt<br>
         uvicorn backend.main:app --port 8000
       </div>
@@ -213,8 +224,10 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
   </div>
 </div>
 
+<script src="assets/js/config.js"></script>
 <script src="assets/js/data.js"></script>
 <script src="assets/js/conflict_rules.js"></script>
+<script src="assets/js/domain.js"></script>
 <script src="assets/js/utils.js"></script>
 <script src="assets/js/ai.js"></script>
 <script src="assets/js/admin.js"></script>

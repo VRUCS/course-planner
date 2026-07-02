@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data:; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>انتخاب واحد هوشمند</title>
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
 <link rel="stylesheet" href="assets/css/main.css">
@@ -449,8 +451,10 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 </div>
 
 <!-- ── Scripts ─────────────────────────────────────────────────────────────── -->
+<script src="assets/js/config.js"></script>
 <script src="assets/js/data.js"></script>
 <script src="assets/js/curriculum_cs.js"></script>
+<script src="assets/js/domain.js"></script>
 <script src="assets/js/utils.js"></script>
 <script src="assets/js/ai.js"></script>
 <script src="assets/js/ai-advisor.js"></script>

@@ -12,7 +12,20 @@
 const AI = (() => {
 
     // آدرس backend — در production باید آدرس واقعی سرور باشد
-    const BACKEND_URL = window.__AI_BACKEND_URL || 'http://localhost:8000';
+    const configuredUrl = window.APP_CONFIG?.backendUrl || window.__AI_BACKEND_URL || '';
+    const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    const BACKEND_URL = configuredUrl.replace(/\/+$/, '') || (isLocal ? 'http://localhost:8000' : '');
+
+    function getAccessToken() {
+        return window.__AI_API_TOKEN || sessionStorage.getItem('ai_api_token') || '';
+    }
+
+    function requestHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        const token = getAccessToken();
+        if (token) headers['X-API-Token'] = token;
+        return headers;
+    }
 
     // ─── Feature flags (از backend می‌آید) ─────────────────────────────────
     let _interactiveEnabled = false;   // پیش‌فرض: غیرفعال
@@ -22,6 +35,11 @@ const AI = (() => {
     // بررسی وضعیت سرور در ابتدا
     async function checkHealth() {
         if (_healthChecked) return;
+        if (!BACKEND_URL) {
+            _healthChecked = true;
+            _updateInteractiveUI();
+            return;
+        }
         try {
             const res = await fetch(`${BACKEND_URL}/health`, { signal: AbortSignal.timeout(3000) });
             if (res.ok) {
@@ -47,12 +65,13 @@ const AI = (() => {
     }
 
     function isInteractiveEnabled() { return _interactiveEnabled; }
+    function isConfigured() { return _healthChecked && _interactiveEnabled; }
 
     // ─── Batch: complete (همیشه فعال) ─────────────────────────────────────
     async function batchComplete(messages, { model, jsonMode = false, maxTokens } = {}) {
         const res = await fetch(`${BACKEND_URL}/api/ai/batch/complete`, {
             method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: requestHeaders(),
             body: JSON.stringify({ messages, model, json_mode: jsonMode, max_tokens: maxTokens }),
         });
         if (!res.ok) {
@@ -71,7 +90,7 @@ const AI = (() => {
     async function generateConflictRules(fieldKey, courses, model) {
         const res = await fetch(`${BACKEND_URL}/api/ai/batch/generate-rules`, {
             method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: requestHeaders(),
             body: JSON.stringify({ field_key: fieldKey, courses, model }),
         });
         if (!res.ok) {
@@ -86,7 +105,7 @@ const AI = (() => {
         if (!_interactiveEnabled) throw new Error('فیچرهای تعاملی AI هنوز فعال نشده‌اند.');
         const res = await fetch(`${BACKEND_URL}/api/ai/chat/complete`, {
             method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: requestHeaders(),
             body: JSON.stringify({ messages, model, json_mode: jsonMode, max_tokens: maxTokens }),
         });
         if (!res.ok) {
@@ -106,7 +125,7 @@ const AI = (() => {
         if (!_interactiveEnabled) throw new Error('فیچرهای تعاملی AI هنوز فعال نشده‌اند.');
         const res = await fetch(`${BACKEND_URL}/api/ai/chat/stream`, {
             method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: requestHeaders(),
             body: JSON.stringify({ messages, model, max_tokens: maxTokens }),
         });
         if (!res.ok) {
@@ -170,7 +189,9 @@ const AI = (() => {
     // ─── Public API ───────────────────────────────────────────────────────
     return {
         BACKEND_URL,
+        getAccessToken,
         checkHealth,
+        isConfigured,
         isInteractiveEnabled,
         // batch (همیشه فعال)
         batchComplete,

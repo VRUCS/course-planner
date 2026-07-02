@@ -145,10 +145,14 @@ function buildTimetable(groupCourses, hardIds, softIds) {
                 else div.style.backgroundImage = `linear-gradient(160deg,${color}dd,${color}99)`;
             }
             div.title = `${c.name}\n${c.prof}\n${c.id}`;
-            div.innerHTML = `
-                <div class="class-block-name">${c.name}</div>
-                <div class="class-block-prof" style="font-size:.58rem;opacity:.7">${c.id}</div>
-            `;
+            const name = document.createElement('div');
+            name.className = 'class-block-name';
+            name.textContent = c.name;
+            const id = document.createElement('div');
+            id.className = 'class-block-prof';
+            id.style.cssText = 'font-size:.58rem;opacity:.7';
+            id.textContent = c.id;
+            div.append(name, id);
             el.appendChild(div);
         });
     });
@@ -166,24 +170,27 @@ function buildConflictList(conflicts) {
         return;
     }
 
-    list.innerHTML = conflicts.map(({ type, rule, overlaps }) => {
+    list.replaceChildren();
+    conflicts.forEach(({ type, rule, overlaps }) => {
         const timePills = [...new Set(overlaps.flatMap(o => o.times))]
-            .map(t => `<span class="time-chip">${t}</span>`).join('');
+            .map(t => `<span class="time-chip">${SafeDOM.escape(t)}</span>`).join('');
         const sections = overlaps.map(o => `${o.secA} ↔ ${o.secB}`)
-            .map(s => `<div style="font-size:.68rem;color:var(--t2);margin-top:2px">${s}</div>`).join('');
-        const ruleJson = JSON.stringify({ a: rule.a, nameA: rule.nameA, b: rule.b, nameB: rule.nameB, reason: rule.reason }).replace(/'/g, '&apos;');
-        return `
-            <div class="conflict-card ${type}">
+            .map(s => `<div style="font-size:.68rem;color:var(--t2);margin-top:2px">${SafeDOM.escape(s)}</div>`).join('');
+        const card = document.createElement('div');
+        card.className = `conflict-card ${type}`;
+        card.innerHTML = `
                 <div class="conflict-header">
                     <span class="conflict-severity ${type}">${type === 'hard' ? '⛔ سخت' : '⚠️ نرم'}</span>
-                    <button class="ai-explain-btn" onclick='explainConflict(${ruleJson},"${type}")' title="توضیح AI">✨ توضیح</button>
+                    <button class="ai-explain-btn" type="button" title="توضیح AI">✨ توضیح</button>
                 </div>
-                <div class="conflict-pair">${rule.nameA} ↔ ${rule.nameB}</div>
+                <div class="conflict-pair">${SafeDOM.escape(rule.nameA)} ↔ ${SafeDOM.escape(rule.nameB)}</div>
                 <div class="conflict-sections">${sections}</div>
-                <div class="conflict-reason">${rule.reason}</div>
+                <div class="conflict-reason">${SafeDOM.escape(rule.reason)}</div>
                 <div class="conflict-times">${timePills}</div>
-            </div>`;
-    }).join('');
+            `;
+        card.querySelector('.ai-explain-btn').addEventListener('click', () => explainConflict(rule, type));
+        list.appendChild(card);
+    });
 }
 
 // ─── Conflict Explainer ───────────────────────────────────────────────────

@@ -14,8 +14,16 @@ function switchAdminTab(t) {
 
 // ─── AI Settings ──────────────────────────────────────────────────────────
 function initAiSettings() {
-    // init هنگام بارگذاری — backend status را بررسی می‌کند
+    const tokenInput = document.getElementById('aiAccessToken');
+    if (tokenInput) tokenInput.value = sessionStorage.getItem('ai_api_token') || '';
     checkBackendStatus();
+}
+
+function saveAiAccessToken() {
+    const value = document.getElementById('aiAccessToken')?.value.trim() || '';
+    if (value) sessionStorage.setItem('ai_api_token', value);
+    else sessionStorage.removeItem('ai_api_token');
+    Toast.success(value ? 'توکن برای این نشست ذخیره شد.' : 'توکن نشست حذف شد.');
 }
 
 async function checkBackendStatus() {
@@ -36,11 +44,17 @@ async function checkBackendStatus() {
         status.textContent = '✓ سرور متصل است';
         status.style.color = 'var(--green)';
         info.style.display = 'block';
-        info.innerHTML = `
-            <strong>مدل:</strong> ${data.model}<br>
-            <strong>API Key:</strong> ${data.api_key_set ? '✓ تنظیم شده' : '✗ تنظیم نشده'}<br>
-            <strong>Interactive AI:</strong> ${data.ai_interactive_enabled ? '✓ فعال' : '○ غیرفعال (batch-only)'}
-        `;
+        info.replaceChildren();
+        [
+            ['مدل', data.model],
+            ['API Key', data.api_key_set ? '✓ تنظیم شده' : '✗ تنظیم نشده'],
+            ['احراز هویت', data.authentication_required ? '✓ لازم است' : '○ حالت عمومی'],
+            ['Interactive AI', data.ai_interactive_enabled ? '✓ فعال' : '○ غیرفعال (batch-only)'],
+        ].forEach(([label, value]) => {
+            const strong = document.createElement('strong');
+            strong.textContent = `${label}: `;
+            info.append(strong, document.createTextNode(String(value)), document.createElement('br'));
+        });
         Toast.success('سرور AI در دسترس است.', 2500);
     } catch (e) {
         status.textContent = `✗ سرور در دسترس نیست (${e.message})`;
@@ -125,15 +139,22 @@ function acSearch(id) {
     filtered = [...new Map(filtered.map(c => [c.id.split('_')[0], c])).values()].slice(0, 25);
 
     if (!filtered.length) { drop.style.display = 'none'; return; }
-    drop.innerHTML = filtered.map(c => {
+    drop.replaceChildren();
+    filtered.forEach(c => {
         const base = c.id.split('_')[0];
-        return `<div onclick="acSelect('${id}','${base}','${c.name.replace(/'/g,"\\'")}')"
-                     style="padding:8px 12px;cursor:pointer;font-size:.8rem;display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--b0)"
-                     onmouseover="this.style.background='var(--b0)'" onmouseout="this.style.background=''">
-                    <span>${c.name}</span>
-                    <span style="color:var(--t3);font-size:.72rem;flex-shrink:0">${base}</span>
-                </div>`;
-    }).join('');
+        const option = document.createElement('div');
+        option.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:.8rem;display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--b0)';
+        const name = document.createElement('span');
+        name.textContent = c.name;
+        const code = document.createElement('span');
+        code.style.cssText = 'color:var(--t3);font-size:.72rem;flex-shrink:0';
+        code.textContent = base;
+        option.append(name, code);
+        option.addEventListener('mouseenter', () => { option.style.background = 'var(--b0)'; });
+        option.addEventListener('mouseleave', () => { option.style.background = ''; });
+        option.addEventListener('click', () => acSelect(id, base, c.name));
+        drop.appendChild(option);
+    });
     drop.style.display = 'block';
 }
 
@@ -206,9 +227,8 @@ function rfExport() {
     const hardData = rfCollect('hard');
     const softData = rfCollect('soft');
     const key = `${fac} >> ${grp}`;
-    const mustStr   = hardData.map(r => `        { a: "${r.a}", nameA: "${r.nameA}",\n          b: "${r.b}", nameB: "${r.nameB}",\n          reason: "${r.reason}" }`).join(',\n');
-    const shouldStr = softData.map(r => `        { a: "${r.a}", nameA: "${r.nameA}",\n          b: "${r.b}", nameB: "${r.nameB}",\n          reason: "${r.reason}" }`).join(',\n');
-    const code = `// اضافه کنید به CONFLICT_RULES در conflict_rules.js\n"${key}": {\n    mustNotConflict: [\n${mustStr}\n    ],\n    shouldNotConflict: [\n${shouldStr}\n    ]\n},`;
+    const payload = { mustNotConflict: hardData, shouldNotConflict: softData };
+    const code = `// اضافه کنید به CONFLICT_RULES در conflict_rules.js\n${JSON.stringify(key)}: ${JSON.stringify(payload, null, 4)},`;
     openOutput('کد قوانین تداخل — conflict_rules.js', code);
 }
 
@@ -228,12 +248,13 @@ function cfUpdateHeaders() {
 
 function cfAddRow(data = {}) {
     const id = ++cfRowCounter;
+    const attr = SafeDOM.escape;
     const tr = document.createElement('tr');
     tr.id = `cf-row-${id}`;
     tr.innerHTML = `
-        <td><input type="number" value="${data.semester || ''}" min="1" max="8" style="width:55px" placeholder="ترم"></td>
-        <td><input type="text" value="${data.id || `c_${id}`}" style="width:110px" id="cfid-${id}"></td>
-        <td><input type="text" value="${data.name || ''}" placeholder="نام درس" style="min-width:130px"></td>
+        <td><input type="number" value="${attr(data.semester || '')}" min="1" max="8" style="width:55px" placeholder="ترم"></td>
+        <td><input type="text" value="${attr(data.id || `c_${id}`)}" style="width:110px" id="cfid-${id}"></td>
+        <td><input type="text" value="${attr(data.name || '')}" placeholder="نام درس" style="min-width:130px"></td>
         <td><input type="number" value="${data.units || 3}" min="1" max="6" style="width:50px"></td>
         <td><select style="width:90px">
             <option value="core"     ${data.type==='core'?'selected':''}>اصلی</option>
@@ -241,9 +262,9 @@ function cfAddRow(data = {}) {
             <option value="elective" ${data.type==='elective'?'selected':''}>اختیاری</option>
             <option value="lab"      ${data.type==='lab'?'selected':''}>آزمایشگاه</option>
         </select></td>
-        <td><input type="text" value="${(data.prereqs || []).join(', ')}" placeholder="id1, id2" style="min-width:110px"></td>
-        <td><input type="text" value="${data.codes?.[cfCohorts[0]] || data.codes?.['*'] || ''}" style="width:100px"></td>
-        <td><input type="text" value="${data.codes?.[cfCohorts[1]] || ''}" style="width:100px"></td>
+        <td><input type="text" value="${attr((data.prereqs || []).join(', '))}" placeholder="id1, id2" style="min-width:110px"></td>
+        <td><input type="text" value="${attr(data.codes?.[cfCohorts[0]] || data.codes?.['*'] || '')}" style="width:100px"></td>
+        <td><input type="text" value="${attr(data.codes?.[cfCohorts[1]] || '')}" style="width:100px"></td>
         <td><button class="btn btn-danger btn-sm" onclick="document.getElementById('cf-row-${id}').remove()">×</button></td>
     `;
     document.getElementById('cfRows').appendChild(tr);
@@ -285,10 +306,10 @@ function cfExport() {
     if (!faculty || !group) { Toast.warning('دانشکده و گروه را وارد کنید'); return; }
     const key = `${faculty} >> ${group}`;
     const coursesArr = cfCollect();
-    const coursesStr = coursesArr.map(c =>
-        `        { id: "${c.id}", name: "${c.name}", units: ${c.units}, semester: ${c.semester}, prereqs: ${JSON.stringify(c.prereqs)}, type: "${c.type}",\n          codes: ${JSON.stringify(c.codes)} }`
-    ).join(',\n');
-    const code = `// اضافه کنید به CURRICULUM_REGISTRY در curriculum_cs.js\n"${key}": {\n    fieldName: "${fieldName}",\n    totalUnits: ${totalUnits},\n    cohorts: ${JSON.stringify(cfCohorts)},\n    courses: [\n${coursesStr}\n    ]\n},`;
+    const payload = {
+        fieldName, totalUnits, cohorts: cfCohorts, courses: coursesArr,
+    };
+    const code = `// اضافه کنید به CURRICULUM_REGISTRY در curriculum_cs.js\n${JSON.stringify(key)}: ${JSON.stringify(payload, null, 4)},`;
     openOutput('کد چارت درسی — curriculum_cs.js', code);
 }
 

@@ -184,6 +184,9 @@ function renderCourseList() {
 
     const frag = document.createDocumentFragment();
     filtered.slice(0, 100).forEach(c => {
+        const safe = Object.fromEntries(
+            ['name', 'id', 'gender', 'prof'].map(key => [key, SafeDOM.escape(c[key])])
+        );
         const isSelected = state.selected.has(c.id);
         const color  = getFacultyColor(c.faculty);
         const cap    = c.capacity || 0;
@@ -200,15 +203,15 @@ function renderCourseList() {
         el.style.setProperty('--fc', color);
         el.onclick = () => toggleCourse(c.id);
         el.innerHTML = `
-            <div class="course-card-name">${c.name}</div>
+            <div class="course-card-name">${safe.name}</div>
             <div class="course-card-meta">
-                <span class="course-card-id">${c.id}</span>
+                <span class="course-card-id">${safe.id}</span>
                 <div style="display:flex;gap:4px;align-items:center">
                     ${c.units ? `<span class="badge badge-unit">${toPersianNum(c.units)}و</span>` : ''}
-                    <span class="badge ${gClass}">${c.gender}</span>
+                    <span class="badge ${gClass}">${safe.gender}</span>
                 </div>
             </div>
-            <div class="course-card-prof">${c.prof}</div>
+            <div class="course-card-prof">${safe.prof}</div>
             ${cap > 0 ? `
             <div class="capacity-bar" title="ظرفیت: ${toPersianNum(enr)}/${toPersianNum(cap)}">
                 <div class="capacity-bar-fill ${capClass}" style="width:${capPct}%"></div>
@@ -249,12 +252,7 @@ function toggleCourse(id) {
 // UNIT DISPLAY
 // ═══════════════════════════════════════════════════════════════════════════
 function getSelectedUnits() {
-    let total = 0;
-    state.selected.forEach(id => {
-        const c = courses.find(x => x.id === id);
-        if (c) total += c.units || 0;
-    });
-    return total;
+    return CourseDomain.totalUnits(state.selected, courses);
 }
 
 function updateUnitDisplay() {
@@ -358,15 +356,15 @@ function updateTimetable() {
             div.title = `${b.name}\n${b.prof}${b.location ? '\n📍 ' + b.location : ''}`;
 
             const rm = document.createElement('div');
-            rm.className = 'remove-btn'; rm.innerHTML = '×';
+            rm.className = 'remove-btn'; rm.textContent = '×';
             rm.onclick = e => { e.stopPropagation(); toggleCourse(b.id); };
             div.appendChild(rm);
 
             const content = document.createElement('div');
             content.innerHTML = `
-                <div class="class-block-name">${b.name}${b.isTA ? ' <small>(ت)</small>' : ''}</div>
-                <div class="class-block-prof">${b.prof}</div>
-                ${b.location ? `<div class="class-block-loc">${b.location}</div>` : ''}
+                <div class="class-block-name">${SafeDOM.escape(b.name)}${b.isTA ? ' <small>(ت)</small>' : ''}</div>
+                <div class="class-block-prof">${SafeDOM.escape(b.prof)}</div>
+                ${b.location ? `<div class="class-block-loc">${SafeDOM.escape(b.location)}</div>` : ''}
             `;
             div.appendChild(content);
             el.appendChild(div);
@@ -385,7 +383,7 @@ function updateFacultyLegend(slotMap) {
     legend.innerHTML = [...used].map(f => `
         <span class="faculty-legend-item">
             <span class="faculty-legend-dot" style="background:${getFacultyColor(f)}"></span>
-            ${f}
+            ${SafeDOM.escape(f)}
         </span>`).join('');
 }
 
@@ -467,7 +465,7 @@ function renderCurriculumTab() {
         container.innerHTML = `<div class="empty-state">
             <div class="empty-state-icon">🚧</div>
             <div class="empty-state-title">هنوز اضافه نشده</div>
-            <div class="empty-state-desc">نقشه درسی «${grp}» موجود نیست. از پنل ادمین وارد کنید.</div>
+            <div class="empty-state-desc">نقشه درسی «${SafeDOM.escape(grp)}» موجود نیست. از پنل ادمین وارد کنید.</div>
         </div>`;
         return;
     }
@@ -507,6 +505,8 @@ function renderCurriculumTab() {
     };
 
     let html = '';
+    const curriculumActions = [];
+    const recommendationActions = [];
     Object.keys(semMap).map(Number).sort((a, b) => a - b).forEach(sem => {
         const semCourses = semMap[sem];
         const semUnits = semCourses.reduce((acc, c) => acc + (c.units || 0), 0);
@@ -524,14 +524,15 @@ function renderCurriculumTab() {
                 ? `<span class="offered-dot" title="این ترم ارائه می‌شود"></span>` : '';
 
             // درس‌های قفل: کلیک → مسیریاب AI | بقیه: toggle وضعیت
-            const clickFn = st === 'locked'
-                ? `showPathPlan('${c.id}')`
-                : `toggleCurriculumCourse('${c.id}')`;
+            const actionIndex = curriculumActions.push(() => {
+                if (st === 'locked') showPathPlan(c.id);
+                else toggleCurriculumCourse(c.id);
+            }) - 1;
 
             html += `
-                <div class="cur-card ${st}" onclick="${clickFn}"
-                     title="${statusTooltip[st] || ''}">
-                    <div class="cur-card-name">${c.name}</div>
+                <div class="cur-card ${st}" data-curriculum-action="${actionIndex}"
+                     title="${SafeDOM.escape(statusTooltip[st] || '')}">
+                    <div class="cur-card-name">${SafeDOM.escape(c.name)}</div>
                     <div class="cur-card-footer">
                         <span class="cur-card-units">${toPersianNum(c.units)} واحد</span>
                         <div style="display:flex;align-items:center;gap:4px;">
@@ -549,8 +550,9 @@ function renderCurriculumTab() {
         html += `<div class="rec-section">
             <div class="rec-title">💡 پیشنهاد این ترم (${toPersianNum(recs.length)} درس)</div>`;
         recs.slice(0, 6).forEach(c => {
-            html += `<div class="rec-item" onclick="jumpToSearch('${c.id}')">
-                <span>${c.name}</span>
+            const actionIndex = recommendationActions.push(() => jumpToSearch(c.id)) - 1;
+            html += `<div class="rec-item" data-recommendation-action="${actionIndex}">
+                <span>${SafeDOM.escape(c.name)}</span>
                 <span class="badge badge-unit">${toPersianNum(c.units)}و</span>
             </div>`;
         });
@@ -558,6 +560,14 @@ function renderCurriculumTab() {
     }
 
     container.innerHTML = html;
+    container.querySelectorAll('[data-curriculum-action]').forEach(element => {
+        const action = curriculumActions[Number(element.dataset.curriculumAction)];
+        if (action) element.addEventListener('click', action);
+    });
+    container.querySelectorAll('[data-recommendation-action]').forEach(element => {
+        const action = recommendationActions[Number(element.dataset.recommendationAction)];
+        if (action) element.addEventListener('click', action);
+    });
 }
 
 function jumpToSearch(courseId) {
@@ -605,7 +615,11 @@ function openExamModal() {
             const date = extractDate(c.exam_text), time = extractTime(c.exam_text);
             const tr = document.createElement('tr');
             if (date !== '—' && dateCounts[date] > 1) tr.className = 'row-danger';
-            tr.innerHTML = `<td>${c.name}</td><td>${date}</td><td>${time}</td>`;
+            [c.name, date, time].forEach(value => {
+                const td = document.createElement('td');
+                td.textContent = value;
+                tr.appendChild(td);
+            });
             body.appendChild(tr);
         });
     }
@@ -830,10 +844,10 @@ async function showPathPlan(courseId) {
         }]);
 
         document.getElementById('pathModalContent').innerHTML =
-            `<p class="path-modal-body">${response.replace(/\n/g, '<br>')}</p>`;
+            `<p class="path-modal-body">${SafeDOM.formatPlainMarkdown(response)}</p>`;
     } catch (e) {
         document.getElementById('pathModalContent').innerHTML =
-            `<p style="color:var(--red)">خطا: ${e.message}</p>`;
+            `<p style="color:var(--red)">خطا: ${SafeDOM.escape(e.message)}</p>`;
     }
 }
 

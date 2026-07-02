@@ -77,10 +77,7 @@ ${ctx || 'اطلاعاتی در دسترس نیست.'}
     }
 
     function formatMessage(text) {
-        return text
-            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.+?)\*/g, '<em>$1</em>')
-            .replace(/\n/g, '<br>');
+        return SafeDOM.formatPlainMarkdown(text);
     }
 
     function showTypingIndicator() {
