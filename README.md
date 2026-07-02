@@ -32,13 +32,30 @@ AI اختیاری (بدون توکن کاربر)
 
 مرزهای مهم پروژه:
 
-- `assets/js/domain.js`: منطق خالص زمان‌بندی و اعتبارسنجی؛ بدون DOM و network
-- `assets/js/app.js`: هماهنگی state و رابط اصلی
-- `assets/data/courses.json`: داده canonical و قابل استفاده توسط ابزارها
-- `assets/js/data.js`: wrapper تولیدی برای اجرای مستقیم و بدون build در Pages
-- `backend/`: فقط API اختیاری AI؛ هسته سایت به آن وابسته نیست
-- `convert.py`: تبدیل deterministic خروجی عمومی گلستان به dataset امن
-- `scripts/build_static.py`: ساخت artifact حداقلی Pages، بدون raw data و backend
+- `apps/web/`: client استاتیک؛ domain، adapter، feature و page controller جدا هستند
+- `apps/api/`: سرویس مستقل FastAPI با لایه‌های transport، application و infrastructure
+- `apps/extension/`: افزونه مستقل مرورگر
+- `data/canonical/`: JSONهای مرجع و versionable
+- `data/sources/`: ورودی‌های عمومی و اسناد منبع؛ هرگز deploy نمی‌شوند
+- `apps/web/generated/`: wrapperهای تولیدی مرورگر؛ ویرایش دستی ممنوع
+- `tools/data_pipeline/`: تبدیل، استخراج و اعتبارسنجی deterministic داده
+- `tests/{backend,frontend,pipelines}/`: تست‌ها بر اساس subsystem
+
+```text
+apps/
+  web/          # static client
+  api/          # FastAPI deployment unit
+  extension/    # browser extension
+data/
+  sources/      # input documents
+  canonical/    # authoritative JSON
+tools/
+  data_pipeline/
+tests/
+  backend/
+  frontend/
+  pipelines/
+```
 
 جزئیات بیشتر در [مستند معماری](docs/architecture.md) آمده است.
 
@@ -47,7 +64,7 @@ AI اختیاری (بدون توکن کاربر)
 نیازی به npm یا build نیست:
 
 ```bash
-python -m http.server 3000
+python -m http.server --directory apps/web 3000
 ```
 
 سپس `http://localhost:3000` را باز کنید. بازکردن مستقیم فایل HTML ممکن است در
@@ -57,13 +74,13 @@ python -m http.server 3000
 
 ```bash
 uv sync
-uv run python convert.py
+uv run python -m tools.data_pipeline.course_converter
 ```
 
 این دستور هر دو فایل زیر را به شکل مرتب و deterministic می‌سازد:
 
-- `assets/data/courses.json`
-- `assets/js/data.js`
+- `data/canonical/courses.json`
+- `apps/web/generated/course-offerings.generated.js`
 
 ورودی‌های محلی حاوی اطلاعات دانشجو را در `temp/` یا `exports/` بگذارید؛ این
 پوشه‌ها عمداً توسط Git نادیده گرفته می‌شوند.
@@ -71,13 +88,14 @@ uv run python convert.py
 ## backend اختیاری AI
 
 ```bash
-cp backend/.env.example backend/.env
+cp apps/api/.env.example apps/api/.env
 # OPENROUTER_API_KEY را تنظیم و AI_INTERACTIVE_ENABLED=true کنید
 uv sync
-uv run uvicorn backend.main:app --reload --port 8000
+uv run uvicorn apps.api.main:app --reload --port 8000
 ```
 
-برای اتصال نسخه Pages، `backendUrl` را در `assets/js/config.js` به URL عمومی API
+برای اتصال نسخه Pages، `backendUrl` را در
+`apps/web/scripts/adapters/app-config.js` به URL عمومی API
 تغییر دهید. **هیچ secret یا توکنی را در این فایل commit نکنید.**
 
 هیچ توکنی از کاربر گرفته نمی‌شود؛ در دسترس بودن AI کاملاً سمت سرور تعیین
@@ -98,8 +116,8 @@ AI فقط یک پیش‌نویس ساختاریافته می‌سازد و مس�
 
 ```bash
 export OPENROUTER_API_KEY=...
-uv run --extra ai-extract python ai_extract.py \
-  --input raw_data/curriculum/cs/cs-chart-1403-and-later.pdf \
+uv run --extra ai-extract python -m tools.data_pipeline.curriculum_extractor \
+  --input data/sources/curriculum/cs/cs-chart-1403-and-later.pdf \
   --field cs --field-name 'علوم کامپیوتر' --cohorts ۱۴۰۳
 ```
 
@@ -108,18 +126,18 @@ PDF به‌صورت متن و تصویر صفحه و فایل‌های JPG/PNG �
 را بدون فراخوانی دوباره AI تأیید کنید:
 
 ```bash
-uv run --extra ai-extract python ai_extract.py \
+uv run --extra ai-extract python -m tools.data_pipeline.curriculum_extractor \
   --approve-draft temp/curriculum_cs.draft.json \
   --faculty 'علوم ریاضی و کامپیوتر' --group 'علوم کامپیوتر'
 ```
 
-تأیید، `assets/data/curricula.json` را به‌روز می‌کند و قوانین تداخل و wrapperهای
+تأیید، `data/canonical/curricula.json` را به‌روز می‌کند و قوانین تداخل و wrapperهای
 JavaScript را به‌شکل deterministic بازسازی می‌کند.
 
 برای اعتبارسنجی داده مرجع و بررسی drift فایل‌های تولیدی:
 
 ```bash
-uv run python scripts/curriculum_pipeline.py check
+uv run python -m tools.data_pipeline.curriculum_pipeline check
 ```
 
 ## تست
@@ -127,9 +145,9 @@ uv run python scripts/curriculum_pipeline.py check
 ```bash
 uv sync
 uv run python -m pytest -q
-node tests/js/domain.test.js
-uv run python -m compileall -q backend scripts ai_extract.py convert.py
-find assets/js extension -name '*.js' -print0 | xargs -0 -n1 node --check
+npm test
+uv run python -m compileall -q apps/api tools
+find apps/web/scripts apps/web/generated apps/extension -name '*.js' -print0 | xargs -0 -n1 node --check
 ```
 
 CI همین بررسی‌ها را در هر push و pull request اجرا می‌کند.
@@ -139,8 +157,8 @@ CI همین بررسی‌ها را در هر push و pull request اجرا می�
 workflow موجود در `.github/workflows/pages.yml` در هر push به `main`:
 
 1. artifact استاتیک را می‌سازد؛
-2. فقط HTML و `assets/` را منتشر می‌کند؛
-3. `raw_data/`، `temp/`، ابزارها و backend را منتشر نمی‌کند.
+2. فقط صفحه‌های عمومی و assetهای لازم `apps/web/` را منتشر می‌کند؛
+3. data editor، داده مرجع/منبع، ابزارها و API را منتشر نمی‌کند.
 
 در تنظیمات repository، بخش Pages را روی **GitHub Actions** قرار دهید.
 

@@ -1,6 +1,6 @@
 # Secrets
 .env
-backend/.env
+apps/api/.env
 *.pem
 
 # Python

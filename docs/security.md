@@ -16,13 +16,13 @@
 
 ## کنترل‌های فعلی
 
-- provider key فقط در environment backend است.
+- provider key فقط در environment سرویس `apps/api` است.
 - endpointهای AI پشت feature flag سرور، allowlist مدل و rate limit هستند.
 - schema درخواست‌ها فیلد اضافه و ورودی بیش از سقف را رد می‌کند.
 - CORS به originهای تنظیم‌شده محدود است.
 - داده و پاسخ AI پیش از ورود به HTML escape می‌شوند.
 - CSP پایه، object و base تزریقی را مسدود می‌کند.
-- artifact مربوط به Pages شامل backend، raw data یا exportهای محلی نیست.
+- artifact مربوط به Pages شامل API، داده‌های source/canonical یا exportهای محلی نیست.
 - `temp/`، `exports/` و `.env` در Git نادیده گرفته می‌شوند.
 
 ## محدودیت‌های آگاهانه

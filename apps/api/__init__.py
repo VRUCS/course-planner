@@ -1,0 +1,1 @@
+"""Course-planning API application."""

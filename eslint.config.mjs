@@ -39,11 +39,17 @@ const scriptStyleRedeclare = ['error', { builtinGlobals: false }];
 
 export default [
     {
-        ignores: ['assets/js/data.js', '_site/**', 'node_modules/**', 'raw_data/**', 'temp/**'],
+        ignores: [
+            'apps/web/generated/**',
+            '_site/**',
+            'node_modules/**',
+            'data/sources/**',
+            'temp/**',
+        ],
     },
     js.configs.recommended,
     {
-        files: ['assets/js/**/*.js'],
+        files: ['apps/web/scripts/**/*.js'],
         languageOptions: {
             ecmaVersion: 2023,
             sourceType: 'script',
@@ -58,7 +64,7 @@ export default [
         },
     },
     {
-        files: ['extension/**/*.js'],
+        files: ['apps/extension/**/*.js'],
         languageOptions: {
             ecmaVersion: 2023,
             sourceType: 'script',
@@ -77,7 +83,7 @@ export default [
         },
     },
     {
-        files: ['tests/js/**/*.js'],
+        files: ['tests/frontend/**/*.js'],
         languageOptions: {
             ecmaVersion: 2023,
             sourceType: 'commonjs',

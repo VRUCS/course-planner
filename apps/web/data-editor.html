@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data:; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<title>ویرایشگر داده — انتخاب واحد هوشمند</title>
+<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
+<link rel="stylesheet" href="styles/main.css">
+<style>
+body { min-height: 100vh; }
+
+/* Page tabs */
+.page-tabs { display: flex; border-bottom: 1px solid var(--b0); background: var(--s1); }
+.page-tab  {
+  padding: 12px 24px; cursor: pointer; font-weight: 600; font-size: .875rem;
+  color: var(--t2); border-bottom: 2px solid transparent; transition: all var(--fast);
+}
+.page-tab:hover  { color: var(--t1); }
+.page-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+.tab-panel        { display: none; padding: 24px; max-width: 1100px; margin: 0 auto; }
+.tab-panel.active { display: block; }
+
+/* Section */
+.section-hd {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.section-title { font-size: .875rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+/* Rule table */
+table.rule-table { width: 100%; border-collapse: collapse; }
+table.rule-table th { text-align: right; padding: 8px 10px; font-size: .74rem; color: var(--t2); font-weight: 600; border-bottom: 1px solid var(--b1); }
+table.rule-table td { padding: 5px 8px; border-bottom: 1px solid var(--b0); vertical-align: top; }
+table.rule-table tr:last-child td { border-bottom: none; }
+
+/* Curriculum table */
+.cur-table-wrap { overflow-x: auto; }
+table.cur-table { width: 100%; border-collapse: collapse; min-width: 860px; }
+table.cur-table th { text-align: right; padding: 8px 10px; font-size: .74rem; color: var(--t2); font-weight: 600; background: var(--s2); border-bottom: 1px solid var(--b1); white-space: nowrap; }
+table.cur-table td { padding: 4px 6px; border-bottom: 1px solid var(--b0); vertical-align: middle; }
+table.cur-table td input, table.cur-table td select { padding: 5px 8px; font-size: .8rem; }
+
+/* Output modal code area */
+.code-area textarea { font-family: monospace; font-size: .78rem; background: var(--s0); min-height: 300px; resize: none; border-radius: var(--r2); }
+
+label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; margin-bottom: 4px; }
+.form-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; }
+.form-row .fg { flex: 1; min-width: 140px; }
+</style>
+</head>
+<body>
+
+<header class="app-topbar">
+  <div class="topbar-brand">
+    <div style="width:32px;height:32px;border-radius:var(--r1);background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:1rem;">⚙️</div>
+    <div class="topbar-brand-name">ویرایشگر داده</div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost btn-sm" onclick="Theme.toggle()">🌗</button>
+    <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none">← انتخاب واحد</a>
+  </div>
+</header>
+
+<div class="page-tabs">
+  <div class="page-tab active" onclick="switchAdminTab('rules')">📋 قوانین تداخل</div>
+  <div class="page-tab" onclick="switchAdminTab('curriculum')">📚 چارت درسی</div>
+</div>
+
+<!-- ── Tab: Rules ──────────────────────────────────────────────────────── -->
+<div class="tab-panel active" id="panelRules">
+
+  <div class="info-box" style="margin-bottom:20px">
+    این ویرایشگر برای بررسی سناریوهاست. قوانین مرجع از چارت و
+    <code>courses.json</code> به‌صورت deterministic تولید می‌شوند.
+  </div>
+
+  <div class="form-row">
+    <div class="fg"><label>دانشکده</label><select id="rfFaculty" onchange="rfOnFacultyChange()"><option value="">انتخاب...</option></select></div>
+    <div class="fg"><label>گروه آموزشی</label><select id="rfGroup"><option value="">انتخاب...</option></select></div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="rfLoadExisting()">📥 بارگذاری موجود</button>
+    </div>
+  </div>
+
+  <!-- Hard rules -->
+  <div class="card" style="padding:var(--sp4);margin-bottom:var(--sp4)">
+    <div class="section-hd">
+      <span class="section-title"><span class="badge badge-danger">⛔ سخت</span> تداخل اجباری (درس‌های هم‌ترم)</span>
+      <button class="btn btn-ghost btn-sm" onclick="rfAddRow('hard')">+ افزودن</button>
+    </div>
+    <table class="rule-table">
+      <thead><tr><th style="width:30%">درس الف</th><th style="width:30%">درس ب</th><th>دلیل</th><th style="width:40px"></th></tr></thead>
+      <tbody id="hardRules"></tbody>
+    </table>
+  </div>
+
+  <!-- Soft rules -->
+  <div class="card" style="padding:var(--sp4);margin-bottom:var(--sp4)">
+    <div class="section-hd">
+      <span class="section-title"><span class="badge badge-warning">⚠️ نرم</span> تداخل توصیه‌شده (هم‌تراز ترم)</span>
+      <button class="btn btn-ghost btn-sm" onclick="rfAddRow('soft')">+ افزودن</button>
+    </div>
+    <table class="rule-table">
+      <thead><tr><th style="width:30%">درس الف</th><th style="width:30%">درس ب</th><th>دلیل</th><th style="width:40px"></th></tr></thead>
+      <tbody id="softRules"></tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-primary" onclick="rfExport()">📤 صادر کردن کد JS</button>
+    <button class="btn btn-ghost" onclick="rfClear()">🗑️ پاک کردن همه</button>
+  </div>
+</div>
+
+<!-- ── Tab: Curriculum ─────────────────────────────────────────────────── -->
+<div class="tab-panel" id="panelCurriculum">
+
+  <div class="info-box" style="margin-bottom:20px">
+    چارت را وارد و قطعه JSON را پس از بازبینی در
+    <code>data/canonical/curricula.json</code> داخل <code>programs</code> قرار دهید.
+  </div>
+
+  <div class="form-row">
+    <div class="fg"><label>نام رشته (فارسی)</label><input type="text" id="cfFieldName" placeholder="مثال: علوم کامپیوتر"></div>
+    <div class="fg"><label>دانشکده</label><input type="text" id="cfFaculty" placeholder="علوم ریاضی و کامپیوتر"></div>
+    <div class="fg"><label>گروه</label><input type="text" id="cfGroup" placeholder="علوم کامپیوتر"></div>
+  </div>
+  <div class="form-row">
+    <div class="fg"><label>ورودی‌ها (با ویرگول)</label><input type="text" id="cfCohorts" value="۱۴۰۰, ۱۴۰۱"></div>
+    <div style="flex:0 0 120px"><label>کل واحد</label><input type="number" id="cfTotalUnits" value="140"></div>
+    <button class="btn btn-ghost btn-sm" onclick="cfAddRow()" style="align-self:flex-end">+ افزودن درس</button>
+  </div>
+
+  <div class="cur-table-wrap">
+    <table class="cur-table">
+      <thead><tr>
+        <th>ترم</th><th>شناسه</th><th>نام درس</th><th>واحد</th><th>نوع</th>
+        <th>پیش‌نیاز (شناسه‌ها)</th>
+        <th id="cfCodeHeader1">کد ورودی ۱</th>
+        <th id="cfCodeHeader2">کد ورودی ۲</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="cfRows"></tbody>
+    </table>
+  </div>
+  <br>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-primary" onclick="cfExport()">📤 صادر کردن کد JS</button>
+    <button class="btn btn-ghost" onclick="cfClear()">🗑️ پاک کردن همه</button>
+  </div>
+</div>
+
+<!-- ── Output Modal ────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="outputModal" onclick="if(event.target===this)closeOutput()">
+  <div class="modal-box" style="max-width:780px">
+    <div class="modal-header">
+      <h3 class="modal-title" id="outputTitle">کد تولیدشده</h3>
+      <button class="modal-close" onclick="closeOutput()">×</button>
+    </div>
+    <div class="modal-body code-area">
+      <textarea id="outputCode" readonly></textarea>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:16px">
+      <button class="btn btn-success" onclick="copyOutput()">📋 کپی</button>
+      <span id="copyMsg" style="display:none;color:var(--green);font-size:.8rem">✓ کپی شد!</span>
+      <span style="font-size:.76rem;color:var(--t3)">این کد را در فایل مربوطه paste کنید.</span>
+    </div>
+  </div>
+</div>
+
+<script src="generated/course-offerings.generated.js"></script>
+<script src="generated/conflict-rules.generated.js"></script>
+<script src="scripts/domain/course-domain.js"></script>
+<script src="scripts/features/ui.js"></script>
+<script src="scripts/pages/data-editor.js"></script>
+</body>
+</html>

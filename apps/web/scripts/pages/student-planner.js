@@ -1,0 +1,905 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════
+const courses = (typeof UNIVERSITY_DATA !== 'undefined') ? UNIVERSITY_DATA : [];
+const planner = window.PlannerDomain;
+const stateRepository = window.PlannerStorage.createRepository(window.localStorage);
+
+const state = {
+    selected: new Set(),           // IDs of selected courses
+    activeSidebarTab: 'search',
+    cohort: stateRepository.getPreference('cohort'),
+    curriculum: { passed: new Set(), failed: new Set() },
+};
+
+function getMaxUnits() {
+    return CourseDomain.maxUnitsForGpa(stateRepository.getPreference('gpa'));
+}
+
+function onGpaChange(rawValue) {
+    const value = parseFloat(rawValue);
+    if (Number.isFinite(value) && value >= 0 && value <= 20) {
+        stateRepository.setPreference('gpa', value);
+    } else {
+        stateRepository.setPreference('gpa', null);
+    }
+    updateUnitDisplay();
+}
+
+function restoreGpaInput() {
+    const input = document.getElementById('gpaInput');
+    if (input) input.value = stateRepository.getPreference('gpa');
+}
+
+// Faculty → color mapping (built at init)
+const facultyColors = {};
+const dialogFocusOrigins = new WeakMap();
+
+function openDialog(dialog) {
+    if (!dialog) return;
+    dialogFocusOrigins.set(dialog, document.activeElement);
+    dialog.classList.add('open');
+    dialog.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')?.focus();
+}
+
+function closeDialog(dialog) {
+    if (!dialog) return;
+    dialog.classList.remove('open');
+    dialogFocusOrigins.get(dialog)?.focus?.();
+    dialogFocusOrigins.delete(dialog);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+function init() {
+    buildFacultyColors();
+    loadState();
+    setupFilters();
+    buildTimetableGrid();
+    renderCourseList();
+    updateTimetable();
+    updateUnitDisplay();
+
+    // Restore saved faculty/group
+    restoreFacultyGroup();
+    restoreGpaInput();
+
+    // Event listeners
+    document.getElementById('searchInput').addEventListener('input', debounce(renderCourseList, 280));
+    document.getElementById('facultyFilter').addEventListener('change', () => {
+        rebuildGroupFilter(); renderCourseList(); syncCurriculumTab(); saveFacultyGroup();
+    });
+    document.getElementById('groupFilter').addEventListener('change', () => {
+        renderCourseList(); syncCurriculumTab(); saveFacultyGroup();
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key !== 'Escape') return;
+        const dialog = document.querySelector('.modal-backdrop.open');
+        if (dialog) closeDialog(dialog);
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FACULTY COLORS
+// ═══════════════════════════════════════════════════════════════════════════
+function buildFacultyColors() {
+    [...new Set(courses.map(c => c.faculty))].sort().forEach((f, i) => {
+        facultyColors[f] = FACULTY_PALETTE[i % FACULTY_PALETTE.length];
+    });
+}
+
+function getFacultyColor(faculty) {
+    return facultyColors[faculty] || '#3b82f6';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════════════════════════
+function saveState() {
+    stateRepository.saveSelection(state.selected);
+}
+
+function loadState() {
+    state.selected = stateRepository.loadSelection(new Set(courses.map(course => course.id)));
+    state.curriculum = stateRepository.loadCurriculumProgress();
+}
+
+function saveCurriculumState() {
+    stateRepository.saveCurriculumProgress(state.curriculum);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SIDEBAR TABS
+// ═══════════════════════════════════════════════════════════════════════════
+function switchTab(tab) {
+    state.activeSidebarTab = tab;
+    ['search', 'curriculum'].forEach(t => {
+        const selected = t === tab;
+        const suffix = t[0].toUpperCase() + t.slice(1);
+        const button = document.getElementById(`tabBtn${suffix}`);
+        const panel = document.getElementById(`tab${suffix}`);
+        button.classList.toggle('active', selected);
+        button.setAttribute('aria-selected', String(selected));
+        panel.classList.toggle('active', selected);
+        panel.hidden = !selected;
+    });
+    if (tab === 'curriculum') renderCurriculumTab();
+}
+
+function syncCurriculumTab() {
+    if (state.activeSidebarTab === 'curriculum') renderCurriculumTab();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTERS & COURSE LIST
+// ═══════════════════════════════════════════════════════════════════════════
+function setupFilters() {
+    const sel = document.getElementById('facultyFilter');
+    planner.getFaculties(courses).forEach(faculty => sel.add(new Option(faculty, faculty)));
+}
+
+function saveFacultyGroup() {
+    stateRepository.setPreference('faculty', document.getElementById('facultyFilter').value);
+    stateRepository.setPreference('group', document.getElementById('groupFilter').value);
+}
+
+function restoreFacultyGroup() {
+    const savedFac = stateRepository.getPreference('faculty');
+    const savedGrp = stateRepository.getPreference('group');
+    if (!savedFac) return;
+
+    const facSel = document.getElementById('facultyFilter');
+    if ([...facSel.options].some(o => o.value === savedFac)) {
+        facSel.value = savedFac;
+        rebuildGroupFilter();
+        if (savedGrp) {
+            const grpSel = document.getElementById('groupFilter');
+            if ([...grpSel.options].some(o => o.value === savedGrp)) grpSel.value = savedGrp;
+        }
+    }
+}
+
+function rebuildGroupFilter() {
+    const fac = document.getElementById('facultyFilter').value;
+    const sel = document.getElementById('groupFilter');
+    sel.innerHTML = '<option value="">همه گروه‌ها</option>';
+    planner.getGroups(courses, fac).forEach(group => sel.add(new Option(group, group)));
+}
+
+function renderCourseList() {
+    const term = document.getElementById('searchInput').value;
+    const fac  = document.getElementById('facultyFilter').value;
+    const grp  = document.getElementById('groupFilter').value;
+    const filtered = planner.filterCourses(courses, { term, faculty: fac, group: grp });
+
+    document.getElementById('courseCount').textContent =
+        `${toPersianNum(filtered.length)} درس`;
+    document.getElementById('selectedStat').textContent =
+        state.selected.size ? `${toPersianNum(state.selected.size)} انتخاب‌شده` : '';
+
+    const list = document.getElementById('courseList');
+    list.innerHTML = '';
+
+    if (!filtered.length) {
+        list.innerHTML = `<div class="empty-state" style="padding:40px 0">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-title">نتیجه‌ای یافت نشد</div>
+        </div>`;
+        return;
+    }
+
+    const frag = document.createDocumentFragment();
+    filtered.slice(0, 100).forEach(c => {
+        const safe = Object.fromEntries(
+            ['name', 'id', 'gender', 'prof'].map(key => [key, SafeDOM.escape(c[key])])
+        );
+        const isSelected = state.selected.has(c.id);
+        const color  = getFacultyColor(c.faculty);
+        const cap    = c.capacity || 0;
+        const enr    = c.enrolled || 0;
+        const capPct = cap > 0 ? Math.min(100, Math.round(enr / cap * 100)) : 0;
+        const capClass = capPct >= 90 ? 'full' : capPct >= 60 ? 'half' : '';
+
+        let gClass = 'badge-mixed';
+        if (c.gender.includes('مرد') || c.gender.includes('برادر')) gClass = 'badge-male';
+        if (c.gender.includes('زن')  || c.gender.includes('خواهر')) gClass = 'badge-female';
+
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = `course-card${isSelected ? ' selected' : ''}`;
+        el.style.setProperty('--fc', color);
+        el.setAttribute('aria-pressed', String(isSelected));
+        el.setAttribute('aria-label', `${c.name}، ${c.prof || 'بدون نام استاد'}`);
+        el.onclick = () => toggleCourse(c.id);
+        el.innerHTML = `
+            <div class="course-card-name">${safe.name}</div>
+            <div class="course-card-meta">
+                <span class="course-card-id">${safe.id}</span>
+                <div style="display:flex;gap:4px;align-items:center">
+                    ${c.units ? `<span class="badge badge-unit">${toPersianNum(c.units)}و</span>` : ''}
+                    <span class="badge ${gClass}">${safe.gender}</span>
+                </div>
+            </div>
+            <div class="course-card-prof">${safe.prof}</div>
+            ${cap > 0 ? `
+            <div class="capacity-bar" title="ظرفیت: ${toPersianNum(enr)}/${toPersianNum(cap)}">
+                <div class="capacity-bar-fill ${capClass}" style="width:${capPct}%"></div>
+            </div>` : ''}
+        `;
+        frag.appendChild(el);
+    });
+
+    if (filtered.length > 100) {
+        const note = document.createElement('p');
+        note.style.cssText = 'text-align:center;font-size:.72rem;color:var(--t3);padding:10px 0;';
+        note.textContent = `... و ${toPersianNum(filtered.length - 100)} درس دیگر. جستجو را دقیق‌تر کنید.`;
+        frag.appendChild(note);
+    }
+    list.appendChild(frag);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TOGGLE COURSE SELECTION
+// ═══════════════════════════════════════════════════════════════════════════
+function toggleCourse(id) {
+    if (state.selected.has(id)) {
+        state.selected.delete(id);
+    } else {
+        state.selected.add(id);
+        const c = courses.find(x => x.id === id);
+        if (c) {
+            const clash = findExamClash(c);
+            if (clash) Toast.error(`امتحان «${c.name}» با «${clash.name}» تداخل دارد`, 4000);
+            else Toast.info(`${c.name} اضافه شد`, 2000);
+        }
+    }
+    saveState();
+    renderCourseList();
+    updateTimetable();
+    updateUnitDisplay();
+    if (state.activeSidebarTab === 'curriculum') renderCurriculumTab();
+    scheduleLoadAnalysis();
+}
+
+function findExamClash(course) {
+    return planner.findExamClash(course, state.selected, courses);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UNIT DISPLAY
+// ═══════════════════════════════════════════════════════════════════════════
+function getSelectedUnits() {
+    return CourseDomain.totalUnits(state.selected, courses);
+}
+
+function updateUnitDisplay() {
+    const total = getSelectedUnits();
+    const maxUnits = getMaxUnits();
+    const pct   = Math.min(100, Math.round(total / maxUnits * 100));
+
+    // ── desktop unit bar ──
+    const fill    = document.getElementById('unitBarFill');
+    const countEl = document.getElementById('unitCount');
+    const display = document.getElementById('unitDisplay');
+    const info    = document.getElementById('selectedInfo');
+    const maxEl   = document.getElementById('unitMax');
+    if (countEl) countEl.textContent = toPersianNum(total);
+    if (maxEl) maxEl.textContent = `${toPersianNum(maxUnits)} واحد`;
+    if (fill) {
+        fill.style.width = `${pct}%`;
+        fill.style.background = total > maxUnits ? 'var(--red)' : total > maxUnits * 0.8 ? 'var(--yellow)' : 'var(--blue)';
+    }
+    if (display) {
+        display.classList.toggle('warning', total > maxUnits * 0.8 && total <= maxUnits);
+        display.classList.toggle('danger',  total > maxUnits);
+    }
+    if (info) {
+        info.style.display = state.selected.size > 0 ? 'block' : 'none';
+        if (state.selected.size > 0) {
+            info.textContent = `${toPersianNum(state.selected.size)} درس — ${toPersianNum(total)} واحد${total > maxUnits ? ' ⚠️' : ''}`;
+            info.style.color = total > maxUnits ? 'var(--red)' : 'var(--t3)';
+        }
+    }
+
+    // ── mobile pill + badge + schedule header ──
+    const pill    = document.getElementById('mobUnitPill');
+    const mNum    = document.getElementById('mobUnitNum');
+    const mMax    = document.getElementById('mobUnitMax');
+    const badge   = document.getElementById('mobBadge');
+    const mobInfo = document.getElementById('mobSelectedInfo');
+    if (mNum)  mNum.textContent = toPersianNum(total);
+    if (mMax)  mMax.textContent = `/ ${toPersianNum(maxUnits)} واحد`;
+    if (pill)  pill.classList.toggle('over', total > maxUnits);
+    if (badge) {
+        const n = state.selected.size;
+        badge.textContent = toPersianNum(n);
+        badge.style.display = n > 0 ? 'block' : 'none';
+    }
+    if (mobInfo) {
+        mobInfo.textContent = state.selected.size > 0
+            ? `${toPersianNum(state.selected.size)} درس · ${toPersianNum(total)} واحد`
+            : '';
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TIMETABLE
+// ═══════════════════════════════════════════════════════════════════════════
+function buildTimetableGrid() {
+    const tbl = document.getElementById('timetable');
+    tbl.innerHTML = '';
+    const days = ['ساعت', 'شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه'];
+    days.forEach(d => {
+        const el = document.createElement('div');
+        el.className = d === 'ساعت' ? 'timetable-header' : 'timetable-header';
+        el.textContent = d;
+        if (d === 'ساعت') el.style.cssText = 'background:transparent;color:var(--t3);font-size:.7rem;';
+        tbl.appendChild(el);
+    });
+    const labels = ['۸–۱۰', '۱۰–۱۲', '۱۳–۱۵', '۱۵–۱۷', '۱۷–۱۹'];
+    TIME_SLOTS.forEach((t, i) => {
+        const label = document.createElement('div');
+        label.className = 'time-label';
+        label.textContent = labels[i];
+        tbl.appendChild(label);
+        for (let d = 0; d < 5; d++) {
+            const slot = document.createElement('div');
+            slot.className = 'slot';
+            slot.id = `slot-${d}-${t}`;
+            tbl.appendChild(slot);
+        }
+    });
+}
+
+function updateTimetable() {
+    document.querySelectorAll('.slot').forEach(el => el.innerHTML = '');
+    const slotMap = planner.buildTimetable(courses, state.selected);
+
+    Object.entries(slotMap).forEach(([key, blocks]) => {
+        const el = document.getElementById(`slot-${key}`);
+        if (!el) return;
+        const uniqueIds = new Set(blocks.map(b => b.id));
+        const hasConflict = uniqueIds.size > 1;
+
+        blocks.forEach(b => {
+            const color = hasConflict ? null : getFacultyColor(b.faculty);
+            const div = document.createElement('div');
+            div.className = `class-block${hasConflict ? ' conflict' : ''}`;
+            if (color) { div.style.background = color; div.style.backgroundImage = `linear-gradient(160deg, ${color}dd, ${color}99)`; }
+            div.title = `${b.name}\n${b.prof}${b.location ? '\n📍 ' + b.location : ''}`;
+
+            const rm = document.createElement('button');
+            rm.type = 'button';
+            rm.className = 'remove-btn'; rm.textContent = '×';
+            rm.setAttribute('aria-label', `حذف ${b.name}`);
+            rm.onclick = e => { e.stopPropagation(); toggleCourse(b.id); };
+            div.appendChild(rm);
+
+            const content = document.createElement('div');
+            content.innerHTML = `
+                <div class="class-block-name">${SafeDOM.escape(b.name)}${b.isTA ? ' <small>(ت)</small>' : ''}</div>
+                <div class="class-block-prof">${SafeDOM.escape(b.prof)}</div>
+                ${b.location ? `<div class="class-block-loc">${SafeDOM.escape(b.location)}</div>` : ''}
+            `;
+            div.appendChild(content);
+            el.appendChild(div);
+        });
+    });
+
+    updateFacultyLegend(slotMap);
+}
+
+function updateFacultyLegend(slotMap) {
+    const used = new Set();
+    Object.values(slotMap).flat().forEach(b => used.add(b.faculty));
+    const legend = document.getElementById('facultyLegend');
+    if (!legend) return;
+    if (used.size <= 1) { legend.innerHTML = ''; return; }
+    legend.innerHTML = [...used].map(f => `
+        <span class="faculty-legend-item">
+            <span class="faculty-legend-dot" style="background:${getFacultyColor(f)}"></span>
+            ${SafeDOM.escape(f)}
+        </span>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CURRICULUM TRACKER
+// ═══════════════════════════════════════════════════════════════════════════
+function getCurrentCurriculum() {
+    if (typeof CURRICULUM_REGISTRY === 'undefined') return null;
+    const fac = document.getElementById('facultyFilter').value;
+    const grp = document.getElementById('groupFilter').value;
+    if (!fac || !grp) return null;
+    return CURRICULUM_REGISTRY[`${fac} >> ${grp}`] || null;
+}
+
+function getCodeForCohort(cur) {
+    if (!cur.codes) return null;
+    return cur.codes[state.cohort] || cur.codes['*'] || null;
+}
+
+function isOfferedThisSemester(cur) {
+    const code = getCodeForCohort(cur);
+    return code ? courses.some(c => c.id.startsWith(code + '_')) : false;
+}
+
+function getCourseStatus(id, data) {
+    return planner.getCurriculumStatus(id, data, {
+        selectedIds: state.selected,
+        passedIds: state.curriculum.passed,
+        failedIds: state.curriculum.failed,
+        cohort: state.cohort,
+    });
+}
+
+function toggleCurriculumCourse(id) {
+    const data = getCurrentCurriculum();
+    const st = getCourseStatus(id, data);
+    if (st === 'locked') return;
+    if (state.curriculum.passed.has(id)) {
+        state.curriculum.passed.delete(id); state.curriculum.failed.add(id);
+    } else if (state.curriculum.failed.has(id)) {
+        state.curriculum.failed.delete(id);
+    } else {
+        state.curriculum.passed.add(id);
+    }
+    saveCurriculumState();
+    renderCurriculumTab();
+}
+
+function onCohortChange() {
+    state.cohort = document.getElementById('cohortSelect').value;
+    stateRepository.setPreference('cohort', state.cohort);
+    renderCurriculumTab();
+}
+
+function renderCurriculumTab() {
+    const container = document.getElementById('curriculumScroll');
+    const controls  = document.getElementById('curriculumControls');
+    const fac = document.getElementById('facultyFilter').value;
+    const grp = document.getElementById('groupFilter').value;
+
+    if (!fac || !grp) {
+        controls.style.display = 'none';
+        container.innerHTML = `<div class="empty-state">
+            <div class="empty-state-icon">🗺️</div>
+            <div class="empty-state-title">نقشه درسی</div>
+            <div class="empty-state-desc">از تب جستجو، یک دانشکده و گروه انتخاب کنید.</div>
+        </div>`;
+        return;
+    }
+
+    const data = getCurrentCurriculum();
+    if (!data) {
+        controls.style.display = 'none';
+        container.innerHTML = `<div class="empty-state">
+            <div class="empty-state-icon">🚧</div>
+            <div class="empty-state-title">هنوز اضافه نشده</div>
+            <div class="empty-state-desc">نقشه درسی «${SafeDOM.escape(grp)}» موجود نیست. آن را با ابزار محلی ویرایش داده اضافه کنید.</div>
+        </div>`;
+        return;
+    }
+
+    // Setup cohort selector
+    controls.style.display = 'block';
+    const cohortEl = document.getElementById('cohortSelect');
+    if (cohortEl.dataset.forGroup !== `${fac}|${grp}`) {
+        cohortEl.innerHTML = '';
+        (data.cohorts || []).forEach(c => cohortEl.add(new Option(`ورودی ${c}`, c)));
+        cohortEl.dataset.forGroup = `${fac}|${grp}`;
+        if (state.cohort && data.cohorts?.includes(state.cohort)) {
+            cohortEl.value = state.cohort;
+        } else {
+            state.cohort = data.cohorts?.[data.cohorts.length - 1] || '';
+            cohortEl.value = state.cohort;
+            stateRepository.setPreference('cohort', state.cohort);
+        }
+    }
+
+    // Build semester map
+    const semMap = {};
+    data.courses.forEach(c => (semMap[c.semester] ??= []).push(c));
+    const semNames = ['اول','دوم','سوم','چهارم','پنجم','ششم','هفتم','هشتم'];
+
+    const recs = data.courses.filter(c => {
+        const st = getCourseStatus(c.id, data);
+        return st === 'available' && isOfferedThisSemester(c);
+    }).sort((a, b) => a.semester - b.semester);
+
+    const statusTooltip = {
+        taking:    'در حال اخذ — کلیک برای علامت‌گذاری پاس',
+        passed:    'پاس شده — کلیک: تبدیل به افتاده',
+        failed:    'افتاده — کلیک: حذف علامت',
+        available: 'در دسترس — کلیک برای علامت‌گذاری پاس',
+        locked:    'قفل: پیش‌نیاز لازم است',
+    };
+
+    let html = '';
+    const curriculumActions = [];
+    const recommendationActions = [];
+    Object.keys(semMap).map(Number).sort((a, b) => a - b).forEach(sem => {
+        const semCourses = semMap[sem];
+        const semUnits = semCourses.reduce((acc, c) => acc + (c.units || 0), 0);
+        html += `<div class="sem-block">
+            <div class="sem-title">
+                ترم ${semNames[sem - 1] || sem}
+                <span class="sem-units">${toPersianNum(semUnits)} واحد</span>
+            </div>
+            <div class="cur-grid">`;
+
+        semCourses.forEach(c => {
+            const st = getCourseStatus(c.id, data);
+            const offered = isOfferedThisSemester(c);
+            const offeredDot = (offered && st !== 'passed' && st !== 'taking')
+                ? `<span class="offered-dot" title="این ترم ارائه می‌شود"></span>` : '';
+
+            // درس‌های قفل: کلیک → مسیریاب AI | بقیه: toggle وضعیت
+            const actionIndex = curriculumActions.push(() => {
+                if (st === 'locked') showPathPlan(c.id);
+                else toggleCurriculumCourse(c.id);
+            }) - 1;
+
+            html += `
+                <div class="cur-card ${st}" data-curriculum-action="${actionIndex}" role="button" tabindex="0"
+                     title="${SafeDOM.escape(statusTooltip[st] || '')}">
+                    <div class="cur-card-name">${SafeDOM.escape(c.name)}</div>
+                    <div class="cur-card-footer">
+                        <span class="cur-card-units">${toPersianNum(c.units)} واحد</span>
+                        <div style="display:flex;align-items:center;gap:4px;">
+                            ${offeredDot}
+                            ${st === 'locked' ? '<span style="font-size:.65rem" title="کلیک برای مسیریاب">🗺️</span>' : ''}
+                            <span class="cur-status-dot"></span>
+                        </div>
+                    </div>
+                </div>`;
+        });
+        html += '</div></div>';
+    });
+
+    if (recs.length) {
+        html += `<div class="rec-section">
+            <div class="rec-title">💡 پیشنهاد این ترم (${toPersianNum(recs.length)} درس)</div>`;
+        recs.slice(0, 6).forEach(c => {
+            const actionIndex = recommendationActions.push(() => jumpToSearch(c.id)) - 1;
+            html += `<div class="rec-item" data-recommendation-action="${actionIndex}" role="button" tabindex="0">
+                <span>${SafeDOM.escape(c.name)}</span>
+                <span class="badge badge-unit">${toPersianNum(c.units)}و</span>
+            </div>`;
+        });
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+    container.querySelectorAll('[data-curriculum-action]').forEach(element => {
+        const action = curriculumActions[Number(element.dataset.curriculumAction)];
+        if (action) bindActivation(element, action);
+    });
+    container.querySelectorAll('[data-recommendation-action]').forEach(element => {
+        const action = recommendationActions[Number(element.dataset.recommendationAction)];
+        if (action) bindActivation(element, action);
+    });
+}
+
+function bindActivation(element, action) {
+    element.addEventListener('click', action);
+    element.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        action();
+    });
+}
+
+function jumpToSearch(courseId) {
+    const data = getCurrentCurriculum();
+    if (!data) return;
+    const cur = data.courses.find(c => c.id === courseId);
+    if (!cur) return;
+    const code = getCodeForCohort(cur);
+    if (!code) return;
+    switchTab('search');
+    document.getElementById('searchInput').value = code;
+    renderCourseList();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════════════════════════
+function onToggleTheme() {
+    const next = Theme.toggle();
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = next === 'light' ? '🌙' : '🌗';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXAMS
+// ═══════════════════════════════════════════════════════════════════════════
+function openExamModal() {
+    const body = document.getElementById('examBody');
+    body.innerHTML = '';
+
+    const list = [...state.selected]
+        .map(id => courses.find(c => c.id === id)).filter(Boolean)
+        .map(course => ({ course, exam: CourseDomain.parseExam(course.exam_text) }))
+        .sort((a, b) => {
+            if (!a.exam) return 1; if (!b.exam) return -1;
+            return a.exam.date.localeCompare(b.exam.date)
+                || (a.exam.startMinutes ?? 0) - (b.exam.startMinutes ?? 0);
+        });
+
+    if (!list.length) {
+        body.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--t3);padding:24px">هیچ درسی انتخاب نشده</td></tr>`;
+    } else {
+        list.forEach(entry => {
+            const { course, exam } = entry;
+            const overlaps = exam && list.some(other =>
+                other !== entry && CourseDomain.examsOverlap(exam, other.exam));
+            const sameDay = exam && !overlaps
+                && list.some(other => other !== entry && other.exam?.date === exam.date);
+            const tr = document.createElement('tr');
+            if (overlaps) { tr.className = 'row-danger'; tr.title = 'تداخل زمانی امتحان'; }
+            else if (sameDay) { tr.className = 'row-warning'; tr.title = 'دو امتحان در یک روز'; }
+            [course.name, exam ? exam.date : '—', formatExamTime(exam)].forEach(value => {
+                const td = document.createElement('td');
+                td.textContent = value;
+                tr.appendChild(td);
+            });
+            body.appendChild(tr);
+        });
+    }
+    openDialog(document.getElementById('examModal'));
+}
+
+function closeExamModal() { closeDialog(document.getElementById('examModal')); }
+
+function formatExamTime(exam) {
+    if (!exam || !Number.isFinite(exam.startMinutes) || !Number.isFinite(exam.endMinutes)) return '—';
+    const fmt = mins => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+    return `${fmt(exam.startMinutes)} - ${fmt(exam.endMinutes)}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// IMPORT FROM GOLESTAN EXTENSION
+// ═══════════════════════════════════════════════════════════════════════════
+function importGolestanFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.type === 'offered_courses') {
+                Toast.info(`${toPersianNum(data.courses?.length || 0)} درس استخراج‌شده. فایل generated/course-offerings.generated.js را بازتولید کنید.`, 6000);
+            } else {
+                Toast.error('فرمت فایل شناخته نشد.');
+            }
+        } catch (err) { Toast.error('خطا در خواندن فایل: ' + err.message); }
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AI FEATURES INIT
+// ═══════════════════════════════════════════════════════════════════════════
+function initAIFeatures() {
+    // FAB dot: نشان می‌دهد AI فعال است
+    const dot = document.getElementById('aiFabDot');
+    if (dot && typeof AI !== 'undefined' && AI.isConfigured()) dot.style.display = 'block';
+
+    // Quick prompts
+    const qEl = document.getElementById('aiQuickPrompts');
+    if (qEl && typeof Advisor !== 'undefined') {
+        Advisor.QUICK_PROMPTS.forEach(p => {
+            const btn = document.createElement('button');
+            btn.className = 'ai-quick-btn';
+            btn.textContent = p;
+            btn.onclick = () => aiQuickPrompt(p);
+            qEl.appendChild(btn);
+        });
+    }
+}
+
+function configureAIContext() {
+    if (typeof AI === 'undefined') return;
+    // Dependency inversion: the API client receives context from the planner
+    // instead of reaching into DOM elements and global application state.
+    AI.setContextProvider(() => planner.buildStudentContext({
+        faculty: document.getElementById('facultyFilter')?.value,
+        group: document.getElementById('groupFilter')?.value,
+        cohort: state.cohort,
+        curriculum: getCurrentCurriculum(),
+        passedIds: state.curriculum.passed,
+        failedIds: state.curriculum.failed,
+        selectedIds: state.selected,
+        courses,
+    }));
+}
+
+// ─── Load Modal helpers ──────────────────────────────────────────────────
+function closeLoadModal() { closeDialog(document.getElementById('loadModal')); }
+function closePathModal()  { closeDialog(document.getElementById('pathModal')); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MOBILE NAV
+// ═══════════════════════════════════════════════════════════════════════════
+const isMobile = () => window.innerWidth <= 768;
+
+function setMobView(view) {
+    if (!isMobile()) return;
+    document.body.setAttribute('data-mob', view);
+
+    // sync desktop sidebar tabs
+    if (view === 'search')     switchTab('search');
+    if (view === 'curriculum') switchTab('curriculum');
+
+    // update bottom‑nav active state
+    ['Search', 'Schedule', 'Curriculum'].forEach(v => {
+        document.getElementById('mn' + v)
+            ?.classList.toggle('active', v.toLowerCase() === view);
+        const wrap = document.getElementById('mn' + v)?.querySelector('.mob-nav-icon-wrap');
+        if (wrap) wrap.style.background = v.toLowerCase() === view ? 'var(--blue-dim)' : '';
+    });
+}
+
+// initialise mobile state
+function initMobile() {
+    if (isMobile()) {
+        document.body.setAttribute('data-mob', 'search');
+        // patch switchTab so it also updates mob view from desktop tabs
+        const origSwitch = switchTab;
+        window.switchTab = (tab) => {
+            origSwitch(tab);
+            if (isMobile()) {
+                if (tab === 'search')     setMobView('search');
+                if (tab === 'curriculum') setMobView('curriculum');
+            }
+        };
+    }
+    // keep data‑mob in sync on resize
+    window.addEventListener('resize', () => {
+        if (!isMobile()) document.body.removeAttribute('data-mob');
+        else if (!document.body.getAttribute('data-mob')) setMobView('search');
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOAD ANALYZER
+// ═══════════════════════════════════════════════════════════════════════════
+const _analyzeLoadDebounced = debounce(runLoadAnalysis, 3000);
+
+function scheduleLoadAnalysis() {
+    if (typeof AI === 'undefined' || !AI.isInteractiveEnabled()) return;
+    if (state.selected.size < 2) { clearLoadBadge(); return; }
+    _analyzeLoadDebounced();
+}
+
+function clearLoadBadge() {
+    const badge = document.getElementById('loadBadge');
+    if (badge) badge.style.display = 'none';
+}
+
+async function runLoadAnalysis() {
+    if (typeof AI === 'undefined' || !AI.isInteractiveEnabled()) return;
+    if (state.selected.size < 2) { clearLoadBadge(); return; }
+
+    const selCourses = [...state.selected].map(id => {
+        const c = courses.find(x => x.id === id);
+        return c ? { name: c.name, units: c.units, exam: c.exam_text ? 'دارد' : 'ندارد' } : null;
+    }).filter(Boolean);
+
+    const units = getSelectedUnits();
+
+    try {
+        const result = await AI.complete([{
+            role: 'user',
+            content: `این برنامه درسی دانشجو را ارزیابی کن و JSON برگردان:
+درس‌ها: ${JSON.stringify(selCourses)}
+کل واحد: ${units}
+
+خروجی دقیقاً به این شکل:
+{"status":"ok","fa":"متن کوتاه فارسی حداکثر ۳۰ کلمه"}
+status باید یکی از: ok، warning، danger باشد.
+ok: برنامه مناسب
+warning: یک نکته مهم دارد
+danger: مشکل جدی دارد (امتحانات متوالی، واحد زیاد، درس‌های سنگین)`,
+        }], { jsonMode: true });
+
+        showLoadBadge(result);
+    } catch (e) { /* بی‌صدا شکست بخورد */ }
+}
+
+function showLoadBadge(result) {
+    let badge = document.getElementById('loadBadge');
+    if (!badge) return;
+
+    const status = result?.status || 'ok';
+    const text   = result?.fa     || '';
+    const icons  = { ok: '🟢', warning: '🟡', danger: '🔴' };
+
+    badge.className = `load-badge ${status}`;
+    badge.textContent = `${icons[status]} ${text}`;
+    badge.style.display = 'inline-flex';
+    badge.title = 'کلیک برای جزئیات';
+    badge.setAttribute('role', 'button');
+    badge.tabIndex = 0;
+    badge.onclick = () => {
+        document.getElementById('loadModalTitle').textContent =
+            status === 'danger' ? '🔴 هشدار بار درسی' :
+            status === 'warning' ? '🟡 نکته مهم' : '🟢 برنامه متعادل';
+        document.getElementById('loadModalText').textContent = text;
+        openDialog(document.getElementById('loadModal'));
+    };
+    badge.onkeydown = event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            badge.click();
+        }
+    };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PREREQUISITE PATH PLANNER
+// ═══════════════════════════════════════════════════════════════════════════
+async function showPathPlan(courseId) {
+    if (typeof AI === 'undefined' || !AI.isInteractiveEnabled()) {
+        Toast.info('برای مشاهده پیش‌نیازها، نقشه درسی را ببینید.');
+        return;
+    }
+
+    const data = getCurrentCurriculum();
+    if (!data) return;
+    const target = data.courses.find(c => c.id === courseId);
+    if (!target) return;
+
+    // باز کردن modal با loading
+    const modal = document.getElementById('pathModal');
+    document.getElementById('pathModalTitle').textContent = `🗺️ مسیر رسیدن به «${target.name}»`;
+    document.getElementById('pathModalContent').innerHTML =
+        '<div class="empty-state" style="padding:30px 0"><div class="empty-state-desc">در حال محاسبه مسیر...</div></div>';
+    openDialog(modal);
+
+    // ساخت گراف پیش‌نیاز
+    function buildPrereqChain(id, visited = new Set()) {
+        if (visited.has(id)) return [];
+        visited.add(id);
+        const course = data.courses.find(c => c.id === id);
+        if (!course) return [];
+        const chain = [];
+        for (const preId of (course.prereqs || [])) {
+            chain.push(...buildPrereqChain(preId, visited));
+        }
+        chain.push(course);
+        return chain;
+    }
+
+    const chain = buildPrereqChain(courseId);
+    const passedNames = [...state.curriculum.passed]
+        .map(id => data.courses.find(c => c.id === id)?.name).filter(Boolean);
+
+    try {
+        const response = await AI.complete([{
+            role: 'user',
+            content: `دانشجو می‌خواهد درس «${target.name}» را بگذراند.
+درس‌های پاس‌شده: ${passedNames.join('، ') || 'هیچ'}
+زنجیره پیش‌نیاز تا این درس: ${chain.map(c => `${c.name} (ترم ${c.semester})`).join(' → ')}
+
+یک برنامه ترم‌بندی کوتاه و واقعی به فارسی بنویس که نشان دهد از وضعیت فعلی تا رسیدن به «${target.name}» چند ترم طول می‌کشد و چه درس‌هایی باید بگذرد.
+حداکثر ۱۰۰ کلمه، ساده و مستقیم.`,
+        }]);
+
+        document.getElementById('pathModalContent').innerHTML =
+            `<p class="path-modal-body">${SafeDOM.formatPlainMarkdown(response)}</p>`;
+    } catch (e) {
+        document.getElementById('pathModalContent').innerHTML =
+            `<p style="color:var(--red)">خطا: ${SafeDOM.escape(e.message)}</p>`;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════════
+init();
+configureAIContext();
+initMobile();
+initAIFeatures();

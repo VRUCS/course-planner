@@ -31,7 +31,7 @@ package = false
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-extend-exclude = ["raw_data", "temp", "_site"]
+extend-exclude = ["data/sources", "apps/web/generated", "temp", "_site"]
 
 [tool.ruff.lint]
 # E/W pycodestyle, F pyflakes, I import order, UP modernization, B bugbear
@@ -39,8 +39,8 @@ select = ["E", "W", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 # Tests use fixtures via arguments that look unused and long literal payloads.
-"tests/*" = ["E501"]
+"tests/**/*.py" = ["E501"]
 # FastAPI's dependency injection uses Depends() in argument defaults.
-"backend/*" = ["B008"]
+"apps/api/api/routes/*.py" = ["B008"]
 # Persian prompt text reads worse when wrapped mid-sentence.
-"ai_extract.py" = ["E501"]
+"tools/data_pipeline/curriculum_extractor.py" = ["E501"]
