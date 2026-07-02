@@ -446,6 +446,7 @@ body {
 }
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tr.row-danger td { color: var(--red); background: var(--red-dim); font-weight: 600; }
+.data-table tr.row-warning td { color: var(--yellow); background: rgba(245, 158, 11, .12); font-weight: 600; }
 
 /* ─── Toast ───────────────────────────────────────────────────────────────── */
 .toast-container {
@@ -755,8 +756,12 @@ body {
   .timetable-inner { min-width: 500px; }
 }
 
-/* Desktop: hide mobile helpers */
-@media (min-width: 769px) {
+/* Mobile: hide desktop-only helpers */
+@media (max-width: 768px) {
   .hide-mobile { display: none !important; }
+}
+
+/* Desktop: hide mobile-only helpers */
+@media (min-width: 769px) {
   .show-mobile { display: none !important; }
 }
