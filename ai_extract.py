@@ -21,12 +21,12 @@ assets/js/curriculum_{field}.js تولید می‌کند.
     openai/gpt-4o-mini               (سریع و ارزان)
 """
 
+import argparse
+import json
 import os
 import sys
-import json
-import argparse
-import re
 from pathlib import Path
+
 
 # ─── PDF extraction ───────────────────────────────────────────────────────────
 def extract_text_from_file(path: Path) -> str:
@@ -239,7 +239,7 @@ def append_conflict_rules(rules: dict, field_key: str, output_path: Path):
     // تولید خودکار توسط ai_extract.py — {datetime.now().strftime('%Y-%m-%d')}
     "{field_key}": {json.dumps(rules, ensure_ascii=False, indent=8)},"""
 
-    print(f"\n📋 قوانین تولیدشده:")
+    print("\n📋 قوانین تولیدشده:")
     print(f"   mustNotConflict: {len(rules.get('mustNotConflict', []))} قانون")
     print(f"   shouldNotConflict: {len(rules.get('shouldNotConflict', []))} قانون")
     print(f"\n{'='*60}")
@@ -331,7 +331,7 @@ def main():
     # ── حالت استخراج درسنامه (پیش‌فرض) ──────────────────────────────────────
     if not input_dir.exists():
         print(f"❌ پوشه ورودی وجود ندارد: {input_dir}")
-        print(f"   لطفاً پوشه را بسازید و فایل‌های PDF/TXT برنامه درسی را داخل آن بریزید.")
+        print("   لطفاً پوشه را بسازید و فایل‌های PDF/TXT برنامه درسی را داخل آن بریزید.")
         sys.exit(1)
 
     print(f"\n🎓 استخراج درسنامه رشته: {args.field_name}")

@@ -3,7 +3,6 @@ from pathlib import Path
 
 from convert import build_dataset, normalized_schedule, validate_course
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 

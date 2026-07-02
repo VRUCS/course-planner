@@ -19,7 +19,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
       - run: pip install -r requirements-dev.txt
+      - run: npm ci
+      - run: ruff check .
+      - run: npx eslint
       - run: python -m pytest -q
       - run: node tests/js/domain.test.js
       - run: python -m compileall -q backend scripts ai_extract.py convert.py

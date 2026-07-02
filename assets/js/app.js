@@ -629,7 +629,7 @@ function openExamModal() {
 function closeExamModal() { document.getElementById('examModal').classList.remove('open'); }
 
 function extractDate(txt) {
-    const m = txt?.match(/امتحان.*?\((\d{4}[\/\.]\d{1,2}[\/\.]\d{1,2})\)/);
+    const m = txt?.match(/امتحان.*?\((\d{4}[/.]\d{1,2}[/.]\d{1,2})\)/);
     return m ? m[1] : '—';
 }
 function extractTime(txt) {

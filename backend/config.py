@@ -2,11 +2,11 @@
 config.py — تنظیمات سرور
 تمام مقادیر حساس از environment variables خوانده می‌شوند.
 """
+from functools import lru_cache
 from pathlib import Path
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from functools import lru_cache
 
 BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = BACKEND_DIR.parent

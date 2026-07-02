@@ -6,11 +6,12 @@ main.py — FastAPI application entry point
     cp backend/.env.example backend/.env   # سپس .env را پر کنید
     uvicorn backend.main:app --reload --port 8000
 """
+from contextlib import asynccontextmanager
+
 import httpx
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
 
 from backend.config import get_settings
 from backend.routes import ai, health
@@ -19,7 +20,7 @@ from backend.routes import ai, health
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     s = get_settings()
-    print(f"\n🚀 سرور شروع به کار کرد")
+    print("\n🚀 سرور شروع به کار کرد")
     print(f"   مدل: {s.default_model}")
     print(f"   API key: {'✓ تنظیم شده' if s.openrouter_api_key else '✗ تنظیم نشده!'}")
     print(f"   Interactive AI: {'فعال ✓' if s.ai_interactive_enabled else 'غیرفعال (batch-only)'}")

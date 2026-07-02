@@ -2,8 +2,10 @@
 services/openrouter.py — OpenRouter async client
 همه درخواست‌ها به OpenRouter از اینجا عبور می‌کنند.
 """
+from collections.abc import AsyncGenerator
+
 import httpx
-from typing import AsyncGenerator
+
 from backend.config import get_settings
 
 HEADERS = {

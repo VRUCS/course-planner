@@ -5,10 +5,13 @@ routes/ai.py — endpoint های هوش مصنوعی
   /api/ai/batch/*    — همیشه فعال، یک‌بار اجرا، مصرف توکن مشخص
   /api/ai/chat/*     — فقط وقتی AI_INTERACTIVE_ENABLED=true
 """
-from fastapi import APIRouter, HTTPException, Depends
+import json
+
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from backend.config import get_settings, Settings
+from pydantic import BaseModel, ConfigDict, Field
+
+from backend.config import Settings, get_settings
 from backend.security import require_ai_access, validate_model
 from backend.services import openrouter
 
@@ -34,6 +37,10 @@ class BatchRulesRequest(BaseModel):
     field_key: str = Field(min_length=1, max_length=300)
     courses: list[dict] = Field(min_length=1, max_length=500)
     model: str | None = Field(default=None, max_length=200)
+
+
+def clamp_max_tokens(requested: int | None, ceiling: int) -> int:
+    return min(requested or ceiling, ceiling)
 
 
 def enforce_runtime_limits(req: CompletionRequest, settings: Settings) -> None:
@@ -84,12 +91,15 @@ async def generate_conflict_rules(
 
 قوانین:
 - mustNotConflict: درس‌هایی که در ترم مشابه هستند و دانشجو باید هر دو را هم‌زمان بگذراند.
-- shouldNotConflict: درس‌هایی از ترم‌های هم‌تراز (هر دو فرد یا هر دو زوج) که دانشجوی عقب‌افتاده ممکن است هم‌زمان بگیرد. (نه درس + پیش‌نیاز مستقیم آن)
+- shouldNotConflict: درس‌هایی از ترم‌های هم‌تراز (هر دو فرد یا هر دو زوج) که دانشجوی
+  عقب‌افتاده ممکن است هم‌زمان بگیرد. (نه درس + پیش‌نیاز مستقیم آن)
 
 خروجی JSON:
 {{
-  "mustNotConflict": [{{"a":"کد_الف","nameA":"نام","b":"کد_ب","nameB":"نام","reason":"دلیل فارسی"}}],
-  "shouldNotConflict": [{{"a":"کد_الف","nameA":"نام","b":"کد_ب","nameB":"نام","reason":"دلیل فارسی"}}]
+  "mustNotConflict":
+    [{{"a":"کد_الف","nameA":"نام","b":"کد_ب","nameB":"نام","reason":"دلیل فارسی"}}],
+  "shouldNotConflict":
+    [{{"a":"کد_الف","nameA":"نام","b":"کد_ب","nameB":"نام","reason":"دلیل فارسی"}}]
 }}
 
 درس‌های چارت:
@@ -102,11 +112,10 @@ async def generate_conflict_rules(
         json_mode=True,
     )
     content = result["choices"][0]["message"]["content"]
-    import json
     try:
         rules = json.loads(content)
     except json.JSONDecodeError:
-        raise HTTPException(status_code=502, detail="پاسخ AI معتبر نبود.")
+        raise HTTPException(status_code=502, detail="پاسخ AI معتبر نبود.") from None
 
     return {
         "field_key": req.field_key,
@@ -128,7 +137,7 @@ async def batch_complete(
     result = await openrouter.complete(
         messages=[m.model_dump() for m in req.messages],
         model=validate_model(req.model, settings),
-        max_tokens=min(req.max_tokens or settings.max_tokens_batch, settings.max_tokens_batch),
+        max_tokens=clamp_max_tokens(req.max_tokens, settings.max_tokens_batch),
         json_mode=req.json_mode,
     )
     return {
@@ -157,7 +166,7 @@ async def chat_stream(
         openrouter.stream_chunks(
             messages=[m.model_dump() for m in req.messages],
             model=validate_model(req.model, settings),
-            max_tokens=min(req.max_tokens or settings.max_tokens_interactive, settings.max_tokens_interactive),
+            max_tokens=clamp_max_tokens(req.max_tokens, settings.max_tokens_interactive),
         ),
         media_type="text/event-stream",
         headers={
@@ -178,7 +187,7 @@ async def chat_complete(
     result = await openrouter.complete(
         messages=[m.model_dump() for m in req.messages],
         model=validate_model(req.model, settings),
-        max_tokens=min(req.max_tokens or settings.max_tokens_interactive, settings.max_tokens_interactive),
+        max_tokens=clamp_max_tokens(req.max_tokens, settings.max_tokens_interactive),
         json_mode=req.json_mode,
     )
     return {
