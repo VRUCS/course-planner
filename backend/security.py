@@ -1,10 +1,14 @@
-"""Small authentication and rate-limit guards for the optional AI API."""
+"""Access guards for the AI API.
+
+There is no client-side credential by design: whether AI is available is
+decided entirely on the server. AI_INTERACTIVE_ENABLED=true opens the
+endpoints to everyone (per-IP rate-limited); false disables them for all.
+"""
 from collections import defaultdict, deque
-from secrets import compare_digest
 from threading import Lock
 from time import monotonic
 
-from fastapi import Depends, Header, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, status
 
 from backend.config import Settings, get_settings
 
@@ -14,26 +18,18 @@ _lock = Lock()
 
 def require_ai_access(
     request: Request,
-    x_api_token: str | None = Header(default=None),
     settings: Settings = Depends(get_settings),
 ) -> Settings:
+    if not settings.ai_interactive_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="سرویس AI روی این سرور فعال نیست.",
+        )
     if not settings.openrouter_api_key:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="سرویس AI روی سرور پیکربندی نشده است.",
         )
-
-    if not settings.allow_anonymous_ai:
-        if not settings.ai_api_token:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="AI_API_TOKEN روی سرور تنظیم نشده است.",
-            )
-        if not x_api_token or not compare_digest(x_api_token, settings.ai_api_token):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="توکن دسترسی AI نامعتبر است.",
-            )
 
     client = request.client.host if request.client else "unknown"
     now = monotonic()

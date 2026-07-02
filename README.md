@@ -25,8 +25,9 @@ GitHub Pages (بدون backend)
       ↓
   courses.json / data.js (داده استاتیک تولیدشده)
 
-AI اختیاری
-  Browser ── X-API-Token ──> FastAPI ── secret ──> OpenRouter
+AI اختیاری (بدون توکن کاربر)
+  Browser ──────────────────> FastAPI ── secret ──> OpenRouter
+                 فعال/غیرفعال فقط با AI_INTERACTIVE_ENABLED روی سرور
 ```
 
 مرزهای مهم پروژه:
@@ -73,26 +74,25 @@ python convert.py
 
 ```bash
 cp backend/.env.example backend/.env
-# مقادیر OPENROUTER_API_KEY و AI_API_TOKEN را تنظیم کنید
+# OPENROUTER_API_KEY را تنظیم و AI_INTERACTIVE_ENABLED=true کنید
 pip install -r backend/requirements.txt
 uvicorn backend.main:app --reload --port 8000
 ```
 
 برای اتصال نسخه Pages، `backendUrl` را در `assets/js/config.js` به URL عمومی API
-تغییر دهید. **هیچ secret یا توکنی را در این فایل commit نکنید.** توکن دسترسی
-backend از پنل ادمین وارد می‌شود و فقط در `sessionStorage` همان تب باقی می‌ماند.
+تغییر دهید. **هیچ secret یا توکنی را در این فایل commit نکنید.**
 
-API به‌صورت پیش‌فرض:
+هیچ توکنی از کاربر گرفته نمی‌شود؛ در دسترس بودن AI کاملاً سمت سرور تعیین
+می‌شود. وقتی `AI_INTERACTIVE_ENABLED=true` باشد AI برای همه کاربران فعال است
+و در غیر این صورت همه endpointها 503 برمی‌گردانند. API به‌صورت پیش‌فرض:
 
-- احراز هویت مستقل از کلید OpenRouter دارد؛
 - مدل‌ها را به allowlist محدود می‌کند؛
-- اندازه پیام، تعداد پیام، تعداد درس و خروجی را محدود می‌کند؛
+- اندازه پیام، تعداد پیام و خروجی را محدود می‌کند؛
 - برای هر IP rate limit دارد؛
 - CORS را تنها برای originهای تنظیم‌شده باز می‌کند.
 
-برای سرویس عمومی واقعی، rate limit درون‌حافظه‌ای را با Redis و ورود کاربران را با
-یک identity provider جایگزین کنید. قرار دادن `AI_API_TOKEN` در JavaScript عمومی
-احراز هویت محسوب نمی‌شود.
+برای سرویس عمومی پرمصرف، rate limit درون‌حافظه‌ای را با Redis و در صورت نیاز
+quota هر کاربر را با یک identity provider اضافه کنید.
 
 ## تست
 

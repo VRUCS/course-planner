@@ -31,23 +31,18 @@ class Settings(BaseSettings):
     frontend_origin: str = "http://localhost:3000"   # CORS برای frontend
     frontend_origins: str = ""
 
-    # Requests to /api/ai require this token. It is intentionally separate
-    # from the provider key, so the OpenRouter secret never reaches a browser.
-    ai_api_token: str = ""
-    allow_anonymous_ai: bool = False
     rate_limit_requests: int = 20
     rate_limit_window_seconds: int = 60
     max_message_chars: int = 12_000
     max_messages: int = 20
-    max_courses_per_request: int = 500
 
-    # ─── Feature flags ────────────────────────────────────────────────────
-    # وقتی False است، endpoint های interactive (chat، analyze) غیرفعالند
+    # ─── Feature flag ─────────────────────────────────────────────────────
+    # تنها کلید روشن/خاموش AI: هیچ توکنی از کاربر گرفته نمی‌شود.
+    # False → همه endpoint های /api/ai برای همه 503 برمی‌گردانند.
+    # True  → برای همه فعال است (با rate limit و allowlist مدل).
     ai_interactive_enabled: bool = False
-    # حداکثر توکن برای هر درخواست interactive
+    # حداکثر توکن برای هر درخواست
     max_tokens_interactive: int = 1200
-    # حداکثر توکن برای batch (ai_extract.py)
-    max_tokens_batch: int = 4096
 
     @property
     def allowed_model_set(self) -> set[str]:

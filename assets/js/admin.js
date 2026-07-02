@@ -14,16 +14,7 @@ function switchAdminTab(t) {
 
 // ─── AI Settings ──────────────────────────────────────────────────────────
 function initAiSettings() {
-    const tokenInput = document.getElementById('aiAccessToken');
-    if (tokenInput) tokenInput.value = sessionStorage.getItem('ai_api_token') || '';
     checkBackendStatus();
-}
-
-function saveAiAccessToken() {
-    const value = document.getElementById('aiAccessToken')?.value.trim() || '';
-    if (value) sessionStorage.setItem('ai_api_token', value);
-    else sessionStorage.removeItem('ai_api_token');
-    Toast.success(value ? 'توکن برای این نشست ذخیره شد.' : 'توکن نشست حذف شد.');
 }
 
 async function checkBackendStatus() {
@@ -48,8 +39,7 @@ async function checkBackendStatus() {
         [
             ['مدل', data.model],
             ['API Key', data.api_key_set ? '✓ تنظیم شده' : '✗ تنظیم نشده'],
-            ['احراز هویت', data.authentication_required ? '✓ لازم است' : '○ حالت عمومی'],
-            ['Interactive AI', data.ai_interactive_enabled ? '✓ فعال' : '○ غیرفعال (batch-only)'],
+            ['Interactive AI', data.ai_interactive_enabled ? '✓ فعال برای همه' : '○ غیرفعال'],
         ].forEach(([label, value]) => {
             const strong = document.createElement('strong');
             strong.textContent = `${label}: `;

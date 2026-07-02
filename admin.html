@@ -170,20 +170,17 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
 
     <div id="backendInfo" style="display:none;font-size:.82rem;line-height:1.8;background:var(--s1);padding:12px;border-radius:var(--r2)"></div>
 
-    <div style="margin-top:16px">
-      <label for="aiAccessToken" style="display:block;font-size:.78rem;font-weight:700;margin-bottom:6px">توکن دسترسی backend (فقط این نشست)</label>
-      <div style="display:flex;gap:8px">
-        <input id="aiAccessToken" type="password" autocomplete="off" placeholder="AI_API_TOKEN" style="flex:1">
-        <button class="btn btn-ghost" type="button" onclick="saveAiAccessToken()">ذخیره موقت</button>
-      </div>
-      <div style="font-size:.7rem;color:var(--t3);margin-top:5px">در sessionStorage مرورگر نگه‌داری می‌شود و با بستن تب حذف می‌شود. این روش برای مدیریت شخصی است، نه انتشار توکن در سایت عمومی.</div>
+    <div style="margin-top:16px;font-size:.78rem;color:var(--t3);line-height:1.7">
+      هیچ توکنی در مرورگر وارد نمی‌شود. فعال یا غیرفعال بودن AI فقط با
+      <code>AI_INTERACTIVE_ENABLED</code> روی سرور تعیین می‌شود؛ وقتی فعال باشد
+      برای همه کاربران کار می‌کند (با rate limit).
     </div>
 
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--b0)">
       <div style="font-size:.8rem;font-weight:700;margin-bottom:10px">برای فعال‌سازی:</div>
       <div style="font-family:monospace;font-size:.75rem;background:var(--s0);padding:10px 14px;border-radius:var(--r1);color:var(--cyan);line-height:1.8">
         cp backend/.env.example backend/.env<br>
-        # ویرایش OPENROUTER_API_KEY، AI_API_TOKEN و AI_INTERACTIVE_ENABLED=true<br>
+        # ویرایش OPENROUTER_API_KEY و AI_INTERACTIVE_ENABLED=true<br>
         pip install -r backend/requirements.txt<br>
         uvicorn backend.main:app --port 8000
       </div>
@@ -191,10 +188,9 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
   </div>
 
   <div style="margin-top:24px;max-width:560px">
-    <div style="font-size:.8rem;font-weight:700;margin-bottom:10px;color:var(--t1)">ویژگی‌ها (batch — همیشه فعال)</div>
+    <div style="font-size:.8rem;font-weight:700;margin-bottom:10px;color:var(--t1)">ابزار محلی (بدون backend)</div>
     <div style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✓</span> تولید قوانین تداخل — از پنل ادمین</div>
-      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✓</span> استخراج درسنامه — <code>ai_extract.py</code></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green)">✓</span> استخراج درسنامه و قوانین تداخل — <code>ai_extract.py</code> (کلید در همان دستگاه)</div>
     </div>
     <div style="font-size:.8rem;font-weight:700;margin-bottom:10px;color:var(--t2)">ویژگی‌ها (interactive — نیاز به AI_INTERACTIVE_ENABLED=true)</div>
     <div style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;color:var(--t2)">

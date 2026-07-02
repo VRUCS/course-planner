@@ -2,11 +2,9 @@
  * ai.js — AI client
  *
  * درخواست‌ها به backend (FastAPI) ارسال می‌شوند، نه مستقیم به OpenRouter.
- * API key روی سرور نگه داشته می‌شود.
- *
- * ─── Feature flags ────────────────────────────────────────────────────────
- * AI_INTERACTIVE_ENABLED  — وقتی false است، chat/load/path UI پنهان هستند.
- *                           از /health دریافت می‌شود (یا پیش‌فرض false).
+ * API key روی سرور نگه داشته می‌شود و هیچ توکنی از کاربر گرفته نمی‌شود؛
+ * فعال یا غیرفعال بودن AI را فقط سرور تعیین می‌کند (AI_INTERACTIVE_ENABLED
+ * که از /health خوانده می‌شود — پیش‌فرض: غیرفعال).
  */
 
 const AI = (() => {
@@ -16,15 +14,8 @@ const AI = (() => {
     const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
     const BACKEND_URL = configuredUrl.replace(/\/+$/, '') || (isLocal ? 'http://localhost:8000' : '');
 
-    function getAccessToken() {
-        return window.__AI_API_TOKEN || sessionStorage.getItem('ai_api_token') || '';
-    }
-
     function requestHeaders() {
-        const headers = { 'Content-Type': 'application/json' };
-        const token = getAccessToken();
-        if (token) headers['X-API-Token'] = token;
-        return headers;
+        return { 'Content-Type': 'application/json' };
     }
 
     // ─── Feature flags (از backend می‌آید) ─────────────────────────────────
@@ -66,39 +57,6 @@ const AI = (() => {
 
     function isInteractiveEnabled() { return _interactiveEnabled; }
     function isConfigured() { return _healthChecked && _interactiveEnabled; }
-
-    // ─── Batch: complete (همیشه فعال) ─────────────────────────────────────
-    async function batchComplete(messages, { model, jsonMode = false, maxTokens } = {}) {
-        const res = await fetch(`${BACKEND_URL}/api/ai/batch/complete`, {
-            method:  'POST',
-            headers: requestHeaders(),
-            body: JSON.stringify({ messages, model, json_mode: jsonMode, max_tokens: maxTokens }),
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || `خطای سرور: ${res.status}`);
-        }
-        const data = await res.json();
-        if (jsonMode) {
-            try { return JSON.parse(data.content); }
-            catch { return { raw: data.content }; }
-        }
-        return data.content;
-    }
-
-    // ─── Batch: generate conflict rules (همیشه فعال) ─────────────────────
-    async function generateConflictRules(fieldKey, courses, model) {
-        const res = await fetch(`${BACKEND_URL}/api/ai/batch/generate-rules`, {
-            method:  'POST',
-            headers: requestHeaders(),
-            body: JSON.stringify({ field_key: fieldKey, courses, model }),
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || `خطای سرور: ${res.status}`);
-        }
-        return res.json();  // { field_key, rules: { mustNotConflict, shouldNotConflict }, usage }
-    }
 
     // ─── Interactive: complete (نیاز به AI_INTERACTIVE_ENABLED=true) ──────
     async function complete(messages, { model, jsonMode = false, maxTokens } = {}) {
@@ -189,14 +147,9 @@ const AI = (() => {
     // ─── Public API ───────────────────────────────────────────────────────
     return {
         BACKEND_URL,
-        getAccessToken,
         checkHealth,
         isConfigured,
         isInteractiveEnabled,
-        // batch (همیشه فعال)
-        batchComplete,
-        generateConflictRules,
-        // interactive (نیاز به feature flag)
         complete,
         stream,
         buildStudentContext,

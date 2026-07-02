@@ -23,7 +23,10 @@ async def lifespan(app: FastAPI):
     print("\n🚀 سرور شروع به کار کرد")
     print(f"   مدل: {s.default_model}")
     print(f"   API key: {'✓ تنظیم شده' if s.openrouter_api_key else '✗ تنظیم نشده!'}")
-    print(f"   Interactive AI: {'فعال ✓' if s.ai_interactive_enabled else 'غیرفعال (batch-only)'}")
+    if s.ai_interactive_enabled:
+        print("   Interactive AI: فعال ✓ (بدون توکن کاربر)")
+    else:
+        print("   Interactive AI: غیرفعال — همه endpoint ها بسته‌اند")
     yield
 
 
@@ -64,7 +67,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "X-API-Token"],
+    allow_headers=["Content-Type"],
 )
 
 app.include_router(health.router)

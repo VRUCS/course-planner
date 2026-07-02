@@ -8,9 +8,10 @@ import httpx
 
 from backend.config import get_settings
 
+# HTTP header values must be ASCII (httpx rejects anything else).
 HEADERS = {
     "HTTP-Referer": "https://github.com/entekhab-vahed",
-    "X-Title":      "سامانه انتخاب واحد هوشمند",
+    "X-Title":      "Entekhab Vahed",
     "Content-Type": "application/json",
 }
 
