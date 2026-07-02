@@ -16,8 +16,27 @@ const KEYS = {
     cohort: 'selectedCohort',
     faculty: 'uni_faculty',
     group: 'uni_group',
+    gpa: 'uni_gpa',
 };
-const MAX_UNITS = 20;
+
+function getMaxUnits() {
+    return CourseDomain.maxUnitsForGpa(localStorage.getItem(KEYS.gpa));
+}
+
+function onGpaChange(rawValue) {
+    const value = parseFloat(rawValue);
+    if (Number.isFinite(value) && value >= 0 && value <= 20) {
+        localStorage.setItem(KEYS.gpa, String(value));
+    } else {
+        localStorage.removeItem(KEYS.gpa);
+    }
+    updateUnitDisplay();
+}
+
+function restoreGpaInput() {
+    const input = document.getElementById('gpaInput');
+    if (input) input.value = localStorage.getItem(KEYS.gpa) || '';
+}
 
 // Faculty → color mapping (built at init)
 const facultyColors = {};
@@ -36,6 +55,7 @@ function init() {
 
     // Restore saved faculty/group
     restoreFacultyGroup();
+    restoreGpaInput();
 
     // Event listeners
     document.getElementById('searchInput').addEventListener('input', debounce(renderCourseList, 280));
@@ -238,7 +258,11 @@ function toggleCourse(id) {
     } else {
         state.selected.add(id);
         const c = courses.find(x => x.id === id);
-        if (c) Toast.info(`${c.name} اضافه شد`, 2000);
+        if (c) {
+            const clash = findExamClash(c);
+            if (clash) Toast.error(`امتحان «${c.name}» با «${clash.name}» تداخل دارد`, 4000);
+            else Toast.info(`${c.name} اضافه شد`, 2000);
+        }
     }
     saveState();
     renderCourseList();
@@ -246,6 +270,16 @@ function toggleCourse(id) {
     updateUnitDisplay();
     if (state.activeSidebarTab === 'curriculum') renderCurriculumTab();
     scheduleLoadAnalysis();
+}
+
+function findExamClash(course) {
+    const exam = CourseDomain.parseExam(course.exam_text);
+    if (!exam) return null;
+    return [...state.selected]
+        .filter(id => id !== course.id)
+        .map(id => courses.find(x => x.id === id))
+        .find(other => other && CourseDomain.examsOverlap(exam, CourseDomain.parseExam(other.exam_text)))
+        || null;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -257,37 +291,42 @@ function getSelectedUnits() {
 
 function updateUnitDisplay() {
     const total = getSelectedUnits();
-    const pct   = Math.min(100, Math.round(total / MAX_UNITS * 100));
+    const maxUnits = getMaxUnits();
+    const pct   = Math.min(100, Math.round(total / maxUnits * 100));
 
     // ── desktop unit bar ──
     const fill    = document.getElementById('unitBarFill');
     const countEl = document.getElementById('unitCount');
     const display = document.getElementById('unitDisplay');
     const info    = document.getElementById('selectedInfo');
+    const maxEl   = document.getElementById('unitMax');
     if (countEl) countEl.textContent = toPersianNum(total);
+    if (maxEl) maxEl.textContent = `${toPersianNum(maxUnits)} واحد`;
     if (fill) {
         fill.style.width = `${pct}%`;
-        fill.style.background = total > MAX_UNITS ? 'var(--red)' : total > MAX_UNITS * 0.8 ? 'var(--yellow)' : 'var(--blue)';
+        fill.style.background = total > maxUnits ? 'var(--red)' : total > maxUnits * 0.8 ? 'var(--yellow)' : 'var(--blue)';
     }
     if (display) {
-        display.classList.toggle('warning', total > MAX_UNITS * 0.8 && total <= MAX_UNITS);
-        display.classList.toggle('danger',  total > MAX_UNITS);
+        display.classList.toggle('warning', total > maxUnits * 0.8 && total <= maxUnits);
+        display.classList.toggle('danger',  total > maxUnits);
     }
     if (info) {
         info.style.display = state.selected.size > 0 ? 'block' : 'none';
         if (state.selected.size > 0) {
-            info.textContent = `${toPersianNum(state.selected.size)} درس — ${toPersianNum(total)} واحد${total > MAX_UNITS ? ' ⚠️' : ''}`;
-            info.style.color = total > MAX_UNITS ? 'var(--red)' : 'var(--t3)';
+            info.textContent = `${toPersianNum(state.selected.size)} درس — ${toPersianNum(total)} واحد${total > maxUnits ? ' ⚠️' : ''}`;
+            info.style.color = total > maxUnits ? 'var(--red)' : 'var(--t3)';
         }
     }
 
     // ── mobile pill + badge + schedule header ──
     const pill    = document.getElementById('mobUnitPill');
     const mNum    = document.getElementById('mobUnitNum');
+    const mMax    = document.getElementById('mobUnitMax');
     const badge   = document.getElementById('mobBadge');
     const mobInfo = document.getElementById('mobSelectedInfo');
     if (mNum)  mNum.textContent = toPersianNum(total);
-    if (pill)  pill.classList.toggle('over', total > MAX_UNITS);
+    if (mMax)  mMax.textContent = `/ ${toPersianNum(maxUnits)} واحد`;
+    if (pill)  pill.classList.toggle('over', total > maxUnits);
     if (badge) {
         const n = state.selected.size;
         badge.textContent = toPersianNum(n);
@@ -600,22 +639,26 @@ function openExamModal() {
 
     const list = [...state.selected]
         .map(id => courses.find(c => c.id === id)).filter(Boolean)
+        .map(course => ({ course, exam: CourseDomain.parseExam(course.exam_text) }))
         .sort((a, b) => {
-            const da = extractDate(a.exam_text), db = extractDate(b.exam_text);
-            if (da === '—') return 1; if (db === '—') return -1;
-            return da.localeCompare(db);
+            if (!a.exam) return 1; if (!b.exam) return -1;
+            return a.exam.date.localeCompare(b.exam.date)
+                || (a.exam.startMinutes ?? 0) - (b.exam.startMinutes ?? 0);
         });
 
     if (!list.length) {
         body.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--t3);padding:24px">هیچ درسی انتخاب نشده</td></tr>`;
     } else {
-        const dateCounts = {};
-        list.forEach(c => { const d = extractDate(c.exam_text); if (d !== '—') dateCounts[d] = (dateCounts[d] || 0) + 1; });
-        list.forEach(c => {
-            const date = extractDate(c.exam_text), time = extractTime(c.exam_text);
+        list.forEach(entry => {
+            const { course, exam } = entry;
+            const overlaps = exam && list.some(other =>
+                other !== entry && CourseDomain.examsOverlap(exam, other.exam));
+            const sameDay = exam && !overlaps
+                && list.some(other => other !== entry && other.exam?.date === exam.date);
             const tr = document.createElement('tr');
-            if (date !== '—' && dateCounts[date] > 1) tr.className = 'row-danger';
-            [c.name, date, time].forEach(value => {
+            if (overlaps) { tr.className = 'row-danger'; tr.title = 'تداخل زمانی امتحان'; }
+            else if (sameDay) { tr.className = 'row-warning'; tr.title = 'دو امتحان در یک روز'; }
+            [course.name, exam ? exam.date : '—', formatExamTime(exam)].forEach(value => {
                 const td = document.createElement('td');
                 td.textContent = value;
                 tr.appendChild(td);
@@ -628,13 +671,10 @@ function openExamModal() {
 
 function closeExamModal() { document.getElementById('examModal').classList.remove('open'); }
 
-function extractDate(txt) {
-    const m = txt?.match(/امتحان.*?\((\d{4}[/.]\d{1,2}[/.]\d{1,2})\)/);
-    return m ? m[1] : '—';
-}
-function extractTime(txt) {
-    const m = txt?.match(/امتحان.*?ساعت\s*:\s*(\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})/);
-    return m ? m[1] : '—';
+function formatExamTime(exam) {
+    if (!exam || !Number.isFinite(exam.startMinutes) || !Number.isFinite(exam.endMinutes)) return '—';
+    const fmt = mins => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+    return `${fmt(exam.startMinutes)} - ${fmt(exam.endMinutes)}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -31,7 +31,20 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 }
 .brand-name  { font-size: 0.92rem; font-weight: 800; }
 .brand-badge { font-size: 0.62rem; background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(59,130,246,0.25); border-radius: 4px; padding: 1px 6px; font-weight: 700; }
-.topbar-center { flex: 1; display: flex; justify-content: center; }
+.topbar-center { flex: 1; display: flex; justify-content: center; align-items: center; gap: 10px; }
+.gpa-box {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--s1); border: 1px solid var(--b0);
+  border-radius: var(--r4); padding: 5px 12px; font-size: 0.8rem;
+}
+.gpa-box label { color: var(--t2); font-weight: 600; cursor: help; }
+.gpa-box input {
+  width: 52px; background: transparent; border: none; outline: none;
+  color: var(--t0); font: inherit; font-weight: 700; text-align: center;
+  -moz-appearance: textfield; appearance: textfield;
+}
+.gpa-box input::-webkit-inner-spin-button,
+.gpa-box input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .unit-display {
   display: flex; align-items: center; gap: 10px;
   background: var(--s1); border: 1px solid var(--b0);
@@ -249,14 +262,19 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       <div class="unit-bar"><div class="unit-bar-fill" id="unitBarFill" style="width:0%"></div></div>
       <span class="unit-count" id="unitCount">۰</span>
       <span class="unit-sep">/</span>
-      <span class="unit-max">۲۰ واحد</span>
+      <span class="unit-max" id="unitMax">۲۰ واحد</span>
+    </div>
+    <div class="gpa-box" title="معدل ترم قبل سقف واحد را تعیین می‌کند: زیر ۱۲ ← ۱۴ واحد، ۱۷ به بالا ← ۲۴ واحد">
+      <label for="gpaInput">معدل</label>
+      <input id="gpaInput" type="number" inputmode="decimal" min="0" max="20" step="0.01"
+             placeholder="—" oninput="onGpaChange(this.value)">
     </div>
   </div>
 
   <!-- unit pill فقط روی موبایل نمایش داده می‌شود -->
   <div class="mob-unit-pill" id="mobUnitPill">
     <span class="mob-unit-num" id="mobUnitNum">۰</span>
-    <span style="color:var(--t3);font-weight:500">/ ۲۰ واحد</span>
+    <span style="color:var(--t3);font-weight:500" id="mobUnitMax">/ ۲۰ واحد</span>
   </div>
 
   <div class="topbar-actions">

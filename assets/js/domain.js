@@ -74,6 +74,29 @@
         return sessions;
     }
 
+    function parseExam(value) {
+        const text = normalizeText(stripHtml(value));
+        const date = text.match(/امتحان\s*\((\d{4})[/.](\d{1,2})[/.](\d{1,2})\)/);
+        if (!date) return null;
+        const pad = part => part.padStart(2, '0');
+        const time = text.match(/امتحان.*?ساعت\s*:\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+        return {
+            date: `${date[1]}/${pad(date[2])}/${pad(date[3])}`,
+            startMinutes: time ? Number(time[1]) * 60 + Number(time[2]) : null,
+            endMinutes: time ? Number(time[3]) * 60 + Number(time[4]) : null,
+        };
+    }
+
+    function examsOverlap(a, b) {
+        if (!a || !b || a.date !== b.date) return false;
+        if (Number.isFinite(a.startMinutes) && Number.isFinite(a.endMinutes)
+            && Number.isFinite(b.startMinutes) && Number.isFinite(b.endMinutes)) {
+            return a.startMinutes < b.endMinutes && b.startMinutes < a.endMinutes;
+        }
+        // Same date with an unknown time cannot be proven safe.
+        return true;
+    }
+
     function sessionPairOverlaps(a, b) {
         if (a.day !== b.day) return false;
         if (Number.isFinite(a.startMinutes) && Number.isFinite(a.endMinutes)
@@ -94,6 +117,20 @@
             .reduce((sum, course) => sum + (Number(course.units) || 0), 0);
     }
 
+    /**
+     * سقف واحد بر اساس معدل ترم قبل (آیین‌نامه آموزشی):
+     * مشروط (< ۱۲) → ۱۴ واحد، عادی → ۲۰ واحد، معدل ≥ ۱۷ → ۲۴ واحد.
+     * معدل نامشخص → سقف عادی.
+     */
+    function maxUnitsForGpa(gpa) {
+        if (gpa === null || gpa === undefined || String(gpa).trim() === '') return 20;
+        const value = Number(gpa);
+        if (!Number.isFinite(value) || value < 0 || value > 20) return 20;
+        if (value < 12) return 14;
+        if (value >= 17) return 24;
+        return 20;
+    }
+
     function validateCourse(course) {
         const errors = [];
         if (!course || typeof course !== 'object') return ['course must be an object'];
@@ -110,6 +147,7 @@
     return Object.freeze({
         DAY_MAP, DAY_NAMES, TIME_SLOTS,
         normalizeText, getDayIndex, getTimeSlot, parseSchedule,
-        sessionsOverlap, totalUnits, validateCourse,
+        parseExam, examsOverlap,
+        sessionsOverlap, totalUnits, maxUnitsForGpa, validateCourse,
     });
 });
