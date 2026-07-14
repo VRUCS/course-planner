@@ -11,14 +11,16 @@
 <style>
 body { min-height: 100vh; }
 
-/* Page tabs */
+/* Page tabs — real buttons: keyboard-operable with a visible focus ring */
 .page-tabs { display: flex; border-bottom: 1px solid var(--b0); background: var(--s1); }
 .page-tab  {
   padding: 12px 24px; cursor: pointer; font-weight: 600; font-size: .875rem;
-  color: var(--t2); border-bottom: 2px solid transparent; transition: all var(--fast);
+  color: var(--t2); border: none; border-bottom: 2px solid transparent;
+  background: transparent; font-family: inherit; min-height: 44px;
+  transition: all var(--fast);
 }
 .page-tab:hover  { color: var(--t1); }
-.page-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.page-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
 .tab-panel        { display: none; padding: 24px; max-width: 1100px; margin: 0 auto; }
 .tab-panel.active { display: block; }
@@ -41,12 +43,15 @@ table.rule-table tr:last-child td { border-bottom: none; }
 table.cur-table { width: 100%; border-collapse: collapse; min-width: 860px; }
 table.cur-table th { text-align: right; padding: 8px 10px; font-size: .74rem; color: var(--t2); font-weight: 600; background: var(--s2); border-bottom: 1px solid var(--b1); white-space: nowrap; }
 table.cur-table td { padding: 4px 6px; border-bottom: 1px solid var(--b0); vertical-align: middle; }
-table.cur-table td input, table.cur-table td select { padding: 5px 8px; font-size: .8rem; }
+/* Dense internal-tool tables: 36px controls are acceptable here */
+table.cur-table td input, table.cur-table td select { padding: 5px 8px; font-size: .8rem; min-height: 36px; }
+table.cur-table td select { padding-left: 26px; }
+table.rule-table td input { min-height: 36px; }
 
 /* Output modal code area */
 .code-area textarea { font-family: monospace; font-size: .78rem; background: var(--s0); min-height: 300px; resize: none; border-radius: var(--r2); }
 
-label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; margin-bottom: 4px; }
+label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: block; margin-bottom: 4px; }
 .form-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; }
 .form-row .fg { flex: 1; min-width: 140px; }
 </style>
@@ -55,22 +60,24 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
 
 <header class="app-topbar">
   <div class="topbar-brand">
-    <div style="width:32px;height:32px;border-radius:var(--r1);background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:1rem;">⚙️</div>
-    <div class="topbar-brand-name">ویرایشگر داده</div>
+    <div style="width:32px;height:32px;border-radius:var(--r1);background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:1rem;" aria-hidden="true">⚙️</div>
+    <h1 class="topbar-brand-name">ویرایشگر داده</h1>
   </div>
   <div class="topbar-actions">
-    <button class="btn btn-ghost btn-sm" onclick="Theme.toggle()">🌗</button>
+    <button class="btn btn-ghost btn-sm" onclick="Theme.toggle()" title="تغییر تم" aria-label="تغییر تم"><span aria-hidden="true">🌗</span></button>
     <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none">← انتخاب واحد</a>
   </div>
 </header>
 
-<div class="page-tabs">
-  <div class="page-tab active" onclick="switchAdminTab('rules')">📋 قوانین تداخل</div>
-  <div class="page-tab" onclick="switchAdminTab('curriculum')">📚 چارت درسی</div>
+<div class="page-tabs" role="tablist" aria-label="بخش‌های ویرایشگر">
+  <button type="button" class="page-tab active" id="tabBtnRules" role="tab" aria-selected="true"
+          aria-controls="panelRules" onclick="switchAdminTab('rules')"><span aria-hidden="true">📋</span> قوانین تداخل</button>
+  <button type="button" class="page-tab" id="tabBtnAdminCurriculum" role="tab" aria-selected="false"
+          aria-controls="panelCurriculum" onclick="switchAdminTab('curriculum')"><span aria-hidden="true">📚</span> چارت درسی</button>
 </div>
 
 <!-- ── Tab: Rules ──────────────────────────────────────────────────────── -->
-<div class="tab-panel active" id="panelRules">
+<div class="tab-panel active" id="panelRules" role="tabpanel" aria-labelledby="tabBtnRules">
 
   <div class="info-box" style="margin-bottom:20px">
     این ویرایشگر برای بررسی سناریوهاست. قوانین مرجع از چارت و
@@ -78,8 +85,8 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
   </div>
 
   <div class="form-row">
-    <div class="fg"><label>دانشکده</label><select id="rfFaculty" onchange="rfOnFacultyChange()"><option value="">انتخاب...</option></select></div>
-    <div class="fg"><label>گروه آموزشی</label><select id="rfGroup"><option value="">انتخاب...</option></select></div>
+    <div class="fg"><label for="rfFaculty">دانشکده</label><select id="rfFaculty" onchange="rfOnFacultyChange()"><option value="">انتخاب...</option></select></div>
+    <div class="fg"><label for="rfGroup">گروه آموزشی</label><select id="rfGroup"><option value="">انتخاب...</option></select></div>
     <div style="display:flex;gap:8px;align-items:flex-end">
       <button class="btn btn-ghost btn-sm" onclick="rfLoadExisting()">📥 بارگذاری موجود</button>
     </div>
@@ -116,7 +123,7 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
 </div>
 
 <!-- ── Tab: Curriculum ─────────────────────────────────────────────────── -->
-<div class="tab-panel" id="panelCurriculum">
+<div class="tab-panel" id="panelCurriculum" role="tabpanel" aria-labelledby="tabBtnAdminCurriculum">
 
   <div class="info-box" style="margin-bottom:20px">
     چارت را وارد و قطعه JSON را پس از بازبینی در
@@ -124,13 +131,13 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
   </div>
 
   <div class="form-row">
-    <div class="fg"><label>نام رشته (فارسی)</label><input type="text" id="cfFieldName" placeholder="مثال: علوم کامپیوتر"></div>
-    <div class="fg"><label>دانشکده</label><input type="text" id="cfFaculty" placeholder="علوم ریاضی و کامپیوتر"></div>
-    <div class="fg"><label>گروه</label><input type="text" id="cfGroup" placeholder="علوم کامپیوتر"></div>
+    <div class="fg"><label for="cfFieldName">نام رشته (فارسی)</label><input type="text" id="cfFieldName" placeholder="مثال: علوم کامپیوتر"></div>
+    <div class="fg"><label for="cfFaculty">دانشکده</label><input type="text" id="cfFaculty" placeholder="علوم ریاضی و کامپیوتر"></div>
+    <div class="fg"><label for="cfGroup">گروه</label><input type="text" id="cfGroup" placeholder="علوم کامپیوتر"></div>
   </div>
   <div class="form-row">
-    <div class="fg"><label>ورودی‌ها (با ویرگول)</label><input type="text" id="cfCohorts" value="۱۴۰۰, ۱۴۰۱"></div>
-    <div style="flex:0 0 120px"><label>کل واحد</label><input type="number" id="cfTotalUnits" value="140"></div>
+    <div class="fg"><label for="cfCohorts">ورودی‌ها (با ویرگول)</label><input type="text" id="cfCohorts" value="۱۴۰۰, ۱۴۰۱"></div>
+    <div style="flex:0 0 120px"><label for="cfTotalUnits">کل واحد</label><input type="number" id="cfTotalUnits" value="140"></div>
     <button class="btn btn-ghost btn-sm" onclick="cfAddRow()" style="align-self:flex-end">+ افزودن درس</button>
   </div>
 
@@ -155,18 +162,18 @@ label { font-size: .76rem; color: var(--t3); font-weight: 700; display: block; m
 
 <!-- ── Output Modal ────────────────────────────────────────────────────── -->
 <div class="modal-backdrop" id="outputModal" onclick="if(event.target===this)closeOutput()">
-  <div class="modal-box" style="max-width:780px">
+  <div class="modal-box anim-scale" style="max-width:780px" role="dialog" aria-modal="true" aria-labelledby="outputTitle">
     <div class="modal-header">
       <h3 class="modal-title" id="outputTitle">کد تولیدشده</h3>
-      <button class="modal-close" onclick="closeOutput()">×</button>
+      <button class="modal-close" onclick="closeOutput()" aria-label="بستن">×</button>
     </div>
     <div class="modal-body code-area">
-      <textarea id="outputCode" readonly></textarea>
+      <textarea id="outputCode" readonly aria-labelledby="outputTitle"></textarea>
     </div>
     <div style="display:flex;gap:10px;align-items:center;margin-top:16px">
-      <button class="btn btn-success" onclick="copyOutput()">📋 کپی</button>
-      <span id="copyMsg" style="display:none;color:var(--green);font-size:.8rem">✓ کپی شد!</span>
-      <span style="font-size:.76rem;color:var(--t3)">این کد را در فایل مربوطه paste کنید.</span>
+      <button class="btn btn-success" onclick="copyOutput()"><span aria-hidden="true">📋</span> کپی</button>
+      <span id="copyMsg" role="status" style="display:none;color:var(--ok-text);font-size:var(--fs-sm)">✓ کپی شد!</span>
+      <span style="font-size:var(--fs-xs);color:var(--t3)">این کد را در فایل مربوطه paste کنید.</span>
     </div>
   </div>
 </div>

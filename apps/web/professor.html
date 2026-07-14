@@ -24,7 +24,7 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
   display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap;
 }
 .control-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 180px; max-width: 300px; }
-.control-group label { font-size: 0.72rem; color: var(--t3); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+.control-group label { font-size: var(--fs-2xs); color: var(--t3); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
 
 /* Summary bar */
 .summary-bar {
@@ -35,7 +35,7 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 /* Legend bar */
 .legend-bar {
   padding: 8px 22px; display: flex; gap: 16px; flex-wrap: wrap;
-  font-size: 0.72rem; color: var(--t2); border-bottom: 1px solid var(--b0);
+  font-size: var(--fs-2xs); color: var(--t2); border-bottom: 1px solid var(--b0);
 }
 .legend-chip { display: flex; align-items: center; gap: 6px; }
 .legend-rect { width: 14px; height: 8px; border-radius: 2px; flex-shrink: 0; }
@@ -64,29 +64,34 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
 /* Override slot for professor view */
 .slot { min-height: 56px; }
-.class-block { min-height: 44px; font-size: 0.65rem; }
+.class-block { min-height: 44px; font-size: var(--fs-2xs); }
 
 .ai-explain-btn {
-  margin-right: auto; font-size: .68rem; padding: 2px 8px;
+  margin-right: auto; font-size: var(--fs-2xs); padding: 4px 12px;
+  min-height: 32px; position: relative;
   border-radius: 20px; border: 1px solid currentColor;
   background: transparent; color: inherit; cursor: pointer;
   font-family: inherit; opacity: .75; transition: opacity .15s;
 }
 .ai-explain-btn:hover { opacity: 1; }
+@media (pointer: coarse) {
+  /* extend hit area to ≥44px */
+  .ai-explain-btn::after { content: ''; position: absolute; inset: -7px; }
+}
 </style>
 </head>
 <body>
 
 <header class="app-topbar">
   <div class="topbar-brand">
-    <div style="width:32px;height:32px;border-radius:var(--r1);background:linear-gradient(135deg,var(--violet),var(--blue));display:flex;align-items:center;justify-content:center;font-size:1rem;">👨‍🏫</div>
+    <div style="width:32px;height:32px;border-radius:var(--r1);background:linear-gradient(135deg,var(--violet),var(--blue));display:flex;align-items:center;justify-content:center;font-size:1rem;" aria-hidden="true">👨‍🏫</div>
     <div>
-      <div class="topbar-brand-name">داشبورد استاد</div>
+      <h1 class="topbar-brand-name">داشبورد استاد</h1>
     </div>
   </div>
   <div class="topbar-actions">
-    <button class="btn btn-ghost btn-sm" onclick="Theme.toggle()" title="تغییر تم">🌗</button>
-    <button class="btn btn-ghost btn-sm" onclick="window.print()" title="چاپ گزارش">🖨️ چاپ</button>
+    <button class="btn btn-ghost btn-sm" onclick="Theme.toggle()" title="تغییر تم" aria-label="تغییر تم"><span aria-hidden="true">🌗</span></button>
+    <button class="btn btn-ghost btn-sm" onclick="window.print()" title="چاپ گزارش"><span aria-hidden="true">🖨️</span> چاپ</button>
     <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none">← انتخاب واحد</a>
   </div>
 </header>
@@ -94,19 +99,19 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 <!-- Controls -->
 <div class="controls-bar">
   <div class="control-group">
-    <label>دانشکده</label>
+    <label for="facultySelect">دانشکده</label>
     <select id="facultySelect" onchange="onFacultyChange()">
       <option value="">انتخاب دانشکده...</option>
     </select>
   </div>
   <div class="control-group">
-    <label>گروه آموزشی</label>
+    <label for="groupSelect">گروه آموزشی</label>
     <select id="groupSelect" onchange="render()">
       <option value="">انتخاب گروه...</option>
     </select>
   </div>
   <div class="control-group" style="max-width:180px">
-    <label>نوع تداخل</label>
+    <label for="conflictFilter">نوع تداخل</label>
     <select id="conflictFilter" onchange="render()">
       <option value="all">همه تداخل‌ها</option>
       <option value="hard">فقط سخت</option>
@@ -116,7 +121,7 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 </div>
 
 <!-- Summary -->
-<div class="summary-bar">
+<div class="summary-bar" role="group" aria-label="خلاصه تداخل‌ها">
   <div class="summary-card primary">
     <div class="summary-card-label">کل درس‌های نمایش‌داده‌شده</div>
     <div class="summary-card-value" id="sumTotal">—</div>

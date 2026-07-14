@@ -42,6 +42,87 @@ test('planner derives timetable and exam conflicts without DOM access', () => {
     }]);
 });
 
+test('offerings group by terminal section suffix without merging fallback identities', () => {
+    const grouped = planner.groupCourses([
+        ...courses,
+        { ...courses[0], id: 'CS101_02', prof: 'اکبری' },
+        { ...courses[0], id: 'legacy', faculty: 'علوم' },
+        { ...courses[0], id: 'legacy', faculty: 'فنی' },
+    ]);
+    assert.equal(grouped.find(group => group.baseId === 'CS101').sections.length, 2);
+    assert.equal(grouped.filter(group => group.baseId.includes('|')).length, 2);
+    assert.equal(planner.getSectionId({ id: 'CS101_02' }), '02');
+});
+
+test('advanced filters preserve unknown capacity semantics and evaluate clashes', () => {
+    const catalog = [
+        ...courses,
+        { ...courses[2], id: 'M102_01', capacity: 0, enrolled: 0 },
+        { ...courses[2], id: 'M103_01', capacity: 20, enrolled: 10 },
+    ];
+    assert.deepEqual(planner.filterCourses(catalog, { availableOnly: true }).map(c => c.id), ['M103_01']);
+    assert.deepEqual(planner.filterCourses(catalog, {
+        conflictFreeOnly: true,
+        selectedCourses: [courses[0]],
+    }).map(c => c.id), ['M101_01', 'M102_01', 'M103_01']);
+});
+
+test('addition risks and durable plan health aggregate every deterministic issue', () => {
+    const selected = new Set(['CS101_01']);
+    const risks = planner.deriveAdditionRisks(courses[1], selected, courses, 5);
+    assert.deepEqual(risks.classConflicts.map(c => c.id), ['CS101_01']);
+    assert.deepEqual(risks.examConflicts.map(c => c.id), ['CS101_01']);
+    assert.deepEqual(risks.unitOverflow, { projectedUnits: 6, maxUnits: 5 });
+
+    const health = planner.derivePlanHealth(new Set(['CS101_01', 'CS102_01']), courses, 5);
+    assert.equal(health.ready, false);
+    assert.deepEqual(health.issues.map(issue => issue.type), ['class', 'exam', 'units']);
+});
+
+test('replacement planning excludes the removed section and preserves atomic before/after state', () => {
+    const replacement = {
+        ...courses[0],
+        id: 'CS101_02',
+        units: 4,
+        time_html: 'دوشنبه 13:00 - 15:00',
+        exam_text: 'امتحان(1405.03.25) ساعت : 10:00-12:00',
+    };
+    const catalog = [...courses, replacement];
+    const selected = new Set(['CS101_01', 'M101_01']);
+    const change = planner.planSelectionChange(replacement, selected, catalog, 7, 'CS101_01');
+
+    assert.deepEqual(change.risks.classConflicts, []);
+    assert.deepEqual(change.risks.examConflicts, []);
+    assert.equal(change.risks.unitOverflow, null);
+    assert.deepEqual([...change.before], ['CS101_01', 'M101_01']);
+    assert.deepEqual([...change.after], ['M101_01', 'CS101_02']);
+
+    const lowerCap = planner.planSelectionChange(replacement, selected, catalog, 6, 'CS101_01');
+    assert.deepEqual(lowerCap.risks.unitOverflow, { projectedUnits: 7, maxUnits: 6 });
+});
+
+test('timetable retains exact section/time metadata for unplaceable sessions', () => {
+    const thursday = {
+        ...courses[0],
+        id: 'CS103_03',
+        time_html: 'پنجشنبه 06:00 - 07:00',
+    };
+    const timetable = planner.buildTimetable([thursday], new Set([thursday.id]));
+    assert.deepEqual(timetable['5-null'][0], {
+        id: 'CS103_03',
+        name: 'برنامه‌نویسی',
+        prof: 'احمدی',
+        faculty: 'فنی',
+        isTA: false,
+        location: '',
+        section: '03',
+        startMinutes: 360,
+        endMinutes: 420,
+        day: 5,
+        slot: null,
+    });
+});
+
 test('curriculum status and AI context are derived from explicit inputs', () => {
     const curriculum = {
         courses: [

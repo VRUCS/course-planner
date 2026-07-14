@@ -69,9 +69,8 @@ function buildEmptyTimetable() {
     tbl.innerHTML = '';
     ['ساعت','شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه'].forEach((d, i) => {
         const el = document.createElement('div');
-        el.className = 'timetable-header';
+        el.className = i === 0 ? 'timetable-header timetable-corner' : 'timetable-header';
         el.textContent = d;
-        if (i === 0) el.style.cssText = 'background:transparent;color:var(--t3);font-size:.7rem;';
         tbl.appendChild(el);
     });
     const labels = ['۸–۱۰','۱۰–۱۲','۱۳–۱۵','۱۵–۱۷','۱۷–۱۹'];
@@ -105,19 +104,14 @@ function buildTimetable(groupCourses, hardIds, softIds) {
             const isSoft = !isHard && softIds.has(c.id);
             const div = document.createElement('div');
             div.className = `class-block${isHard ? ' conflict' : ''}`;
-            if (!isHard) {
-                const color = isSoft ? 'var(--yellow)' : 'var(--blue)';
-                div.style.background = color;
-                if (isSoft) div.style.backgroundImage = `linear-gradient(160deg,${color}cc,${color}88)`;
-                else div.style.backgroundImage = `linear-gradient(160deg,${color}dd,${color}99)`;
-            }
+            // Hard conflicts keep the .conflict styling; soft ones tint yellow.
+            if (!isHard) div.style.setProperty('--fc', isSoft ? 'var(--yellow)' : 'var(--blue)');
             div.title = `${c.name}\n${c.prof}\n${c.id}`;
             const name = document.createElement('div');
             name.className = 'class-block-name';
             name.textContent = c.name;
             const id = document.createElement('div');
             id.className = 'class-block-prof';
-            id.style.cssText = 'font-size:.58rem;opacity:.7';
             id.textContent = c.id;
             div.append(name, id);
             el.appendChild(div);
@@ -142,7 +136,7 @@ function buildConflictList(conflicts) {
         const timePills = [...new Set(overlaps.flatMap(o => o.times))]
             .map(t => `<span class="time-chip">${SafeDOM.escape(t)}</span>`).join('');
         const sections = overlaps.map(o => `${o.secA} ↔ ${o.secB}`)
-            .map(s => `<div style="font-size:.68rem;color:var(--t2);margin-top:2px">${SafeDOM.escape(s)}</div>`).join('');
+            .map(s => `<div style="font-size:var(--fs-2xs);color:var(--t2);margin-top:2px">${SafeDOM.escape(s)}</div>`).join('');
         const card = document.createElement('div');
         card.className = `conflict-card ${type}`;
         card.innerHTML = `

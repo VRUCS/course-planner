@@ -10,7 +10,7 @@
     'use strict';
 
     const DAY_MAP = Object.freeze({
-        'پنج شنبه': -1, 'پنجشنبه': -1,
+        'پنج شنبه': 5, 'پنجشنبه': 5,
         'چهار شنبه': 4, 'چهارشنبه': 4,
         'سه شنبه': 3, 'سهشنبه': 3,
         'دو شنبه': 2, 'دوشنبه': 2,
@@ -18,7 +18,7 @@
         'شنبه': 0,
     });
 
-    const DAY_NAMES = Object.freeze(['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه']);
+    const DAY_NAMES = Object.freeze(['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه']);
     const TIME_SLOTS = Object.freeze(['08', '10', '13', '15', '17']);
 
     function normalizeText(value) {
@@ -60,7 +60,6 @@
             const match = text.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
             if (!match) return;
             const slot = getTimeSlot(Number(match[1]));
-            if (!slot) return;
             const location = text.match(/مکان:\s*(.+?)\s*$/);
             sessions.push({
                 day,

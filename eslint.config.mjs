@@ -9,6 +9,7 @@ const projectGlobals = {
     CURRICULUM_REGISTRY: 'readonly',
     CONFLICT_RULES: 'readonly',
     CourseDomain: 'readonly',
+    CalendarExport: 'readonly',
     Theme: 'readonly',
     SafeDOM: 'readonly',
     Toast: 'readonly',
@@ -25,6 +26,8 @@ const projectGlobals = {
     parseSchedule: 'readonly',
     sessionsOverlap: 'readonly',
     debounce: 'readonly',
+    enhanceTablists: 'readonly',
+    selectTab: 'readonly',
     aiQuickPrompt: 'readonly',
     // Defined by app.js; other files access them behind typeof guards
     // because app.js is only loaded on index.html.
@@ -53,7 +56,7 @@ export default [
         languageOptions: {
             ecmaVersion: 2023,
             sourceType: 'script',
-            globals: { ...globals.browser, ...projectGlobals, module: 'readonly' },
+            globals: { ...globals.browser, ...projectGlobals, module: 'readonly', require: 'readonly' },
         },
         rules: {
             // Top-level functions here are entry points wired via HTML

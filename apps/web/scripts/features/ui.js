@@ -132,6 +132,45 @@ function debounce(fn, delay = 300) {
     return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), delay); };
 }
 
+function selectTab(tab) {
+    if (!tab) return;
+    const tablist = tab.closest('[role="tablist"]');
+    if (!tablist) return;
+    const tabs = [...tablist.querySelectorAll(':scope > [role="tab"], :scope .tabs > [role="tab"]')];
+    tabs.forEach(candidate => {
+        const selected = candidate === tab;
+        candidate.setAttribute('aria-selected', String(selected));
+        candidate.tabIndex = selected ? 0 : -1;
+    });
+}
+
+function enhanceTablists(root = document) {
+    root.querySelectorAll('[role="tablist"]').forEach(tablist => {
+        if (tablist.dataset.keyboardTabs === 'true') return;
+        tablist.dataset.keyboardTabs = 'true';
+        const tabs = [...tablist.querySelectorAll(':scope > [role="tab"], :scope .tabs > [role="tab"]')];
+        if (!tabs.length) return;
+        selectTab(tabs.find(tab => tab.getAttribute('aria-selected') === 'true') || tabs[0]);
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => selectTab(tab));
+            tab.addEventListener('keydown', event => {
+                const current = tabs.indexOf(tab);
+                let next = null;
+                if (event.key === 'Home') next = 0;
+                if (event.key === 'End') next = tabs.length - 1;
+                if (event.key === 'ArrowRight') next = (current - 1 + tabs.length) % tabs.length;
+                if (event.key === 'ArrowLeft') next = (current + 1) % tabs.length;
+                if (event.key === 'ArrowDown') next = (current + 1) % tabs.length;
+                if (event.key === 'ArrowUp') next = (current - 1 + tabs.length) % tabs.length;
+                if (next === null) return;
+                event.preventDefault();
+                tabs[next].focus();
+                tabs[next].click();
+            });
+        });
+    });
+}
+
 // ─── Faculty color palette ────────────────────────────────────────────────────
 // رنگ‌ها عمداً از رنگ‌های status (قرمز conflict، نارنجی warning) دور هستند
 const FACULTY_PALETTE = [

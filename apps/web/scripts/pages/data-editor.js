@@ -2,13 +2,22 @@
 // Shared UI utilities must be loaded before this controller.
 
 const allCourses = (typeof UNIVERSITY_DATA !== 'undefined') ? UNIVERSITY_DATA : [];
+enhanceTablists();
 
 // ─── Tab switching ────────────────────────────────────────────────────────
 const TAB_IDS = ['rules', 'curriculum'];
 function switchAdminTab(t) {
-    document.querySelectorAll('.page-tab').forEach((el, i) => el.classList.toggle('active', TAB_IDS[i] === t));
-    document.getElementById('panelRules').classList.toggle('active', t === 'rules');
-    document.getElementById('panelCurriculum').classList.toggle('active', t === 'curriculum');
+    document.querySelectorAll('.page-tab').forEach((el, i) => {
+        const selected = TAB_IDS[i] === t;
+        el.classList.toggle('active', selected);
+        if (selected) selectTab(el);
+    });
+    const rulesPanel = document.getElementById('panelRules');
+    const curriculumPanel = document.getElementById('panelCurriculum');
+    rulesPanel.classList.toggle('active', t === 'rules');
+    curriculumPanel.classList.toggle('active', t === 'curriculum');
+    rulesPanel.hidden = t !== 'rules';
+    curriculumPanel.hidden = t !== 'curriculum';
 }
 
 // ─── Rules editor ─────────────────────────────────────────────────────────
@@ -36,8 +45,8 @@ function rfAddRow(type) {
     tr.innerHTML = `
         <td>${buildAC(`ac-${type}-a-${id}`)}</td>
         <td>${buildAC(`ac-${type}-b-${id}`)}</td>
-        <td><input type="text" placeholder="دلیل..." id="reason-${type}-${id}" style="width:100%"></td>
-        <td><button class="btn btn-danger btn-sm" onclick="document.getElementById('row-${type}-${id}').remove()">×</button></td>
+        <td><input type="text" placeholder="دلیل..." aria-label="دلیل" id="reason-${type}-${id}" style="width:100%"></td>
+        <td><button class="btn btn-danger btn-sm" aria-label="حذف ردیف" onclick="document.getElementById('row-${type}-${id}').remove()">×</button></td>
     `;
     tbody.appendChild(tr);
     initAC(`ac-${type}-a-${id}`);
@@ -48,11 +57,11 @@ function rfAddRow(type) {
 function buildAC(id) {
     return `<div class="ac-wrap" id="wrap-${id}" style="position:relative">
         <div class="ac-sel" id="sel-${id}" style="display:none;background:var(--blue-dim);border:1px solid var(--blue);border-radius:var(--r1);padding:4px 8px;font-size:.78rem;display:none;align-items:center;gap:6px">
-            <span style="background:var(--blue);color:#fff;border-radius:4px;padding:1px 6px;font-size:.68rem" id="tag-code-${id}"></span>
+            <span style="background:var(--blue);color:#fff;border-radius:4px;padding:1px 6px;font-size:var(--fs-2xs)" id="tag-code-${id}"></span>
             <span id="tag-name-${id}"></span>
-            <span style="cursor:pointer;color:var(--red);margin-right:auto" onclick="acClear('${id}')">×</span>
+            <span style="cursor:pointer;color:var(--err-text);margin-right:auto" role="button" tabindex="0" aria-label="پاک کردن انتخاب" onclick="acClear('${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();acClear('${id}')}">×</span>
         </div>
-        <input type="text" class="ac-inp" id="inp-${id}" placeholder="جستجو (کد یا نام)..." autocomplete="off" style="display:block">
+        <input type="text" class="ac-inp" id="inp-${id}" placeholder="جستجو (کد یا نام)..." aria-label="جستجوی درس (کد یا نام)" autocomplete="off" style="display:block">
         <div id="drop-${id}" style="position:absolute;top:calc(100% + 2px);right:0;left:0;background:var(--s3);border:1px solid var(--b2);border-radius:var(--r2);max-height:180px;overflow-y:auto;z-index:100;display:none"></div>
         <input type="hidden" id="code-${id}">
         <input type="hidden" id="name-${id}">
@@ -197,20 +206,20 @@ function cfAddRow(data = {}) {
     const tr = document.createElement('tr');
     tr.id = `cf-row-${id}`;
     tr.innerHTML = `
-        <td><input type="number" value="${attr(data.semester || '')}" min="1" max="8" style="width:55px" placeholder="ترم"></td>
-        <td><input type="text" value="${attr(data.id || `c_${id}`)}" style="width:110px" id="cfid-${id}"></td>
-        <td><input type="text" value="${attr(data.name || '')}" placeholder="نام درس" style="min-width:130px"></td>
-        <td><input type="number" value="${data.units || 3}" min="1" max="6" style="width:50px"></td>
-        <td><select style="width:90px">
+        <td><input type="number" value="${attr(data.semester || '')}" min="1" max="8" style="width:55px" placeholder="ترم" aria-label="ترم"></td>
+        <td><input type="text" value="${attr(data.id || `c_${id}`)}" style="width:110px" id="cfid-${id}" aria-label="شناسه درس"></td>
+        <td><input type="text" value="${attr(data.name || '')}" placeholder="نام درس" style="min-width:130px" aria-label="نام درس"></td>
+        <td><input type="number" value="${data.units || 3}" min="1" max="6" style="width:50px" aria-label="واحد"></td>
+        <td><select style="width:90px" aria-label="نوع درس">
             <option value="core"     ${data.type==='core'?'selected':''}>اصلی</option>
             <option value="general"  ${data.type==='general'?'selected':''}>عمومی</option>
             <option value="elective" ${data.type==='elective'?'selected':''}>اختیاری</option>
             <option value="lab"      ${data.type==='lab'?'selected':''}>آزمایشگاه</option>
         </select></td>
-        <td><input type="text" value="${attr((data.prereqs || []).join(', '))}" placeholder="id1, id2" style="min-width:110px"></td>
-        <td><input type="text" value="${attr(data.codes?.[cfCohorts[0]] || data.codes?.['*'] || '')}" style="width:100px"></td>
-        <td><input type="text" value="${attr(data.codes?.[cfCohorts[1]] || '')}" style="width:100px"></td>
-        <td><button class="btn btn-danger btn-sm" onclick="document.getElementById('cf-row-${id}').remove()">×</button></td>
+        <td><input type="text" value="${attr((data.prereqs || []).join(', '))}" placeholder="id1, id2" style="min-width:110px" aria-label="پیش‌نیازها (شناسه‌ها)"></td>
+        <td><input type="text" value="${attr(data.codes?.[cfCohorts[0]] || data.codes?.['*'] || '')}" style="width:100px" aria-label="کد ورودی ۱"></td>
+        <td><input type="text" value="${attr(data.codes?.[cfCohorts[1]] || '')}" style="width:100px" aria-label="کد ورودی ۲"></td>
+        <td><button class="btn btn-danger btn-sm" aria-label="حذف ردیف" onclick="document.getElementById('cf-row-${id}').remove()">×</button></td>
     `;
     document.getElementById('cfRows').appendChild(tr);
 }
@@ -262,13 +271,33 @@ function cfExport() {
 function cfClear() { document.getElementById('cfRows').innerHTML = ''; cfRowCounter = 0; }
 
 // ─── Output modal ─────────────────────────────────────────────────────────
+// Same open/close-with-focus-restore pattern as the planner page dialogs.
+let outputModalFocusOrigin = null;
+
 function openOutput(title, code) {
     document.getElementById('outputTitle').textContent = title;
     document.getElementById('outputCode').value = code;
     document.getElementById('copyMsg').style.display = 'none';
-    document.getElementById('outputModal').classList.add('open');
+    const modal = document.getElementById('outputModal');
+    outputModalFocusOrigin = document.activeElement;
+    modal.classList.add('open');
+    const target = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (!target) return;
+    target.focus();
+    // children with `transition: all` stay visibility:hidden for a frame after
+    // the backdrop opens, silently defeating the synchronous focus()
+    if (document.activeElement !== target) {
+        setTimeout(() => {
+            if (!modal.contains(document.activeElement)) target.focus();
+        }, 60);
+    }
 }
-function closeOutput() { document.getElementById('outputModal').classList.remove('open'); }
+
+function closeOutput() {
+    document.getElementById('outputModal').classList.remove('open');
+    outputModalFocusOrigin?.focus?.();
+    outputModalFocusOrigin = null;
+}
 
 async function copyOutput() {
     try {
@@ -283,4 +312,8 @@ document.addEventListener('DOMContentLoaded', () => {
     rfInitFaculties();
     cfUpdateHeaders();
     document.getElementById('cfCohorts').addEventListener('input', cfUpdateHeaders);
+    document.addEventListener('keydown', event => {
+        if (event.key !== 'Escape') return;
+        if (document.getElementById('outputModal').classList.contains('open')) closeOutput();
+    });
 });

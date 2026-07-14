@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="application-version" content="0.1.0">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data:; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>انتخاب واحد هوشمند</title>
@@ -30,7 +31,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   font-size: 1rem; flex-shrink: 0;
 }
 .brand-name  { font-size: 0.92rem; font-weight: 800; }
-.brand-badge { font-size: 0.62rem; background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(59,130,246,0.25); border-radius: 4px; padding: 1px 6px; font-weight: 700; }
+.brand-badge { font-size: var(--fs-2xs); background: var(--blue-dim); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 4px; padding: 1px 6px; font-weight: 700; }
 .topbar-center { flex: 1; display: flex; justify-content: center; align-items: center; gap: 10px; }
 .gpa-box {
   display: flex; align-items: center; gap: 6px;
@@ -42,6 +43,12 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   width: 52px; background: transparent; border: none; outline: none;
   color: var(--t0); font: inherit; font-weight: 700; text-align: center;
   -moz-appearance: textfield; appearance: textfield;
+}
+/* Only the compact topbar pill opts out of the global input min-height;
+   the unit-sheet copy keeps its 44px touch size (QA DEF-3) */
+.topbar-center .gpa-box input { min-height: 0; }
+.unit-sheet-help {
+  font-size: var(--fs-xs); color: var(--t2); line-height: 1.8; margin-top: 12px;
 }
 .gpa-box input::-webkit-inner-spin-button,
 .gpa-box input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -70,27 +77,32 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 /* Search tab */
 .search-filters {
   padding: 12px 14px 10px; border-bottom: 1px solid var(--b0);
-  display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
 }
-.filter-row { display: flex; gap: 8px; }
-.filter-row select { flex: 1; }
+.filter-row {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+}
+.filter-row select { width: 100%; min-width: 0; }
+.filter-row .filter-toggle { grid-column: 1 / -1; min-height: 40px; }
+.quick-start { flex-direction: column; align-items: stretch; }
+.quick-start .dialog-actions { width: 100%; margin-top: 2px; justify-content: flex-start; }
 
 .course-list-header {
   padding: 8px 14px 4px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
 }
-.course-list-count { font-size: 0.72rem; color: var(--t3); }
+.course-list-count { font-size: var(--fs-2xs); color: var(--t3); }
 .course-list { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 10px 10px; }
 
 /* Curriculum tab */
 .cur-controls { padding: 12px 14px 10px; border-bottom: 1px solid var(--b0); flex-shrink: 0; }
-.cur-controls label { font-size: 0.74rem; color: var(--t3); font-weight: 600; display: block; margin-bottom: 5px; }
+.cur-controls label { font-size: var(--fs-xs); color: var(--t3); font-weight: 600; display: block; margin-bottom: 5px; }
 .cur-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; }
 
 /* ── Main ────────────────────────────────────────────────────────────────── */
 .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 16px 20px; gap: 12px; min-width: 0; min-height: 0; }
 .main-header { display: flex; justify-content: space-between; align-items: center; }
 .main-title  { font-size: 1.1rem; font-weight: 800; }
-.main-subtitle { font-size: 0.78rem; color: var(--t3); margin-top: 2px; }
+.main-subtitle { font-size: var(--fs-xs); color: var(--t3); margin-top: 2px; }
 
 .timetable-container {
   flex: 1; min-height: 0; background: var(--s1); border: 1px solid var(--b0);
@@ -185,17 +197,24 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   .topbar-center, .brand-badge { display: none; }
   .topbar-actions .btn { padding: 6px 10px; font-size: .76rem; }
   /* hide print/professor shortcuts on mobile — accessible via menu */
-  .topbar-actions .btn:not(#themeBtn):not(.mob-exam-btn) { display: none; }
+  .topbar-actions .btn:not(#themeBtn):not(.mob-exam-btn):not(.profile-btn) { display: none; }
+  .topbar-actions .profile-btn { padding-inline: 9px; }
+  .topbar-actions .profile-btn .profile-label { display: none; }
 
-  /* mobile unit pill inside topbar */
+  /* mobile unit pill inside topbar — a real button opening the unit sheet */
   .mob-unit-pill {
     display: flex; align-items: center; gap: 6px;
-    background: var(--blue-dim); border: 1px solid rgba(59,130,246,.3);
+    background: var(--blue-dim); border: 1px solid var(--accent-border);
     border-radius: 20px; padding: 4px 12px 4px 8px;
-    font-size: .78rem; font-weight: 700; color: var(--blue);
+    font-size: var(--fs-xs); font-weight: 700; color: var(--accent);
+    font-family: inherit; cursor: pointer; position: relative;
+    -webkit-tap-highlight-color: transparent;
   }
-  .mob-unit-pill.over { background: var(--red-dim); border-color: rgba(239,68,68,.4); color: var(--red); }
+  /* extend hit area toward 44px without growing the compact topbar */
+  .mob-unit-pill::after { content: ''; position: absolute; inset: -8px; }
+  .mob-unit-pill.over { background: var(--err-bg); border-color: var(--err-border); color: var(--err-text); }
   .mob-unit-num { font-size: .95rem; font-weight: 800; }
+  .mob-unit-max-label { color: var(--t3); font-weight: 500; }
 
   /* ── Bottom Navigation ── */
   .mob-nav {
@@ -203,21 +222,20 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     height: 62px;
     background: var(--s1);
     border-top: 1px solid var(--b0);
-    safe-area-inset-bottom: env(safe-area-inset-bottom);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .mob-nav-btn {
     flex: 1; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 3px;
     border: none; background: transparent; cursor: pointer;
-    color: var(--t3); font-family: inherit; font-size: .65rem; font-weight: 600;
+    color: var(--t3); font-family: inherit; font-size: var(--fs-2xs); font-weight: 600;
     transition: color .15s, background .15s;
     position: relative; padding: 6px 4px;
     -webkit-tap-highlight-color: transparent;
   }
   .mob-nav-btn:active { background: var(--b0); }
   .mob-nav-icon { font-size: 1.35rem; line-height: 1; }
-  .mob-nav-btn.active { color: var(--blue); }
+  .mob-nav-btn.active { color: var(--accent); }
   .mob-nav-btn.active .mob-nav-icon-wrap {
     background: var(--blue-dim); border-radius: 12px;
     padding: 4px 18px; margin-bottom: 1px;
@@ -225,9 +243,9 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 
   /* badge for schedule button */
   .mob-nav-badge {
-    position: absolute; top: 6px; right: calc(50% - 22px);
+    position: absolute; top: 4px; right: calc(50% - 24px);
     background: var(--blue); color: #fff;
-    border-radius: 10px; font-size: .6rem; font-weight: 800;
+    border-radius: 10px; font-size: var(--fs-2xs); font-weight: 800;
     padding: 1px 5px; min-width: 16px; text-align: center;
     border: 2px solid var(--s1);
   }
@@ -246,6 +264,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 </style>
 </head>
 <body>
+<a class="skip-link" href="#mainContent">رفتن به محتوای اصلی</a>
 
 <!-- ── Top Bar ─────────────────────────────────────────────────────────────── -->
 <header class="app-topbar no-print">
@@ -254,12 +273,12 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     <div>
       <div class="brand-name">انتخاب واحد</div>
     </div>
-    <span class="brand-badge hide-mobile">هوشمند</span>
+    <span class="brand-badge hide-mobile">هوشمند <small class="app-version" title="نسخه آزمایشی">v0.1.0</small></span>
   </a>
 
   <div class="topbar-center hide-mobile">
-    <div class="unit-display" id="unitDisplay" title="واحدهای انتخاب‌شده">
-      <div class="unit-bar"><div class="unit-bar-fill" id="unitBarFill" style="width:0%"></div></div>
+    <div class="unit-display" id="unitDisplay" role="status" title="واحدهای انتخاب‌شده">
+      <div class="unit-bar" aria-hidden="true"><div class="unit-bar-fill" id="unitBarFill" style="width:0%"></div></div>
       <span class="unit-count" id="unitCount">۰</span>
       <span class="unit-sep">/</span>
       <span class="unit-max" id="unitMax">۲۰ واحد</span>
@@ -272,16 +291,23 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   </div>
 
   <!-- unit pill فقط روی موبایل نمایش داده می‌شود -->
-  <div class="mob-unit-pill" id="mobUnitPill">
+  <button type="button" class="mob-unit-pill" id="mobUnitPill" aria-haspopup="dialog"
+          aria-label="واحدها و معدل" onclick="openUnitSheet()">
     <span class="mob-unit-num" id="mobUnitNum">۰</span>
-    <span style="color:var(--t3);font-weight:500" id="mobUnitMax">/ ۲۰ واحد</span>
-  </div>
+    <span class="mob-unit-max-label" id="mobUnitMax">/ ۲۰ واحد</span>
+  </button>
 
   <div class="topbar-actions">
-    <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="onToggleTheme()" title="تغییر تم">🌗</button>
-    <button class="btn btn-ghost btn-sm mob-exam-btn" style="background:rgba(245,158,11,.15);color:var(--yellow);border-color:rgba(245,158,11,.3)" onclick="openExamModal()">📅 امتحانات</button>
-    <button class="btn btn-ghost btn-sm" onclick="window.print()" title="چاپ">🖨️</button>
-    <a href="professor.html" class="btn btn-ghost btn-sm" style="background:var(--violet-dim);color:var(--violet);border-color:rgba(139,92,246,.3);text-decoration:none">👨‍🏫 استاد</a>
+    <button class="btn btn-ghost btn-sm profile-btn" id="profileBtn" type="button"
+            onclick="openStudentProfile()" aria-haspopup="dialog" title="پروفایل تحصیلی">
+      <span aria-hidden="true">👤</span> <span class="profile-label">پروفایل</span>
+    </button>
+    <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="onToggleTheme()" title="تغییر تم" aria-label="تغییر به تم روشن"><span id="themeBtnIcon" aria-hidden="true">🌗</span></button>
+    <button class="btn btn-ghost btn-sm mob-exam-btn" style="background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-border)" onclick="openExamModal()"><span aria-hidden="true">📅</span> امتحانات</button>
+    <button class="btn btn-ghost btn-sm" onclick="printSchedule()" title="چاپ برنامه" aria-label="چاپ برنامه"><span aria-hidden="true">🖨️</span></button>
+    <button class="btn btn-ghost btn-sm" onclick="openCalendarExport()" title="افزودن به تقویم" aria-label="افزودن برنامه به تقویم"><span aria-hidden="true">📆</span></button>
+    <a href="professor.html" class="btn btn-ghost btn-sm" style="background:var(--violet-dim);color:var(--violet);border-color:rgba(139,92,246,.3);text-decoration:none"><span aria-hidden="true">👨‍🏫</span> استاد</a>
+    <button class="btn btn-ghost btn-sm" onclick="openDialog(document.getElementById('aboutModal'))" title="درباره پروژه"><span aria-hidden="true">ⓘ</span> درباره</button>
   </div>
 </header>
 
@@ -292,9 +318,9 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   <aside class="sidebar no-print">
     <div class="sidebar-tabs">
       <div class="tabs" role="tablist" aria-label="بخش‌های انتخاب واحد">
-        <button class="tab-btn active" id="tabBtnSearch" role="tab" aria-selected="true"
+        <button class="tab-btn active" id="tabBtnSearch" role="tab" aria-selected="true" tabindex="0"
                 aria-controls="tabSearch" onclick="switchTab('search')">🔍 جستجوی درس</button>
-        <button class="tab-btn" id="tabBtnCurriculum" role="tab" aria-selected="false"
+        <button class="tab-btn" id="tabBtnCurriculum" role="tab" aria-selected="false" tabindex="-1"
                 aria-controls="tabCurriculum" onclick="switchTab('curriculum')">🗺️ نقشه درسی</button>
       </div>
     </div>
@@ -303,19 +329,37 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 
       <!-- Tab: Search -->
       <div class="tab-panel active" id="tabSearch" role="tabpanel" aria-labelledby="tabBtnSearch" style="flex-direction:column">
+        <section class="quick-start" id="quickStart" aria-labelledby="quickStartTitle">
+          <div>
+            <h2 id="quickStartTitle">برای چه رشته‌ای برنامه می‌چینی؟</h2>
+            <p>دانشکده، گروه و ورودی را از کنترل‌های زیر انتخاب کن. اطلاعات ارائه‌ها: نیم‌سال جاری</p>
+          </div>
+          <div class="dialog-actions"><button type="button" class="btn btn-primary btn-sm" onclick="dismissQuickStart()">نمایش درس‌ها</button><button type="button" class="btn btn-ghost btn-sm" onclick="dismissQuickStart()">فعلاً همه درس‌ها را ببین</button></div>
+        </section>
         <div class="search-filters">
-          <div class="search-wrapper">
-            <input type="text" id="searchInput" placeholder="جستجو در نام درس، استاد، کد...">
-            <span class="search-icon">🔍</span>
+          <div class="search-wrapper" role="search">
+            <input type="search" id="searchInput" placeholder="نام درس، استاد یا کد درس"
+                   aria-label="جستجو در نام درس، استاد، کد">
+            <span class="search-icon" aria-hidden="true">🔍</span>
           </div>
           <div class="filter-row">
-            <select id="facultyFilter"><option value="">همه دانشکده‌ها</option></select>
-            <select id="groupFilter"><option value="">همه گروه‌ها</option></select>
+            <select id="facultyFilter" aria-label="دانشکده"><option value="">همه دانشکده‌ها</option></select>
+            <select id="groupFilter" aria-label="گروه آموزشی"><option value="">همه گروه‌ها</option></select>
+            <button type="button" class="btn btn-ghost filter-toggle" id="filterToggle" aria-expanded="false" aria-controls="advancedFilters" onclick="toggleFilters()">فیلترها</button>
           </div>
+          <div class="advanced-filters" id="advancedFilters" hidden>
+            <label>جنسیت<select id="genderFilter"><option value="">همه</option><option value="مرد">آقایان</option><option value="زن">خانم‌ها</option></select></label>
+            <label>روز<select id="dayFilter"><option value="">همه روزها</option><option value="0">شنبه</option><option value="1">یکشنبه</option><option value="2">دوشنبه</option><option value="3">سه‌شنبه</option><option value="4">چهارشنبه</option></select></label>
+            <label>واحد<select id="unitsFilter"><option value="">همه</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></label>
+            <label>مرتب‌سازی<select id="sortFilter"><option value="relevance">مرتبط‌ترین</option><option value="name">نام درس</option><option value="capacity">ظرفیت بیشتر</option><option value="time">زمان زودتر</option></select></label>
+            <label class="check-label"><input type="checkbox" id="availabilityFilter"> ظرفیت دارد</label>
+            <label class="check-label"><input type="checkbox" id="conflictFilter"> بدون تداخل با برنامه</label>
+          </div>
+          <div class="active-filters" id="activeFilters"></div>
         </div>
         <div class="course-list-header">
           <span class="course-list-count" id="courseCount" aria-live="polite">...</span>
-          <span style="font-size:.7rem;color:var(--t3)" id="selectedStat" aria-live="polite"></span>
+          <span style="font-size:var(--fs-2xs);color:var(--t3)" id="selectedStat" aria-live="polite"></span>
         </div>
         <div class="course-list" id="courseList"></div>
       </div>
@@ -323,7 +367,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       <!-- Tab: Curriculum -->
       <div class="tab-panel" id="tabCurriculum" role="tabpanel" aria-labelledby="tabBtnCurriculum" hidden style="flex-direction:column">
         <div class="cur-controls" id="curriculumControls" style="display:none">
-          <label>ورودی:</label>
+          <label for="cohortSelect">ورودی:</label>
           <select id="cohortSelect" onchange="onCohortChange()"></select>
         </div>
         <div class="cur-scroll" id="curriculumScroll">
@@ -339,11 +383,22 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   </aside>
 
   <!-- ── Main ────────────────────────────────────────────────────────────── -->
-  <main class="main">
+  <main class="main" id="mainContent">
+    <header class="print-header" aria-hidden="true">
+      <div>
+        <div class="print-kicker">انتخاب واحد هوشمند</div>
+        <h1>برنامهٔ هفتگی کلاس‌ها</h1>
+      </div>
+      <div class="print-meta">
+        <span id="printTerm">نیم‌سال جاری</span>
+        <span id="printSummary">بدون درس انتخاب‌شده</span>
+        <span id="printDate"></span>
+      </div>
+    </header>
     <!-- Desktop header -->
     <div class="main-header">
       <div>
-        <h1 class="main-title">برنامه هفتگی</h1>
+        <h1 class="main-title">برنامه این ترم</h1>
         <div id="selectedInfo" class="main-subtitle" style="display:none"></div>
       </div>
       <div id="facultyLegend" class="faculty-legend"></div>
@@ -351,36 +406,187 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 
     <!-- Load analyzer badge (فقط وقتی AI فعال است) -->
     <div id="loadBadge" class="load-badge ok" style="display:none"></div>
+    <section class="plan-status" aria-labelledby="planHealthTitle">
+      <div>
+        <h2 id="planHealthTitle">وضعیت برنامه</h2>
+        <span class="health-pill ready" id="healthPill">آماده</span>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" onclick="openReviewModal()">مرور نهایی</button>
+    </section>
+    <div class="attention-queue" id="attentionQueue" aria-live="polite"></div>
+    <div class="plan-view-tabs" role="tablist" aria-label="نمای برنامه">
+      <button type="button" role="tab" aria-selected="true" tabindex="0" aria-controls="weeklyView" data-plan-view="weekly" onclick="setPlanView('weekly')">هفتگی</button>
+      <button type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="listView" data-plan-view="list" onclick="setPlanView('list')">فهرست</button>
+      <button type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="examsView" data-plan-view="exams" onclick="setPlanView('exams')">امتحان‌ها</button>
+    </div>
+    <button type="button" class="schedule-warning" id="scheduleWarning" hidden onclick="setPlanView('list')">بعضی جلسه‌ها خارج از بازهٔ جدول‌اند؛ مشاهده فهرست کامل</button>
 
     <!-- Mobile header (only shown on mobile) -->
     <div class="mob-sched-header" style="display:none" id="mobSchedHeader">
-      <span class="mob-sched-title">📅 برنامه هفتگی</span>
-      <span id="mobSelectedInfo" style="font-size:.75rem;color:var(--t3)"></span>
+      <span class="mob-sched-title"><span aria-hidden="true">📅</span> برنامه هفتگی</span>
+      <span id="mobSelectedInfo" style="font-size:var(--fs-xs);color:var(--t3)"></span>
     </div>
 
-    <div class="timetable-container">
+    <div class="timetable-container" id="weeklyView">
       <div class="timetable-inner" id="timetable"></div>
     </div>
+    <section class="print-timetable" id="printTimetable" aria-label="نسخه چاپی برنامه هفتگی"></section>
+    <footer class="print-footer" aria-hidden="true">
+      <span>برنامهٔ پیشنهادی دانشجو — پیش از ثبت نهایی با سامانهٔ آموزشی تطبیق داده شود.</span>
+      <span>entekhab-vahed · v0.1.0</span>
+    </footer>
+    <div class="plan-list" id="listView" tabindex="-1" hidden></div>
+    <div class="plan-list" id="examsView" hidden></div>
   </main>
 
 </div>
 
+<div class="modal-backdrop" id="aboutModal">
+  <div class="modal-box about-dialog" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+    <div class="modal-header">
+      <h2 class="modal-title" id="aboutTitle">دربارهٔ انتخاب واحد هوشمند</h2>
+      <button class="modal-close" onclick="closeDialog(document.getElementById('aboutModal'))" aria-label="بستن">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="about-intro">
+        <span class="about-logo" aria-hidden="true">📚</span>
+        <div>
+          <h3>یک برنامه‌ریز دانشگاهی آزاد و دانشجویی</h3>
+          <p>این سامانه به‌عنوان پروژهٔ کارشناسی ساخته شده تا جست‌وجوی درس‌ها، بررسی تداخل‌ها و ساخت برنامهٔ هفتگی ساده‌تر و قابل‌اعتمادتر شود.</p>
+        </div>
+      </div>
+      <section class="about-card">
+        <h3><span aria-hidden="true">🔒</span> حریم خصوصی و مالکیت داده</h3>
+        <p>درس‌های انتخاب‌شده، معدل، فیلترها و وضعیت دروس فقط در حافظهٔ محلی همین مرورگر (<bdi dir="ltr">localStorage</bdi>) ذخیره می‌شوند. هستهٔ برنامه حساب کاربری ندارد و این اطلاعات را به سروری ارسال نمی‌کند؛ با پاک‌کردن داده‌های سایت از مرورگر نیز حذف می‌شوند.</p>
+        <p class="about-note">قابلیت اختیاری دستیار هوشمند، فقط در صورت فعال‌بودن و استفادهٔ آگاهانه، ممکن است اطلاعات لازم برای همان درخواست را به سرویس تنظیم‌شده ارسال کند.</p>
+      </section>
+      <section class="about-card">
+        <h3><span aria-hidden="true">🌱</span> آزاد و متن‌باز</h3>
+        <p>کد این پروژه با مجوز <bdi dir="ltr">GNU GPLv3</bdi> منتشر شده است؛ می‌توانید آن را بررسی کنید، تغییر دهید و طبق شرایط همین مجوز بازنشر کنید.</p>
+        <p class="about-contribute">اگر با خطایی روبه‌رو شدید یا پیشنهادی برای بهترشدن برنامه دارید، آن را در بخش Issues مطرح کنید.</p>
+        <div class="about-links">
+          <a class="about-github" href="https://github.com/VRUCS/entekhab-vahed" target="_blank" rel="noopener noreferrer">
+            <span aria-hidden="true">↗</span>
+            مشاهدهٔ کد در GitHub
+          </a>
+          <a class="about-issues" href="https://github.com/VRUCS/entekhab-vahed/issues" target="_blank" rel="noopener noreferrer">
+            <span aria-hidden="true">💬</span>
+            گزارش خطا یا پیشنهاد
+          </a>
+        </div>
+      </section>
+      <div class="about-footer">
+        <span>نسخهٔ آزمایشی <bdi dir="ltr">v0.1.0</bdi></span>
+        <span>ساخته‌شده برای دانشجوها، با احترام به داده‌هایشان</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="calendarModal">
+  <div class="modal-box calendar-dialog" role="dialog" aria-modal="true" aria-labelledby="calendarTitle">
+    <div class="modal-header">
+      <h2 class="modal-title" id="calendarTitle">افزودن برنامه به Google Calendar</h2>
+      <button class="modal-close" onclick="closeDialog(document.getElementById('calendarModal'))" aria-label="بستن">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="calendar-help">بازهٔ برگزاری کلاس‌ها را وارد کنید. فایل برنامه دانلود می‌شود و صفحهٔ Import گوگل‌کلندر باز خواهد شد.</p>
+      <div class="calendar-date-grid">
+        <label for="calendarStart">شروع کلاس‌ها<input type="date" id="calendarStart" required></label>
+        <label for="calendarEnd">پایان کلاس‌ها<input type="date" id="calendarEnd" required></label>
+      </div>
+      <label class="check-label calendar-reminder"><input type="checkbox" id="calendarReminder" checked> یادآوری ۱۵ دقیقه قبل از هر کلاس</label>
+      <p class="calendar-note">در صفحهٔ گوگل، فایل <bdi dir="ltr">barname-daneshgah.ics</bdi> را انتخاب و روی Import بزنید. گوگل ورود چند کلاس را فقط از نسخهٔ رایانه‌ای پشتیبانی می‌کند.</p>
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" onclick="closeDialog(document.getElementById('calendarModal'))">انصراف</button>
+        <button class="btn btn-primary" onclick="exportCalendar()">دانلود و بازکردن Google Calendar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="riskModal">
+  <div class="modal-box anim-scale" role="dialog" aria-modal="true" aria-labelledby="riskTitle">
+    <div class="modal-header"><h2 class="modal-title" id="riskTitle">بررسی پیش از افزودن</h2><button class="modal-close" onclick="cancelPendingAction()" aria-label="بستن">×</button></div>
+    <div class="modal-body"><div id="riskContent"></div><div class="dialog-actions"><button class="btn btn-ghost" onclick="cancelPendingAction()">انصراف</button><button class="btn btn-ghost" onclick="reviewPendingRisk()">بررسی برنامه</button><button class="btn btn-primary" id="riskConfirmBtn" onclick="confirmPendingAction()">با وجود تداخل اضافه کن</button></div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="reviewModal">
+  <div class="modal-box review-dialog" role="dialog" aria-modal="true" aria-labelledby="reviewTitle">
+    <div class="modal-header"><h2 class="modal-title" id="reviewTitle">مرور نهایی برنامه</h2><button class="modal-close" onclick="closeDialog(document.getElementById('reviewModal'))" aria-label="بستن">×</button></div>
+    <div class="modal-body" id="reviewContent"></div>
+    <div class="dialog-actions review-actions"><button class="btn btn-ghost" onclick="printSchedule()">چاپ برنامه</button><button class="btn btn-ghost" onclick="openCalendarExport()">افزودن به تقویم</button><button class="btn btn-ghost" onclick="copySectionCodes()">کپی کد گروه‌ها</button><button class="btn btn-primary" onclick="exportPlan()">خروجی JSON</button></div>
+  </div>
+</div>
+
+<!-- ── Local student profile ─────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="studentProfileModal" onclick="if(event.target===this)closeStudentProfile()">
+  <div class="modal-box profile-dialog anim-scale" role="dialog" aria-modal="true"
+       aria-labelledby="studentProfileTitle" aria-describedby="studentProfilePrivacy">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="studentProfileTitle">پروفایل تحصیلی</h2>
+        <p class="profile-subtitle">برای دیدن سریع درس‌های مرتبط با رشته‌ات</p>
+      </div>
+      <button class="modal-close" type="button" onclick="closeStudentProfile()" aria-label="بستن">×</button>
+    </div>
+    <form id="studentProfileForm" class="modal-body" onsubmit="applyStudentProfile(event)">
+      <div class="profile-fields">
+        <label for="profileFaculty">دانشکده
+          <select id="profileFaculty" required onchange="onProfileFacultyChange()">
+            <option value="">انتخاب دانشکده</option>
+          </select>
+        </label>
+        <label for="profileGroup">رشته / گروه آموزشی
+          <select id="profileGroup" required onchange="onProfileGroupChange()">
+            <option value="">ابتدا دانشکده را انتخاب کنید</option>
+          </select>
+        </label>
+        <label for="profileCohort">سال ورود
+          <select id="profileCohort" aria-describedby="profileCohortHelp">
+            <option value="">نامشخص</option>
+          </select>
+          <small id="profileCohortHelp">در صورت وجود چارت رشته استفاده می‌شود.</small>
+        </label>
+        <label for="profileGpa">معدل ترم قبل
+          <input id="profileGpa" type="number" inputmode="decimal" min="0" max="20"
+                 step="0.01" placeholder="مثلاً ۱۶٫۵۰">
+          <small>عددی بین ۰ تا ۲۰؛ برای محاسبه سقف واحد.</small>
+        </label>
+      </div>
+      <p class="profile-privacy" id="studentProfilePrivacy">
+        این اطلاعات فقط در مرورگر همین دستگاه ذخیره می‌شود و به سروری ارسال نمی‌شود.
+        نام، شماره دانشجویی یا اطلاعات هویتی دریافت نمی‌کنیم.
+      </p>
+      <div class="profile-curriculum-note" id="profileCurriculumNote" role="status"></div>
+      <div class="dialog-actions profile-actions">
+        <button class="btn btn-danger profile-delete" id="deleteProfileBtn" type="button"
+                onclick="deleteStudentProfile()">حذف پروفایل</button>
+        <button class="btn btn-ghost" id="profileCurriculumBtn" type="button"
+                onclick="openProfileCurriculum()" hidden>دیدن نقشه درسی</button>
+        <button class="btn btn-primary" type="submit">ذخیره و نمایش درس‌های مرتبط</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- ── Mobile bottom nav ──────────────────────────────────────────────────── -->
 <nav class="mob-nav no-print" role="tablist">
-  <button class="mob-nav-btn active" id="mnSearch" onclick="setMobView('search')" aria-label="جستجوی درس">
+  <button class="mob-nav-btn active" id="mnSearch" role="tab" aria-selected="true" tabindex="0" aria-controls="tabSearch" onclick="setMobView('search')" aria-label="جستجوی درس">
     <div class="mob-nav-icon-wrap">
       <span class="mob-nav-icon">🔍</span>
     </div>
     <span>جستجو</span>
   </button>
-  <button class="mob-nav-btn" id="mnSchedule" onclick="setMobView('schedule')" aria-label="برنامه هفتگی">
+  <button class="mob-nav-btn" id="mnSchedule" role="tab" aria-selected="false" tabindex="-1" aria-controls="mainContent" onclick="setMobView('schedule')" aria-label="برنامه هفتگی">
     <div class="mob-nav-icon-wrap" style="position:relative">
       <span class="mob-nav-icon">📅</span>
       <span class="mob-nav-badge" id="mobBadge" style="display:none"></span>
     </div>
     <span>برنامه</span>
   </button>
-  <button class="mob-nav-btn" id="mnCurriculum" onclick="setMobView('curriculum')" aria-label="نقشه درسی">
+  <button class="mob-nav-btn" id="mnCurriculum" role="tab" aria-selected="false" tabindex="-1" aria-controls="tabCurriculum" onclick="setMobView('curriculum')" aria-label="نقشه درسی">
     <div class="mob-nav-icon-wrap">
       <span class="mob-nav-icon">🗺️</span>
     </div>
@@ -400,9 +606,33 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     </div>
     <div class="modal-body">
       <table class="data-table">
-        <thead><tr><th>نام درس</th><th>تاریخ</th><th>ساعت</th></tr></thead>
+        <thead><tr><th style="width:36px"><span class="sr-only">وضعیت</span></th><th>نام درس</th><th>تاریخ</th><th>ساعت</th></tr></thead>
         <tbody id="examBody"></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Mobile Units/GPA Sheet ─────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="unitSheet" onclick="if(event.target===this)closeUnitSheet()">
+  <div class="modal-box anim-scale" style="max-width:340px" role="dialog" aria-modal="true" aria-labelledby="unitSheetTitle">
+    <div class="modal-header">
+      <h3 class="modal-title" id="unitSheetTitle">واحدها و معدل</h3>
+      <button class="modal-close" onclick="closeUnitSheet()" aria-label="بستن">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="unit-display" id="unitDisplaySheet" role="status" style="margin-bottom:14px">
+        <div class="unit-bar" aria-hidden="true"><div class="unit-bar-fill" id="unitBarFillSheet" style="width:0%"></div></div>
+        <span class="unit-count" id="unitCountSheet">۰</span>
+        <span class="unit-sep">/</span>
+        <span class="unit-max" id="unitMaxSheet">۲۰ واحد</span>
+      </div>
+      <div class="gpa-box">
+        <label for="gpaInputSheet">معدل</label>
+        <input id="gpaInputSheet" type="number" inputmode="decimal" min="0" max="20" step="0.01"
+               placeholder="—" oninput="onGpaChange(this.value)">
+      </div>
+      <p class="unit-sheet-help">معدل ترم قبل سقف واحد را تعیین می‌کند: زیر ۱۲ ← ۱۴ واحد، ۱۷ به بالا ← ۲۴ واحد</p>
     </div>
   </div>
 </div>
@@ -422,8 +652,8 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       <span>دستیار مشاور</span>
     </div>
     <div class="ai-header-actions">
-      <button class="ai-header-btn" onclick="Advisor.clearHistory()" title="شروع مجدد">🔄</button>
-      <button class="ai-header-btn" onclick="Advisor.close()" title="بستن">✕</button>
+      <button class="ai-header-btn" onclick="Advisor.clearHistory()" title="شروع مجدد" aria-label="شروع مجدد"><span aria-hidden="true">🔄</span></button>
+      <button class="ai-header-btn" onclick="Advisor.close()" title="بستن" aria-label="بستن"><span aria-hidden="true">✕</span></button>
     </div>
   </div>
 
@@ -438,7 +668,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       placeholder="سوالت را بپرس..."
       onkeydown="aiHandleKey(event)"
       oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-    <button class="ai-send-btn" onclick="aiSendFromInput()" title="ارسال">➤</button>
+    <button class="ai-send-btn" onclick="aiSendFromInput()" title="ارسال" aria-label="ارسال"><span aria-hidden="true">➤</span></button>
   </div>
 </div>
 
@@ -475,6 +705,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 <script src="generated/course-offerings.generated.js"></script>
 <script src="generated/curriculum.generated.js"></script>
 <script src="scripts/domain/course-domain.js"></script>
+<script src="scripts/domain/calendar-export.js"></script>
 <script src="scripts/domain/planner-domain.js"></script>
 <script src="scripts/adapters/planner-storage.js"></script>
 <script src="scripts/features/ui.js"></script>

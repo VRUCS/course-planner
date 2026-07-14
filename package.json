@@ -4,10 +4,15 @@
   "description": "Dev-only tooling (lint). The site itself runs without any build step.",
   "scripts": {
     "lint": "eslint",
-    "test": "node --test tests/frontend/*.test.js"
+    "test": "node --test tests/frontend/*.test.js",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@playwright/test": "^1.61.1",
     "eslint": "^9.0.0",
     "globals": "^15.0.0"
   }

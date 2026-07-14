@@ -26,3 +26,5 @@ exports/
 *.tmp
 coverage/
 _site/
+playwright-report/
+test-results/

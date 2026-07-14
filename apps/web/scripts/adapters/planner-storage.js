@@ -18,6 +18,7 @@
         faculty: 'uni_faculty',
         group: 'uni_group',
         gpa: 'uni_gpa',
+        onboarding: 'uni_planner_onboarding_v1',
     });
 
     function safeParse(raw, fallback) {
