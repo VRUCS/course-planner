@@ -708,11 +708,32 @@ function renderPlanWorkspace() {
         const sessions = CourseDomain.parseSchedule(course.time_html);
         return `<article class="plan-list-item" style="--course-color:${getCourseColor(course)}" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1"><h3>${SafeDOM.escape(course.name)} · گروه <bdi dir="ltr">${SafeDOM.escape(planner.getSectionId(course))}</bdi></h3><button class="remove-section" onclick="removeCourse('${SafeDOM.escape(course.id)}')" aria-label="حذف ${SafeDOM.escape(course.name)}">${AppIcons.svg('Trash2')}</button><p>${SafeDOM.escape(course.prof || 'استاد اعلام نشده')} · ${sessions.length ? sessions.map(formatSessionChip).join('، ') : 'زمان اعلام نشده'}</p></article>`;
     }).join('') : '<div class="empty-state"><div class="empty-state-title">برنامه‌ات خالی است</div></div>'}`;
-    document.getElementById('examsView').innerHTML = `<h2 class="sr-only" id="examListFocus" tabindex="-1">فهرست امتحان‌های انتخاب‌شده</h2>${selected.length ? selected
+    const examEntries = selected
         .map(course => ({ course, exam: CourseDomain.parseExam(course.exam_text) }))
-        .sort((a, b) => (a.exam?.date || '9999').localeCompare(b.exam?.date || '9999'))
-        .map(({ course, exam }) => `<article class="plan-list-item" style="--course-color:${getCourseColor(course)}" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1"><h3>${SafeDOM.escape(course.name)}</h3><p>${exam ? `${toPersianNum(exam.date)} · ${formatExamTime(exam)}` : 'تاریخ اعلام نشده'}</p></article>`).join('')
-        : '<div class="empty-state"><div class="empty-state-title">امتحانی برای نمایش نیست</div></div>'}`;
+        .sort((a, b) => (a.exam?.date || '9999').localeCompare(b.exam?.date || '9999'));
+    const examFlags = examEntries.map(entry => ({ ...entry, ...getExamConflictInfo(entry, examEntries) }));
+    const examOverlapCount = examFlags.filter(entry => entry.overlaps).length;
+    const examSameDayCount = examFlags.filter(entry => entry.sameDay).length;
+    const examSummary = examOverlapCount
+        ? `<div class="exam-conflict-summary danger" role="alert"><span class="exam-summary-icon" aria-hidden="true">${AppIcons.svg('CircleAlert')}</span><div><strong>تداخل زمانی امتحان</strong><span>${toPersianNum(examOverlapCount)} درس با امتحان هم‌زمان مشخص شده‌اند.</span></div></div>`
+        : examSameDayCount
+            ? `<div class="exam-conflict-summary warning" role="status"><span class="exam-summary-icon" aria-hidden="true">${AppIcons.svg('CalendarDays')}</span><div><strong>امتحان‌های فشرده</strong><span>${toPersianNum(examSameDayCount)} درس با امتحان در یک روز قرار دارند.</span></div></div>`
+            : '';
+    document.getElementById('examsView').innerHTML = `<h2 class="sr-only" id="examListFocus" tabindex="-1">فهرست امتحان‌های انتخاب‌شده</h2>${examEntries.length ? `${examSummary}${examFlags.map(({ course, exam, overlaps, sameDay, overlapCourses, sameDayCourses }) => {
+        const stateClass = overlaps ? ' has-exam-conflict' : sameDay ? ' has-exam-same-day' : '';
+        const status = overlaps
+            ? `<span class="exam-status danger">${AppIcons.svg('CircleAlert')} تداخل زمانی</span>`
+            : sameDay
+                ? `<span class="exam-status warning">${AppIcons.svg('CalendarDays')} همان روز</span>`
+                : !exam
+                    ? `<span class="exam-status muted">${AppIcons.svg('CircleAlert')} زمان اعلام نشده</span>`
+                    : '';
+        const related = overlaps ? overlapCourses : sameDayCourses;
+        const relatedText = related.length
+            ? `<p class="exam-conflict-detail">${overlaps ? 'هم‌زمان با' : 'همان روز با'}: ${related.map(other => `«${SafeDOM.escape(other.name)}»`).join('، ')}</p>`
+            : '';
+        return `<article class="plan-list-item exam-list-item${stateClass}" style="--course-color:${getCourseColor(course)}" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1"><h3>${SafeDOM.escape(course.name)}</h3>${status}<p class="exam-list-meta">${exam ? `${AppIcons.svg('CalendarDays')}${toPersianNum(exam.date)} <span aria-hidden="true">·</span> ${AppIcons.svg('Clock')}${formatExamTime(exam)}` : 'تاریخ و ساعت امتحان اعلام نشده'}</p>${relatedText}</article>`;
+    }).join('')}` : '<div class="empty-state"><div class="empty-state-title">امتحانی برای نمایش نیست</div></div>'}`;
     const scheduleButton = document.getElementById('mnSchedule');
     scheduleButton?.classList.toggle('has-issues', !health.ready);
     scheduleButton?.setAttribute('aria-label', `برنامه، ${health.ready ? 'آماده' : `${health.issues.length} مورد نیازمند بررسی`}`);
@@ -731,6 +752,21 @@ function focusPlanIssue(issue) {
     const target = id && document.querySelector(`#${container} [data-course-id="${CSS.escape(id)}"]`);
     target?.focus();
     target?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function getExamConflictInfo(entry, list) {
+    const overlapCourses = entry.exam ? list
+        .filter(other => other !== entry && other.exam && CourseDomain.examsOverlap(entry.exam, other.exam))
+        .map(other => other.course) : [];
+    const sameDayCourses = entry.exam ? list
+        .filter(other => other !== entry && other.exam?.date === entry.exam.date && !overlapCourses.some(course => course.id === other.course.id))
+        .map(other => other.course) : [];
+    return {
+        overlaps: overlapCourses.length > 0,
+        sameDay: overlapCourses.length === 0 && sameDayCourses.length > 0,
+        overlapCourses,
+        sameDayCourses,
+    };
 }
 
 function setPlanView(view) {
