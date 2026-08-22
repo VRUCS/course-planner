@@ -265,6 +265,17 @@ function saveCurriculumState() {
 // ═══════════════════════════════════════════════════════════════════════════
 // SIDEBAR TABS
 // ═══════════════════════════════════════════════════════════════════════════
+function syncMobileNavigation(view) {
+    ['Search', 'Schedule', 'Curriculum'].forEach(value => {
+        const button = document.getElementById(`mn${value}`);
+        const selected = value.toLowerCase() === view;
+        button?.classList.toggle('active', selected);
+        if (selected) selectTab(button);
+        const wrap = button?.querySelector('.mob-nav-icon-wrap');
+        if (wrap) wrap.style.background = selected ? 'var(--blue-dim)' : '';
+    });
+}
+
 function switchTab(tab) {
     state.activeSidebarTab = tab;
     ['search', 'curriculum'].forEach(t => {
@@ -279,6 +290,14 @@ function switchTab(tab) {
         if (selected) selectTab(button);
     });
     if (tab === 'curriculum') renderCurriculumTab();
+
+    // Keep the single-workspace navigation in sync without replacing this
+    // global handler. Replacing `window.switchTab` caused a recursion loop:
+    // setMobView() -> switchTab() -> setMobView().
+    if (window.innerWidth <= 1100) {
+        document.body.setAttribute('data-mob', tab);
+        syncMobileNavigation(tab);
+    }
 }
 
 function syncCurriculumTab() {
@@ -1342,36 +1361,22 @@ const isSingleWorkspace = () => window.innerWidth <= 1100;
 
 function setMobView(view) {
     if (!isSingleWorkspace()) return;
+
+    // Search and curriculum are also sidebar tabs. `switchTab()` synchronizes
+    // both the sidebar and the mobile navigation in one direction.
+    if (view === 'search' || view === 'curriculum') {
+        switchTab(view);
+        return;
+    }
+
     document.body.setAttribute('data-mob', view);
-
-    // sync desktop sidebar tabs
-    if (view === 'search')     switchTab('search');
-    if (view === 'curriculum') switchTab('curriculum');
-
-    // update bottom‑nav active state
-    ['Search', 'Schedule', 'Curriculum'].forEach(v => {
-        const button = document.getElementById('mn' + v);
-        const selected = v.toLowerCase() === view;
-        button?.classList.toggle('active', selected);
-        if (selected) selectTab(button);
-        const wrap = button?.querySelector('.mob-nav-icon-wrap');
-        if (wrap) wrap.style.background = selected ? 'var(--blue-dim)' : '';
-    });
+    syncMobileNavigation(view);
 }
 
 // initialise mobile state
 function initMobile() {
     if (isSingleWorkspace()) {
-        document.body.setAttribute('data-mob', 'search');
-        // patch switchTab so it also updates mob view from desktop tabs
-        const origSwitch = switchTab;
-        window.switchTab = (tab) => {
-            origSwitch(tab);
-            if (isSingleWorkspace()) {
-                if (tab === 'search')     setMobView('search');
-                if (tab === 'curriculum') setMobView('curriculum');
-            }
-        };
+        setMobView('search');
     }
     // keep data‑mob in sync on resize
     window.addEventListener('resize', () => {

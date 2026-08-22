@@ -53,6 +53,13 @@ test('tablet navigation shares the 1100px workspace breakpoint in JS and CSS', (
     assert.match(css, /\.sidebar, \.main \{ width:100% !important/);
 });
 
+test('mobile navigation synchronizes tabs without replacing the global tab handler', () => {
+    const controller = read('apps/web/scripts/pages/student-planner.js');
+    assert.match(controller, /function syncMobileNavigation\(view\)/);
+    assert.doesNotMatch(controller, /window\.switchTab\s*=\s*\(/);
+    assert.match(controller, /if \(view === 'search' \|\| view === 'curriculum'\) \{/);
+});
+
 test('student tablists expose complete tab relationships and keyboard enhancement', () => {
     const html = read('apps/web/index.html');
     const ui = read('apps/web/scripts/features/ui.js');

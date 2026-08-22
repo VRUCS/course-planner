@@ -57,7 +57,8 @@ tests/
   pipelines/
 ```
 
-جزئیات بیشتر در [مستند معماری](docs/architecture.md) آمده است.
+جزئیات بیشتر در [مستند معماری](docs/architecture.md) و
+[راهنمای ساختار پروژه](docs/project-structure.md) آمده است.
 
 ## اجرای محلی سایت
 

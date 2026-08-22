@@ -25,6 +25,7 @@ jobs:
       - run: uv run ruff check .
       - run: npx eslint
       - run: uv run python -m pytest -q
+      - run: uv run python -m tools.data_pipeline.course_converter --check
       - run: uv run python -m tools.data_pipeline.curriculum_pipeline check
       - run: npm test
       - run: uv run python -m compileall -q apps/api tools
