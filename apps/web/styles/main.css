@@ -708,6 +708,7 @@ select { appearance: none; background-image: none; padding-left: 32px; }
   position: sticky; top: 0; z-index: 50;
 }
 .topbar-brand { display: flex; align-items: center; gap: var(--sp2); }
+.professor-link-icon { display: none; }
 .topbar-brand-icon { display: inline-flex; align-items: center; color: var(--accent); }
 .topbar-brand-name { font-size: 0.95rem; font-weight: 800; }
 .topbar-actions { display: flex; gap: var(--sp2); flex-wrap: wrap; align-items: center; }

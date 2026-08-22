@@ -353,7 +353,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     <button class="btn btn-ghost btn-sm mob-exam-btn" style="background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-border)" onclick="openExamModal()" aria-label="امتحانات" title="امتحانات"><span data-icon="CalendarDays"></span> امتحانات</button>
     <button class="btn btn-ghost btn-sm" onclick="printSchedule()" title="چاپ برنامه" aria-label="چاپ برنامه"><span data-icon="Printer"></span></button>
     <button class="btn btn-ghost btn-sm" onclick="openCalendarExport()" title="افزودن به تقویم" aria-label="افزودن برنامه به تقویم"><span data-icon="Download"></span></button>
-    <a href="professor.html" class="btn btn-ghost btn-sm" style="text-decoration:none"><span data-icon="GraduationCap"></span> استاد</a>
+    <a href="professor.html" class="btn btn-ghost btn-sm" style="text-decoration:none"><span class="professor-link-icon" data-icon="GraduationCap" aria-hidden="true"></span> استاد</a>
     <button class="btn btn-ghost btn-sm" onclick="openDialog(document.getElementById('aboutModal'))" title="درباره پروژه"><span data-icon="Info"></span> درباره</button>
   </div>
 </header>
@@ -511,11 +511,11 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         <p>کد این پروژه با مجوز <bdi dir="ltr">GNU GPLv3</bdi> منتشر شده است؛ می‌توانید آن را بررسی کنید، تغییر دهید و طبق شرایط همین مجوز بازنشر کنید.</p>
         <p class="about-contribute">اگر با خطایی روبه‌رو شدید یا پیشنهادی برای بهترشدن برنامه دارید، آن را در بخش Issues مطرح کنید.</p>
         <div class="about-links">
-          <a class="about-github" href="https://github.com/VRUCS/entekhab-vahed" target="_blank" rel="noopener noreferrer">
+          <a class="about-github" href="https://github.com/VRUCS/course-planner" target="_blank" rel="noopener noreferrer">
             <span data-icon="ArrowLeft"></span>
             مشاهدهٔ کد در GitHub
           </a>
-          <a class="about-issues" href="https://github.com/VRUCS/entekhab-vahed/issues" target="_blank" rel="noopener noreferrer">
+          <a class="about-issues" href="https://github.com/VRUCS/course-planner/issues" target="_blank" rel="noopener noreferrer">
             <span data-icon="MessageCircle"></span>
             گزارش خطا یا پیشنهاد
           </a>

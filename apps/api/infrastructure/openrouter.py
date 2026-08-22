@@ -10,7 +10,7 @@ from apps.api.config import Settings, get_settings
 from apps.api.domain.errors import ProviderResponseError
 
 HEADERS = {
-    "HTTP-Referer": "https://github.com/entekhab-vahed",
+    "HTTP-Referer": "https://github.com/VRUCS/course-planner",
     "X-Title": "Entekhab Vahed",
     "Content-Type": "application/json",
 }

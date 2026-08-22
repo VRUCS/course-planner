@@ -21,8 +21,8 @@ test('about dialog documents project purpose, privacy, license, and source', () 
     assert.match(html, /پروژهٔ کارشناسی/);
     assert.match(html, /localStorage/);
     assert.match(html, /GNU GPLv3/);
-    assert.match(html, /https:\/\/github\.com\/VRUCS\/entekhab-vahed/);
-    assert.match(html, /href="https:\/\/github\.com\/VRUCS\/entekhab-vahed\/issues" target="_blank" rel="noopener noreferrer"/);
+    assert.match(html, /https:\/\/github\.com\/VRUCS\/course-planner/);
+    assert.match(html, /href="https:\/\/github\.com\/VRUCS\/course-planner\/issues" target="_blank" rel="noopener noreferrer"/);
     assert.match(html, /گزارش خطا یا پیشنهاد/);
     assert.match(html, /قابلیت اختیاری دستیار هوشمند/);
 });
