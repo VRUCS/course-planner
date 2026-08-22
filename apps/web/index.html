@@ -26,7 +26,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 }
 .brand-logo {
   width: 32px; height: 32px; border-radius: var(--r1);
-  background: linear-gradient(135deg, var(--blue), var(--violet));
+  color: var(--accent); background: var(--blue-dim); border: 1px solid var(--accent-border);
   display: flex; align-items: center; justify-content: center;
   font-size: 1rem; flex-shrink: 0;
 }
@@ -63,7 +63,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 .unit-max   { color: var(--t2); font-weight: 600; }
 .unit-bar   { width: 60px; height: 4px; background: var(--b0); border-radius: 2px; overflow: hidden; }
 .unit-bar-fill { height: 100%; border-radius: 2px; background: var(--blue); transition: width var(--slow), background var(--mid); }
-.topbar-actions { display: flex; gap: 6px; align-items: center; }
+.topbar-actions { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; min-width: 0; }
 
 /* ── Sidebar ─────────────────────────────────────────────────────────────── */
 .sidebar {
@@ -103,6 +103,56 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 .main-header { display: flex; justify-content: space-between; align-items: center; }
 .main-title  { font-size: 1.1rem; font-weight: 800; }
 .main-subtitle { font-size: var(--fs-xs); color: var(--t3); margin-top: 2px; }
+
+/* ── Compact tablet layout (769–1100px) ──────────────────────────────────── */
+@media (min-width: 769px) and (max-width: 1100px) {
+  .app {
+    display: grid;
+    grid-template-areas: 'view';
+    grid-template-rows: 1fr;
+    grid-template-columns: 1fr;
+  }
+  .sidebar, .main {
+    grid-area: view;
+    width: 100% !important; min-width: 0 !important; max-width: none;
+    height: 100%;
+    border: none !important;
+    transition: transform .28s cubic-bezier(.4,0,.2,1), opacity .2s ease;
+    will-change: transform, opacity;
+  }
+  body[data-mob="search"] .sidebar,
+  body[data-mob="curriculum"] .sidebar { transform: translateX(0); opacity: 1; pointer-events: auto; }
+  body[data-mob="search"] .main,
+  body[data-mob="curriculum"] .main { transform: translateX(-110%); opacity: 0; pointer-events: none; }
+  body[data-mob="schedule"] .sidebar { transform: translateX(110%); opacity: 0; pointer-events: none; }
+  body[data-mob="schedule"] .main { transform: translateX(0); opacity: 1; pointer-events: auto; }
+  .topbar-center { display: none; }
+  .app-topbar { padding: 0 14px; gap: 10px; }
+  .topbar-actions .btn:not(#themeBtn):not(.mob-exam-btn):not(.profile-btn) { display: none; }
+  .topbar-actions .profile-btn { padding-inline: 9px; }
+  .topbar-actions .profile-btn .profile-label { display: none; }
+  .mob-unit-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--blue-dim); border: 1px solid var(--accent-border);
+    border-radius: 20px; padding: 4px 12px 4px 8px;
+    font-size: var(--fs-xs); font-weight: 700; color: var(--accent);
+    font-family: inherit; cursor: pointer; position: relative; flex-shrink: 0;
+  }
+  .mob-unit-num { font-size: .95rem; font-weight: 800; }
+  .mob-unit-max-label { color: var(--t3); font-weight: 500; }
+  .mob-nav {
+    display: flex; flex-shrink: 0; height: 62px;
+    background: var(--s1); border-top: 1px solid var(--b0);
+  }
+  .mob-nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    border: none; background: transparent; cursor: pointer; color: var(--t3);
+    font-family: inherit; font-size: var(--fs-2xs); font-weight: 600; position: relative; padding: 6px 4px;
+  }
+  .mob-nav-icon { font-size: 1.35rem; line-height: 1; }
+  .mob-nav-btn.active { color: var(--accent); }
+  .mob-nav-btn.active .mob-nav-icon-wrap { background: var(--blue-dim); border-radius: 12px; padding: 4px 18px; margin-bottom: 1px; }
+}
 
 .timetable-container {
   flex: 1; min-height: 0; background: var(--s1); border: 1px solid var(--b0);
@@ -192,14 +242,20 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 
   /* ── Topbar: compact ── */
   .app-topbar {
-    height: 50px; padding: 0 14px; gap: 10px;
+    height: 50px; padding: 0 8px; gap: 6px; flex-wrap: nowrap; overflow: visible;
   }
+  .brand { min-width: 0; flex: 1 1 auto; gap: 6px; overflow: hidden; }
+  .brand-logo { width: 28px; height: 28px; }
+  .brand-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .topbar-center, .brand-badge { display: none; }
-  .topbar-actions .btn { padding: 6px 10px; font-size: .76rem; }
+  .topbar-actions { flex: 0 0 auto; gap: 4px; }
+  .topbar-actions .btn { padding: 6px 8px; font-size: .76rem; }
   /* hide print/professor shortcuts on mobile — accessible via menu */
   .topbar-actions .btn:not(#themeBtn):not(.mob-exam-btn):not(.profile-btn) { display: none; }
   .topbar-actions .profile-btn { padding-inline: 9px; }
   .topbar-actions .profile-btn .profile-label { display: none; }
+  .mob-exam-btn { width: 36px; padding-inline: 6px !important; font-size: 0 !important; }
+  .mob-exam-btn span { font-size: 1rem; }
 
   /* mobile unit pill inside topbar — a real button opening the unit sheet */
   .mob-unit-pill {
@@ -241,15 +297,6 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     padding: 4px 18px; margin-bottom: 1px;
   }
 
-  /* badge for schedule button */
-  .mob-nav-badge {
-    position: absolute; top: 4px; right: calc(50% - 24px);
-    background: var(--blue); color: #fff;
-    border-radius: 10px; font-size: var(--fs-2xs); font-weight: 800;
-    padding: 1px 5px; min-width: 16px; text-align: center;
-    border: 2px solid var(--s1);
-  }
-
   /* cur‑scroll bottom padding so last card isn't behind nav */
   .cur-scroll  { padding-bottom: 16px; }
   .course-list { padding-bottom: 16px; }
@@ -269,7 +316,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 <!-- ── Top Bar ─────────────────────────────────────────────────────────────── -->
 <header class="app-topbar no-print">
   <a href="#" class="brand" onclick="return false">
-    <div class="brand-logo">📚</div>
+    <div class="brand-logo"><span data-icon="BookOpen"></span></div>
     <div>
       <div class="brand-name">انتخاب واحد</div>
     </div>
@@ -300,14 +347,14 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   <div class="topbar-actions">
     <button class="btn btn-ghost btn-sm profile-btn" id="profileBtn" type="button"
             onclick="openStudentProfile()" aria-haspopup="dialog" title="پروفایل تحصیلی">
-      <span aria-hidden="true">👤</span> <span class="profile-label">پروفایل</span>
+      <span data-icon="UserRound"></span> <span class="profile-label">پروفایل</span>
     </button>
-    <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="onToggleTheme()" title="تغییر تم" aria-label="تغییر به تم روشن"><span id="themeBtnIcon" aria-hidden="true">🌗</span></button>
-    <button class="btn btn-ghost btn-sm mob-exam-btn" style="background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-border)" onclick="openExamModal()"><span aria-hidden="true">📅</span> امتحانات</button>
-    <button class="btn btn-ghost btn-sm" onclick="printSchedule()" title="چاپ برنامه" aria-label="چاپ برنامه"><span aria-hidden="true">🖨️</span></button>
-    <button class="btn btn-ghost btn-sm" onclick="openCalendarExport()" title="افزودن به تقویم" aria-label="افزودن برنامه به تقویم"><span aria-hidden="true">📆</span></button>
-    <a href="professor.html" class="btn btn-ghost btn-sm" style="background:var(--violet-dim);color:var(--violet);border-color:rgba(139,92,246,.3);text-decoration:none"><span aria-hidden="true">👨‍🏫</span> استاد</a>
-    <button class="btn btn-ghost btn-sm" onclick="openDialog(document.getElementById('aboutModal'))" title="درباره پروژه"><span aria-hidden="true">ⓘ</span> درباره</button>
+    <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="onToggleTheme()" title="تغییر تم" aria-label="تغییر به تم روشن"><span id="themeBtnIcon" data-icon="Moon"></span></button>
+    <button class="btn btn-ghost btn-sm mob-exam-btn" style="background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-border)" onclick="openExamModal()" aria-label="امتحانات" title="امتحانات"><span data-icon="CalendarDays"></span> امتحانات</button>
+    <button class="btn btn-ghost btn-sm" onclick="printSchedule()" title="چاپ برنامه" aria-label="چاپ برنامه"><span data-icon="Printer"></span></button>
+    <button class="btn btn-ghost btn-sm" onclick="openCalendarExport()" title="افزودن به تقویم" aria-label="افزودن برنامه به تقویم"><span data-icon="Download"></span></button>
+    <a href="professor.html" class="btn btn-ghost btn-sm" style="text-decoration:none"><span data-icon="GraduationCap"></span> استاد</a>
+    <button class="btn btn-ghost btn-sm" onclick="openDialog(document.getElementById('aboutModal'))" title="درباره پروژه"><span data-icon="Info"></span> درباره</button>
   </div>
 </header>
 
@@ -319,9 +366,9 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     <div class="sidebar-tabs">
       <div class="tabs" role="tablist" aria-label="بخش‌های انتخاب واحد">
         <button class="tab-btn active" id="tabBtnSearch" role="tab" aria-selected="true" tabindex="0"
-                aria-controls="tabSearch" onclick="switchTab('search')">🔍 جستجوی درس</button>
+                aria-controls="tabSearch" onclick="switchTab('search')"><span data-icon="Search"></span> جستجوی درس</button>
         <button class="tab-btn" id="tabBtnCurriculum" role="tab" aria-selected="false" tabindex="-1"
-                aria-controls="tabCurriculum" onclick="switchTab('curriculum')">🗺️ نقشه درسی</button>
+                aria-controls="tabCurriculum" onclick="switchTab('curriculum')"><span data-icon="GraduationCap"></span> نقشه درسی</button>
       </div>
     </div>
 
@@ -340,7 +387,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
           <div class="search-wrapper" role="search">
             <input type="search" id="searchInput" placeholder="نام درس، استاد یا کد درس"
                    aria-label="جستجو در نام درس، استاد، کد">
-            <span class="search-icon" aria-hidden="true">🔍</span>
+            <span class="search-icon" data-icon="Search"></span>
           </div>
           <div class="filter-row">
             <select id="facultyFilter" aria-label="دانشکده"><option value="">همه دانشکده‌ها</option></select>
@@ -372,7 +419,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         </div>
         <div class="cur-scroll" id="curriculumScroll">
           <div class="empty-state">
-            <div class="empty-state-icon">🗺️</div>
+            <div class="empty-state-icon"><span data-icon="GraduationCap"></span></div>
             <div class="empty-state-title">نقشه درسی</div>
             <div class="empty-state-desc">از تب جستجو، یک دانشکده و گروه آموزشی انتخاب کنید.</div>
           </div>
@@ -423,7 +470,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 
     <!-- Mobile header (only shown on mobile) -->
     <div class="mob-sched-header" style="display:none" id="mobSchedHeader">
-      <span class="mob-sched-title"><span aria-hidden="true">📅</span> برنامه هفتگی</span>
+      <span class="mob-sched-title"><span data-icon="CalendarDays"></span> برنامه هفتگی</span>
       <span id="mobSelectedInfo" style="font-size:var(--fs-xs);color:var(--t3)"></span>
     </div>
 
@@ -445,32 +492,32 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   <div class="modal-box about-dialog" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
     <div class="modal-header">
       <h2 class="modal-title" id="aboutTitle">دربارهٔ انتخاب واحد هوشمند</h2>
-      <button class="modal-close" onclick="closeDialog(document.getElementById('aboutModal'))" aria-label="بستن">×</button>
+      <button class="modal-close" onclick="closeDialog(document.getElementById('aboutModal'))" aria-label="بستن"><span data-icon="X"></span></button>
     </div>
     <div class="modal-body">
       <div class="about-intro">
-        <span class="about-logo" aria-hidden="true">📚</span>
+        <span class="about-logo" aria-hidden="true"><span data-icon="BookOpen"></span></span>
         <div>
           <h3>یک برنامه‌ریز دانشگاهی آزاد و دانشجویی</h3>
           <p>این سامانه به‌عنوان پروژهٔ کارشناسی ساخته شده تا جست‌وجوی درس‌ها، بررسی تداخل‌ها و ساخت برنامهٔ هفتگی ساده‌تر و قابل‌اعتمادتر شود.</p>
         </div>
       </div>
       <section class="about-card">
-        <h3><span aria-hidden="true">🔒</span> حریم خصوصی و مالکیت داده</h3>
+        <h3><span data-icon="LockKeyhole"></span> حریم خصوصی و مالکیت داده</h3>
         <p>درس‌های انتخاب‌شده، معدل، فیلترها و وضعیت دروس فقط در حافظهٔ محلی همین مرورگر (<bdi dir="ltr">localStorage</bdi>) ذخیره می‌شوند. هستهٔ برنامه حساب کاربری ندارد و این اطلاعات را به سروری ارسال نمی‌کند؛ با پاک‌کردن داده‌های سایت از مرورگر نیز حذف می‌شوند.</p>
         <p class="about-note">قابلیت اختیاری دستیار هوشمند، فقط در صورت فعال‌بودن و استفادهٔ آگاهانه، ممکن است اطلاعات لازم برای همان درخواست را به سرویس تنظیم‌شده ارسال کند.</p>
       </section>
       <section class="about-card">
-        <h3><span aria-hidden="true">🌱</span> آزاد و متن‌باز</h3>
+        <h3><span data-icon="ShieldCheck"></span> آزاد و متن‌باز</h3>
         <p>کد این پروژه با مجوز <bdi dir="ltr">GNU GPLv3</bdi> منتشر شده است؛ می‌توانید آن را بررسی کنید، تغییر دهید و طبق شرایط همین مجوز بازنشر کنید.</p>
         <p class="about-contribute">اگر با خطایی روبه‌رو شدید یا پیشنهادی برای بهترشدن برنامه دارید، آن را در بخش Issues مطرح کنید.</p>
         <div class="about-links">
           <a class="about-github" href="https://github.com/VRUCS/entekhab-vahed" target="_blank" rel="noopener noreferrer">
-            <span aria-hidden="true">↗</span>
+            <span data-icon="ArrowLeft"></span>
             مشاهدهٔ کد در GitHub
           </a>
           <a class="about-issues" href="https://github.com/VRUCS/entekhab-vahed/issues" target="_blank" rel="noopener noreferrer">
-            <span aria-hidden="true">💬</span>
+            <span data-icon="MessageCircle"></span>
             گزارش خطا یا پیشنهاد
           </a>
         </div>
@@ -487,7 +534,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   <div class="modal-box calendar-dialog" role="dialog" aria-modal="true" aria-labelledby="calendarTitle">
     <div class="modal-header">
       <h2 class="modal-title" id="calendarTitle">افزودن برنامه به Google Calendar</h2>
-      <button class="modal-close" onclick="closeDialog(document.getElementById('calendarModal'))" aria-label="بستن">×</button>
+      <button class="modal-close" onclick="closeDialog(document.getElementById('calendarModal'))" aria-label="بستن"><span data-icon="X"></span></button>
     </div>
     <div class="modal-body">
       <p class="calendar-help">بازهٔ برگزاری کلاس‌ها را وارد کنید. فایل برنامه دانلود می‌شود و صفحهٔ Import گوگل‌کلندر باز خواهد شد.</p>
@@ -507,14 +554,14 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 
 <div class="modal-backdrop" id="riskModal">
   <div class="modal-box anim-scale" role="dialog" aria-modal="true" aria-labelledby="riskTitle">
-    <div class="modal-header"><h2 class="modal-title" id="riskTitle">بررسی پیش از افزودن</h2><button class="modal-close" onclick="cancelPendingAction()" aria-label="بستن">×</button></div>
+    <div class="modal-header"><h2 class="modal-title" id="riskTitle">بررسی پیش از افزودن</h2><button class="modal-close" onclick="cancelPendingAction()" aria-label="بستن"><span data-icon="X"></span></button></div>
     <div class="modal-body"><div id="riskContent"></div><div class="dialog-actions"><button class="btn btn-ghost" onclick="cancelPendingAction()">انصراف</button><button class="btn btn-ghost" onclick="reviewPendingRisk()">بررسی برنامه</button><button class="btn btn-primary" id="riskConfirmBtn" onclick="confirmPendingAction()">با وجود تداخل اضافه کن</button></div></div>
   </div>
 </div>
 
 <div class="modal-backdrop" id="reviewModal">
   <div class="modal-box review-dialog" role="dialog" aria-modal="true" aria-labelledby="reviewTitle">
-    <div class="modal-header"><h2 class="modal-title" id="reviewTitle">مرور نهایی برنامه</h2><button class="modal-close" onclick="closeDialog(document.getElementById('reviewModal'))" aria-label="بستن">×</button></div>
+    <div class="modal-header"><h2 class="modal-title" id="reviewTitle">مرور نهایی برنامه</h2><button class="modal-close" onclick="closeDialog(document.getElementById('reviewModal'))" aria-label="بستن"><span data-icon="X"></span></button></div>
     <div class="modal-body" id="reviewContent"></div>
     <div class="dialog-actions review-actions"><button class="btn btn-ghost" onclick="printSchedule()">چاپ برنامه</button><button class="btn btn-ghost" onclick="openCalendarExport()">افزودن به تقویم</button><button class="btn btn-ghost" onclick="copySectionCodes()">کپی کد گروه‌ها</button><button class="btn btn-primary" onclick="exportPlan()">خروجی JSON</button></div>
   </div>
@@ -529,7 +576,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         <h2 class="modal-title" id="studentProfileTitle">پروفایل تحصیلی</h2>
         <p class="profile-subtitle">برای دیدن سریع درس‌های مرتبط با رشته‌ات</p>
       </div>
-      <button class="modal-close" type="button" onclick="closeStudentProfile()" aria-label="بستن">×</button>
+      <button class="modal-close" type="button" onclick="closeStudentProfile()" aria-label="بستن"><span data-icon="X"></span></button>
     </div>
     <form id="studentProfileForm" class="modal-body" onsubmit="applyStudentProfile(event)">
       <div class="profile-fields">
@@ -575,20 +622,17 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 <nav class="mob-nav no-print" role="tablist">
   <button class="mob-nav-btn active" id="mnSearch" role="tab" aria-selected="true" tabindex="0" aria-controls="tabSearch" onclick="setMobView('search')" aria-label="جستجوی درس">
     <div class="mob-nav-icon-wrap">
-      <span class="mob-nav-icon">🔍</span>
+      <span class="mob-nav-icon"><span data-icon="Search"></span></span>
     </div>
     <span>جستجو</span>
   </button>
   <button class="mob-nav-btn" id="mnSchedule" role="tab" aria-selected="false" tabindex="-1" aria-controls="mainContent" onclick="setMobView('schedule')" aria-label="برنامه هفتگی">
-    <div class="mob-nav-icon-wrap" style="position:relative">
-      <span class="mob-nav-icon">📅</span>
-      <span class="mob-nav-badge" id="mobBadge" style="display:none"></span>
-    </div>
+    <div class="mob-nav-icon-wrap"><span class="mob-nav-icon"><span data-icon="CalendarDays"></span></span></div>
     <span>برنامه</span>
   </button>
   <button class="mob-nav-btn" id="mnCurriculum" role="tab" aria-selected="false" tabindex="-1" aria-controls="tabCurriculum" onclick="setMobView('curriculum')" aria-label="نقشه درسی">
     <div class="mob-nav-icon-wrap">
-      <span class="mob-nav-icon">🗺️</span>
+      <span class="mob-nav-icon"><span data-icon="GraduationCap"></span></span>
     </div>
     <span>نقشه</span>
   </button>
@@ -601,8 +645,8 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 <div class="modal-backdrop" id="examModal" onclick="if(event.target===this)closeExamModal()">
   <div class="modal-box anim-scale" role="dialog" aria-modal="true" aria-labelledby="examModalTitle">
     <div class="modal-header">
-      <h3 class="modal-title" id="examModalTitle">📅 برنامه امتحانات</h3>
-      <button class="modal-close" onclick="closeExamModal()" aria-label="بستن">×</button>
+      <h3 class="modal-title" id="examModalTitle"><span data-icon="CalendarDays"></span> برنامه امتحانات</h3>
+      <button class="modal-close" onclick="closeExamModal()" aria-label="بستن"><span data-icon="X"></span></button>
     </div>
     <div class="modal-body">
       <table class="data-table">
@@ -618,7 +662,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   <div class="modal-box anim-scale" style="max-width:340px" role="dialog" aria-modal="true" aria-labelledby="unitSheetTitle">
     <div class="modal-header">
       <h3 class="modal-title" id="unitSheetTitle">واحدها و معدل</h3>
-      <button class="modal-close" onclick="closeUnitSheet()" aria-label="بستن">×</button>
+      <button class="modal-close" onclick="closeUnitSheet()" aria-label="بستن"><span data-icon="X"></span></button>
     </div>
     <div class="modal-body">
       <div class="unit-display" id="unitDisplaySheet" role="status" style="margin-bottom:14px">
@@ -641,19 +685,19 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 <!-- پنهان تا AI_INTERACTIVE_ENABLED=true در backend تنظیم شود -->
 <button class="ai-fab no-print" id="aiFab" onclick="Advisor.toggle()" title="دستیار مشاور AI"
         aria-controls="aiPanel" aria-expanded="false" style="display:none">
-  🤖
+  <span data-icon="Bot"></span>
   <span class="ai-fab-dot" id="aiFabDot"></span>
 </button>
 
 <div class="ai-panel no-print" id="aiPanel" role="dialog" aria-label="دستیار مشاور" aria-hidden="true">
   <div class="ai-header">
     <div class="ai-header-title">
-      <span>🤖</span>
+      <span data-icon="Bot"></span>
       <span>دستیار مشاور</span>
     </div>
     <div class="ai-header-actions">
-      <button class="ai-header-btn" onclick="Advisor.clearHistory()" title="شروع مجدد" aria-label="شروع مجدد"><span aria-hidden="true">🔄</span></button>
-      <button class="ai-header-btn" onclick="Advisor.close()" title="بستن" aria-label="بستن"><span aria-hidden="true">✕</span></button>
+      <button class="ai-header-btn" onclick="Advisor.clearHistory()" title="شروع مجدد" aria-label="شروع مجدد"><span data-icon="RotateCcw"></span></button>
+      <button class="ai-header-btn" onclick="Advisor.close()" title="بستن" aria-label="بستن"><span data-icon="X"></span></button>
     </div>
   </div>
 
@@ -668,7 +712,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       placeholder="سوالت را بپرس..."
       onkeydown="aiHandleKey(event)"
       oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-    <button class="ai-send-btn" onclick="aiSendFromInput()" title="ارسال" aria-label="ارسال"><span aria-hidden="true">➤</span></button>
+    <button class="ai-send-btn" onclick="aiSendFromInput()" title="ارسال" aria-label="ارسال"><span data-icon="Send"></span></button>
   </div>
 </div>
 
@@ -677,7 +721,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   <div class="modal-box" style="max-width:420px" role="dialog" aria-modal="true" aria-labelledby="loadModalTitle">
     <div class="modal-header">
       <h3 class="modal-title" id="loadModalTitle">تحلیل بار درسی</h3>
-      <button class="modal-close" onclick="closeLoadModal()" aria-label="بستن">×</button>
+      <button class="modal-close" onclick="closeLoadModal()" aria-label="بستن"><span data-icon="X"></span></button>
     </div>
     <div class="modal-body" style="padding-top:10px">
       <p id="loadModalText" style="font-size:.88rem;line-height:1.7;color:var(--t1)"></p>
@@ -689,8 +733,8 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 <div class="modal-backdrop" id="pathModal" onclick="if(event.target===this)closePathModal()">
   <div class="modal-box" style="max-width:480px" role="dialog" aria-modal="true" aria-labelledby="pathModalTitle">
     <div class="modal-header">
-      <h3 class="modal-title" id="pathModalTitle">🗺️ مسیر رسیدن به درس</h3>
-      <button class="modal-close" onclick="closePathModal()" aria-label="بستن">×</button>
+      <h3 class="modal-title" id="pathModalTitle"><span data-icon="Map"></span> مسیر رسیدن به درس</h3>
+      <button class="modal-close" onclick="closePathModal()" aria-label="بستن"><span data-icon="X"></span></button>
     </div>
     <div class="modal-body">
       <div id="pathModalContent" class="path-modal-body" style="min-height:80px">
@@ -708,6 +752,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 <script src="scripts/domain/calendar-export.js"></script>
 <script src="scripts/domain/planner-domain.js"></script>
 <script src="scripts/adapters/planner-storage.js"></script>
+<script src="scripts/features/icons.js"></script>
 <script src="scripts/features/ui.js"></script>
 <script src="scripts/adapters/ai-client.js"></script>
 <script src="scripts/features/advisor.js"></script>

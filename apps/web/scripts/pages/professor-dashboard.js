@@ -34,7 +34,7 @@ function render() {
         setSummary(0, 0, 0, 0);
         document.getElementById('conflictList').innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">📋</div>
+                <div class="empty-state-icon">${AppIcons.svg('ListChecks')}</div>
                 <div class="empty-state-title">ابتدا یک گروه انتخاب کنید</div>
             </div>`;
         return;
@@ -107,6 +107,7 @@ function buildTimetable(groupCourses, hardIds, softIds) {
             // Hard conflicts keep the .conflict styling; soft ones tint yellow.
             if (!isHard) div.style.setProperty('--fc', isSoft ? 'var(--yellow)' : 'var(--blue)');
             div.title = `${c.name}\n${c.prof}\n${c.id}`;
+            if (isHard) div.insertAdjacentHTML('beforeend', `<span class="class-block-alert" aria-label="تداخل سخت">${AppIcons.svg('CircleAlert')}</span>`);
             const name = document.createElement('div');
             name.className = 'class-block-name';
             name.textContent = c.name;
@@ -124,7 +125,7 @@ function buildConflictList(conflicts) {
     const list = document.getElementById('conflictList');
     if (!conflicts.length) {
         list.innerHTML = `<div class="empty-state">
-            <div class="empty-state-icon">✅</div>
+            <div class="empty-state-icon">${AppIcons.svg('CircleCheck')}</div>
             <div class="empty-state-title">هیچ تداخلی یافت نشد</div>
             <div class="empty-state-desc">برنامه این گروه با قوانین تعریف‌شده سازگار است.</div>
         </div>`;
@@ -141,8 +142,8 @@ function buildConflictList(conflicts) {
         card.className = `conflict-card ${type}`;
         card.innerHTML = `
                 <div class="conflict-header">
-                    <span class="conflict-severity ${type}">${type === 'hard' ? '⛔ سخت' : '⚠️ نرم'}</span>
-                    <button class="ai-explain-btn" type="button" title="توضیح AI">✨ توضیح</button>
+                    <span class="conflict-severity ${type}">${AppIcons.svg(type === 'hard' ? 'CircleX' : 'CircleAlert')} ${type === 'hard' ? 'سخت' : 'نرم'}</span>
+                    <button class="ai-explain-btn" type="button" title="توضیح AI">${AppIcons.svg('Info')} توضیح</button>
                 </div>
                 <div class="conflict-pair">${SafeDOM.escape(rule.nameA)} ↔ ${SafeDOM.escape(rule.nameB)}</div>
                 <div class="conflict-sections">${sections}</div>

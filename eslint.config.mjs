@@ -19,6 +19,8 @@ const projectGlobals = {
     DAY_NAMES: 'readonly',
     TIME_SLOTS: 'readonly',
     FACULTY_PALETTE: 'readonly',
+    COURSE_PALETTE: 'readonly',
+    AppIcons: 'readonly',
     normalizeStr: 'readonly',
     toPersianNum: 'readonly',
     getDayIndex: 'readonly',

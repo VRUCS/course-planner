@@ -246,6 +246,16 @@ function getFacultyColor(faculty) {
     return facultyColors[faculty] || '#3b82f6';
 }
 
+function getCourseColor(courseOrId) {
+    const id = typeof courseOrId === 'string' ? courseOrId : courseOrId?.id;
+    if (!id) return COURSE_PALETTE[0];
+    let hash = 0;
+    for (let index = 0; index < id.length; index += 1) {
+        hash = ((hash << 5) - hash + id.charCodeAt(index)) | 0;
+    }
+    return COURSE_PALETTE[Math.abs(hash) % COURSE_PALETTE.length];
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // STORAGE
 // ═══════════════════════════════════════════════════════════════════════════
@@ -393,7 +403,7 @@ function renderCourseList() {
     renderActiveFilters(filters);
     if (!groups.length) {
         list.innerHTML = `<div class="empty-state" style="padding:40px 0">
-            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-icon">${AppIcons.svg('Search')}</div>
             <div class="empty-state-title">درسی با این مشخصات پیدا نشد</div>
             <div class="empty-state-desc">فیلترها را کمتر کن یا نام و کد درس را دوباره بررسی کن.</div>
             <button class="btn btn-ghost" onclick="clearAllFilters()">پاک‌کردن فیلترها</button>
@@ -428,7 +438,7 @@ function renderCourseList() {
               </dl>
               <div class="section-action">
                 <button type="button" class="btn ${isSelected ? 'btn-ghost' : 'btn-primary'} btn-sm" ${isSelected ? 'disabled' : ''}>${isSelected ? 'انتخاب‌شده' : 'افزودن به برنامه'}</button>
-                ${isSelected ? '<button type="button" class="remove-section" aria-label="حذف این درس">×</button>' : ''}
+                ${isSelected ? `<button type="button" class="remove-section" aria-label="حذف این درس">${AppIcons.svg('X')}</button>` : ''}
               </div>
             </div>`;
             article.querySelector('.section-action .btn').addEventListener('click', () => requestAdd(section.id));
@@ -439,7 +449,7 @@ function renderCourseList() {
         article.innerHTML = `<button type="button" class="course-group-toggle" aria-expanded="${expanded}" aria-controls="sections-${safeBase}">
           <span class="course-group-title">${SafeDOM.escape(group.course.name || 'درس بدون نام')}</span>
           <span class="course-group-meta"><bdi dir="ltr">${SafeDOM.escape(group.baseId)}</bdi> · ${toPersianNum(group.course.units || 0)} واحد<br>${toPersianNum(group.sections.length)} گروه ارائه شده · ${toPersianNum(conflictFree)} گروه بدون تداخل</span>
-          <span class="course-group-chevron" aria-hidden="true">${expanded ? '⌃' : '⌄'}</span></button>
+          <span class="course-group-chevron" aria-hidden="true">${AppIcons.svg(expanded ? 'ChevronUp' : 'ChevronDown')}</span></button>
           <div class="section-list" id="sections-${safeBase}" ${expanded ? '' : 'hidden'}></div>`;
         article.querySelector('button').addEventListener('click', () => {
             if (expanded) state.expandedGroups.delete(group.baseId); else state.expandedGroups.add(group.baseId);
@@ -452,7 +462,7 @@ function renderCourseList() {
 
     if (groups.length > state.visibleGroups) {
         const more = document.createElement('button');
-        more.className = 'btn btn-ghost load-more'; more.textContent = 'نمایش موارد بیشتر';
+        more.className = 'btn btn-ghost load-more'; more.innerHTML = `${AppIcons.svg('ChevronDown')} نمایش موارد بیشتر`;
         more.onclick = () => { state.visibleGroups += 30; renderCourseList(); };
         frag.appendChild(more);
     }
@@ -472,7 +482,7 @@ function buildSectionRow(course) {
       <div class="section-cell"><strong>${sessions.length ? sessions.map(formatSessionChip).join('، ') : 'زمان اعلام نشده'}</strong><span>${SafeDOM.escape(course.gender || 'جنسیت اعلام نشده')}</span></div>
       <div class="section-cell"><strong>${exam ? toPersianNum(exam.date) : 'تاریخ اعلام نشده'}</strong><span>امتحان</span></div>
       <div class="section-cell"><strong>${remaining}</strong><span>${Number(course.capacity) > 0 ? `${toPersianNum(course.enrolled || 0)} از ${toPersianNum(course.capacity)}` : ''}</span></div>
-      <div class="section-action"><button type="button" class="btn ${selected ? 'btn-ghost' : 'btn-primary'} btn-sm" ${selected ? 'disabled' : ''}>${selected ? 'انتخاب‌شده' : 'افزودن'}</button>${selected ? '<button type="button" class="remove-section" aria-label="حذف این گروه">×</button>' : ''}</div>`;
+      <div class="section-action"><button type="button" class="btn ${selected ? 'btn-ghost' : 'btn-primary'} btn-sm" ${selected ? 'disabled' : ''}>${selected ? 'انتخاب‌شده' : 'افزودن'}</button>${selected ? `<button type="button" class="remove-section" aria-label="حذف این گروه">${AppIcons.svg('X')}</button>` : ''}</div>`;
     row.querySelector('.section-action .btn').addEventListener('click', () => requestAdd(course.id));
     row.querySelector('.remove-section')?.addEventListener('click', () => removeCourse(course.id));
     return row;
@@ -504,7 +514,7 @@ function commitAdd(course, change = planner.planSelectionChange(course, state.se
     scheduleLoadAnalysis();
     const toast = Toast.info(`${course.name} اضافه شد`, 5000);
     const undo = document.createElement('button');
-    undo.type = 'button'; undo.className = 'toast-close'; undo.textContent = 'واگردانی';
+    undo.type = 'button'; undo.className = 'toast-close'; undo.innerHTML = `${AppIcons.svg('RotateCcw')} واگردانی`;
     undo.setAttribute('aria-label', `واگردانی افزودن ${course.name}`);
     undo.addEventListener('click', () => {
         state.selected = new Set(before); saveState(); renderCourseList(); updateTimetable(); updateUnitDisplay();
@@ -589,7 +599,7 @@ function renderActiveFilters(filters) {
     target.innerHTML = '';
     chips.forEach(chip => {
         const button = document.createElement('button'); button.className = 'filter-chip';
-        button.textContent = `${chip.label} ×`; button.addEventListener('click', () => { chip.reset(); renderCourseList(); });
+        button.innerHTML = `${SafeDOM.escape(chip.label)} ${AppIcons.svg('X')}`; button.addEventListener('click', () => { chip.reset(); renderCourseList(); });
         target.appendChild(button);
     });
     if (chips.length) {
@@ -627,7 +637,7 @@ function updateUnitDisplay() {
     const total = getSelectedUnits();
     const maxUnits = getMaxUnits();
     const pct   = Math.min(100, Math.round(total / maxUnits * 100));
-    const countText = `${total > maxUnits ? '⚠ ' : ''}${toPersianNum(total)}`;
+    const countText = toPersianNum(total);
     const fillColor = total > maxUnits ? 'var(--err-text)'
         : total > maxUnits * 0.8 ? 'var(--warn-text)' : 'var(--accent)';
 
@@ -652,25 +662,19 @@ function updateUnitDisplay() {
     if (info) {
         info.style.display = state.selected.size > 0 ? 'block' : 'none';
         if (state.selected.size > 0) {
-            info.textContent = `${toPersianNum(state.selected.size)} درس — ${toPersianNum(total)} واحد${total > maxUnits ? ' ⚠️' : ''}`;
+            info.textContent = `${toPersianNum(state.selected.size)} درس — ${toPersianNum(total)} واحد${total > maxUnits ? ' — بیش از سقف' : ''}`;
             info.style.color = total > maxUnits ? 'var(--err-text)' : 'var(--t3)';
         }
     }
 
-    // ── mobile pill + badge + schedule header ──
+    // ── mobile pill + schedule header ──
     const pill    = document.getElementById('mobUnitPill');
     const mNum    = document.getElementById('mobUnitNum');
     const mMax    = document.getElementById('mobUnitMax');
-    const badge   = document.getElementById('mobBadge');
     const mobInfo = document.getElementById('mobSelectedInfo');
     if (mNum)  mNum.textContent = countText;
     if (mMax)  mMax.textContent = `/ ${toPersianNum(maxUnits)} واحد`;
     if (pill)  pill.classList.toggle('over', total > maxUnits);
-    if (badge) {
-        const n = state.selected.size;
-        badge.textContent = toPersianNum(n);
-        badge.style.display = n > 0 ? 'block' : 'none';
-    }
     if (mobInfo) {
         mobInfo.textContent = state.selected.size > 0
             ? `${toPersianNum(state.selected.size)} درس · ${toPersianNum(total)} واحد`
@@ -702,12 +706,12 @@ function renderPlanWorkspace() {
     const selected = [...state.selected].map(id => planner.findCourse(courses, id)).filter(Boolean);
     document.getElementById('listView').innerHTML = `<h2 class="sr-only" id="planListFocus" tabindex="-1">فهرست درس‌های انتخاب‌شده</h2>${selected.length ? selected.map(course => {
         const sessions = CourseDomain.parseSchedule(course.time_html);
-        return `<article class="plan-list-item" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1"><h3>${SafeDOM.escape(course.name)} · گروه <bdi dir="ltr">${SafeDOM.escape(planner.getSectionId(course))}</bdi></h3><button class="remove-section" onclick="removeCourse('${SafeDOM.escape(course.id)}')" aria-label="حذف ${SafeDOM.escape(course.name)}">×</button><p>${SafeDOM.escape(course.prof || 'استاد اعلام نشده')} · ${sessions.length ? sessions.map(formatSessionChip).join('، ') : 'زمان اعلام نشده'}</p></article>`;
+        return `<article class="plan-list-item" style="--course-color:${getCourseColor(course)}" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1"><h3>${SafeDOM.escape(course.name)} · گروه <bdi dir="ltr">${SafeDOM.escape(planner.getSectionId(course))}</bdi></h3><button class="remove-section" onclick="removeCourse('${SafeDOM.escape(course.id)}')" aria-label="حذف ${SafeDOM.escape(course.name)}">${AppIcons.svg('Trash2')}</button><p>${SafeDOM.escape(course.prof || 'استاد اعلام نشده')} · ${sessions.length ? sessions.map(formatSessionChip).join('، ') : 'زمان اعلام نشده'}</p></article>`;
     }).join('') : '<div class="empty-state"><div class="empty-state-title">برنامه‌ات خالی است</div></div>'}`;
     document.getElementById('examsView').innerHTML = `<h2 class="sr-only" id="examListFocus" tabindex="-1">فهرست امتحان‌های انتخاب‌شده</h2>${selected.length ? selected
         .map(course => ({ course, exam: CourseDomain.parseExam(course.exam_text) }))
         .sort((a, b) => (a.exam?.date || '9999').localeCompare(b.exam?.date || '9999'))
-        .map(({ course, exam }) => `<article class="plan-list-item" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1"><h3>${SafeDOM.escape(course.name)}</h3><p>${exam ? `${toPersianNum(exam.date)} · ${formatExamTime(exam)}` : 'تاریخ اعلام نشده'}</p></article>`).join('')
+        .map(({ course, exam }) => `<article class="plan-list-item" style="--course-color:${getCourseColor(course)}" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1"><h3>${SafeDOM.escape(course.name)}</h3><p>${exam ? `${toPersianNum(exam.date)} · ${formatExamTime(exam)}` : 'تاریخ اعلام نشده'}</p></article>`).join('')
         : '<div class="empty-state"><div class="empty-state-title">امتحانی برای نمایش نیست</div></div>'}`;
     const scheduleButton = document.getElementById('mnSchedule');
     scheduleButton?.classList.toggle('has-issues', !health.ready);
@@ -882,7 +886,7 @@ function renderPrintTimetable() {
         block.className = `print-class${clashes ? ' print-class-conflict' : ''}`;
         block.style.gridColumn = String(session.day + 2);
         block.style.gridRow = `${rowStart} / span ${rowSpan}`;
-        block.style.setProperty('--course-color', getFacultyColor(course.faculty));
+        block.style.setProperty('--course-color', getCourseColor(course));
         block.innerHTML = `
             <div class="print-class-name">${SafeDOM.escape(course.name)}</div>
             <div class="print-class-prof">${SafeDOM.escape(course.prof || 'استاد اعلام نشده')}</div>
@@ -935,7 +939,7 @@ function updateTimetable() {
     if (state.selected.size === 0) {
         tbl.innerHTML = `
             <div class="timetable-empty empty-state">
-                <div class="empty-state-icon" aria-hidden="true">📅</div>
+                <div class="empty-state-icon" aria-hidden="true">${AppIcons.svg('CalendarDays')}</div>
                 <div class="empty-state-title">برنامه‌ات خالی است</div>
                 <div class="empty-state-desc">از جستجوی درس، درس‌های موردنظرت را اضافه کن تا اینجا نمایش داده شوند.</div>
                 <button type="button" class="btn btn-primary show-mobile" onclick="setMobView('search')">رفتن به جستجو</button>
@@ -961,12 +965,13 @@ function updateTimetable() {
             const div = document.createElement('div');
             const justAdded = hasConflict && b.id === lastAddedId;
             div.className = `class-block${hasConflict ? ' conflict' : ''}${justAdded ? ' just-added' : ''}`;
-            if (!hasConflict) div.style.setProperty('--fc', getFacultyColor(b.faculty));
-            div.title = `${b.name}\n${b.prof}${b.location ? '\n📍 ' + b.location : ''}`;
+            div.style.setProperty('--course-color', getCourseColor(b));
+            if (!hasConflict) div.style.setProperty('--fc', getCourseColor(b));
+            div.title = `${b.name}\n${b.prof}${b.location ? '\n' + b.location : ''}`;
 
             const rm = document.createElement('button');
             rm.type = 'button';
-            rm.className = 'remove-btn'; rm.textContent = '×';
+            rm.className = 'remove-btn'; rm.innerHTML = AppIcons.svg('X');
             rm.setAttribute('aria-label', `حذف ${b.name}`);
             rm.onclick = e => { e.stopPropagation(); toggleCourse(b.id); };
             div.appendChild(rm);
@@ -974,10 +979,11 @@ function updateTimetable() {
             const content = document.createElement('div');
             content.innerHTML = `
                 <div class="class-block-name">${SafeDOM.escape(b.name)} · گروه <bdi dir="ltr">${SafeDOM.escape(b.section)}</bdi>${b.isTA ? ' <small>(ت)</small>' : ''}</div>
-                <div class="class-block-time"><bdi dir="ltr">${formatMinutes(b.startMinutes)}–${formatMinutes(b.endMinutes)}</bdi></div>
+                <div class="class-block-time">${AppIcons.svg('Clock')}<bdi dir="ltr">${formatMinutes(b.startMinutes)}–${formatMinutes(b.endMinutes)}</bdi></div>
                 <div class="class-block-prof">${SafeDOM.escape(b.prof)}</div>
-                ${b.location ? `<div class="class-block-loc">${SafeDOM.escape(b.location)}</div>` : ''}
+                ${b.location ? `<div class="class-block-loc">${AppIcons.svg('MapPin')}${SafeDOM.escape(b.location)}</div>` : ''}
             `;
+            if (hasConflict) div.insertAdjacentHTML('beforeend', `<span class="class-block-alert" aria-label="تداخل زمانی">${AppIcons.svg('CircleAlert')}</span>`);
             div.appendChild(content);
             el.appendChild(div);
         });
@@ -1068,7 +1074,7 @@ function renderCurriculumTab() {
     if (!fac || !grp) {
         controls.style.display = 'none';
         container.innerHTML = `<div class="empty-state">
-            <div class="empty-state-icon">🗺️</div>
+            <div class="empty-state-icon">${AppIcons.svg('GraduationCap')}</div>
             <div class="empty-state-title">نقشه درسی</div>
             <div class="empty-state-desc">از تب جستجو، یک دانشکده و گروه انتخاب کنید.</div>
         </div>`;
@@ -1079,7 +1085,7 @@ function renderCurriculumTab() {
     if (!data) {
         controls.style.display = 'none';
         container.innerHTML = `<div class="empty-state">
-            <div class="empty-state-icon">🚧</div>
+            <div class="empty-state-icon">${AppIcons.svg('Info')}</div>
             <div class="empty-state-title">هنوز اضافه نشده</div>
             <div class="empty-state-desc">نقشه درسی «${SafeDOM.escape(grp)}» موجود نیست. آن را با ابزار محلی ویرایش داده اضافه کنید.</div>
         </div>`;
@@ -1120,9 +1126,12 @@ function renderCurriculumTab() {
         locked:    'قفل: پیش‌نیاز لازم است',
     };
     // Status is conveyed by glyph + text, never color alone
-    const statusGlyph = { passed: '✓', failed: '✗', taking: '↻', available: '+', locked: '🔒' };
+    const statusGlyph = {
+        passed: AppIcons.svg('Check'), failed: AppIcons.svg('X'), taking: AppIcons.svg('RefreshCw'),
+        available: AppIcons.svg('Plus'), locked: AppIcons.svg('LockKeyhole'),
+    };
 
-    let html = `<p class="cur-legend">یک‌بار کلیک: پاس ✓ · دوباره: افتاده ✗ · بار سوم: حذف علامت</p>`;
+    let html = '<p class="cur-legend">یک‌بار کلیک: پاس · دوباره: افتاده · بار سوم: حذف علامت</p>';
     const curriculumActions = [];
     const recommendationActions = [];
     Object.keys(semMap).map(Number).sort((a, b) => a - b).forEach(sem => {
@@ -1156,7 +1165,7 @@ function renderCurriculumTab() {
                         <span class="cur-card-units">${toPersianNum(c.units)} واحد</span>
                         <div style="display:flex;align-items:center;gap:4px;">
                             ${offeredDot}
-                            ${st === 'locked' ? '<span style="font-size:var(--fs-2xs)" title="کلیک برای مسیریاب" aria-hidden="true">🗺️</span>' : ''}
+                            ${st === 'locked' ? `<span title="کلیک برای مسیریاب" aria-hidden="true">${AppIcons.svg('Map')}</span>` : ''}
                             <span class="cur-status-glyph" aria-hidden="true">${statusGlyph[st] || ''}</span>
                         </div>
                     </div>
@@ -1167,7 +1176,7 @@ function renderCurriculumTab() {
 
     if (recs.length) {
         html += `<div class="rec-section">
-            <div class="rec-title">💡 پیشنهاد این ترم (${toPersianNum(recs.length)} درس)</div>`;
+            <div class="rec-title">${AppIcons.svg('Lightbulb')} پیشنهاد این ترم (${toPersianNum(recs.length)} درس)</div>`;
         recs.slice(0, 6).forEach(c => {
             const actionIndex = recommendationActions.push(() => jumpToSearch(c.id)) - 1;
             html += `<div class="rec-item" data-recommendation-action="${actionIndex}" role="button" tabindex="0">
@@ -1221,7 +1230,7 @@ function syncThemeButton(theme) {
     const btn = document.getElementById('themeBtn');
     if (!btn) return;
     const icon = document.getElementById('themeBtnIcon');
-    if (icon) icon.textContent = theme === 'light' ? '🌙' : '🌗';
+    if (icon) icon.outerHTML = AppIcons.svg(theme === 'light' ? 'Moon' : 'Sun', 'تغییر تم').replace('<svg ', '<svg id="themeBtnIcon" ');
     btn.setAttribute('aria-label', theme === 'light' ? 'تغییر به تم تیره' : 'تغییر به تم روشن');
 }
 
@@ -1261,7 +1270,7 @@ function openExamModal() {
                 glyph.className = 'row-status-glyph';
                 glyph.setAttribute('role', 'img');
                 glyph.setAttribute('aria-label', overlaps ? 'تداخل زمانی امتحان' : 'دو امتحان در یک روز');
-                glyph.textContent = overlaps ? '⛔' : '⚠';
+                glyph.innerHTML = AppIcons.svg('CircleAlert');
                 statusTd.appendChild(glyph);
             }
             tr.appendChild(statusTd);
@@ -1437,18 +1446,18 @@ function showLoadBadge(result) {
 
     const status = result?.status || 'ok';
     const text   = result?.fa     || '';
-    const icons  = { ok: '🟢', warning: '🟡', danger: '🔴' };
+    const icons  = { ok: 'CircleCheck', warning: 'CircleAlert', danger: 'CircleX' };
 
     badge.className = `load-badge ${status}`;
-    badge.textContent = `${icons[status]} ${text}`;
+    badge.innerHTML = `${AppIcons.svg(icons[status] || 'Info')} ${SafeDOM.escape(text)}`;
     badge.style.display = 'inline-flex';
     badge.title = 'کلیک برای جزئیات';
     badge.setAttribute('role', 'button');
     badge.tabIndex = 0;
     badge.onclick = () => {
-        document.getElementById('loadModalTitle').textContent =
-            status === 'danger' ? '🔴 هشدار بار درسی' :
-            status === 'warning' ? '🟡 نکته مهم' : '🟢 برنامه متعادل';
+        document.getElementById('loadModalTitle').innerHTML =
+            `${AppIcons.svg(icons[status] || 'Info')} ${status === 'danger' ? 'هشدار بار درسی' :
+                status === 'warning' ? 'نکته مهم' : 'برنامه متعادل'}`;
         document.getElementById('loadModalText').textContent = text;
         openDialog(document.getElementById('loadModal'));
     };
@@ -1476,7 +1485,7 @@ async function showPathPlan(courseId) {
 
     // باز کردن modal با loading
     const modal = document.getElementById('pathModal');
-    document.getElementById('pathModalTitle').textContent = `🗺️ مسیر رسیدن به «${target.name}»`;
+    document.getElementById('pathModalTitle').innerHTML = `${AppIcons.svg('Map')} مسیر رسیدن به «${SafeDOM.escape(target.name)}»`;
     document.getElementById('pathModalContent').innerHTML =
         '<div class="empty-state" style="padding:30px 0"><div class="empty-state-desc">در حال محاسبه مسیر...</div></div>';
     openDialog(modal);

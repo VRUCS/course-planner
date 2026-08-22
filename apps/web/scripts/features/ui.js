@@ -59,7 +59,7 @@ const Toast = (() => {
         return container;
     }
 
-    const icons = { success: '✓', error: '✗', warning: '⚠', info: 'ℹ' };
+    const icons = { success: 'CircleCheck', error: 'CircleX', warning: 'CircleAlert', info: 'Info' };
 
     function show(message, type = 'info', duration = 4000) {
         const el = document.createElement('div');
@@ -67,7 +67,7 @@ const Toast = (() => {
         el.setAttribute('role', type === 'error' ? 'alert' : 'status');
         const icon = document.createElement('span');
         icon.className = 'toast-icon';
-        icon.textContent = icons[type] || '•';
+        icon.innerHTML = AppIcons.svg(icons[type] || 'Info');
         const body = document.createElement('span');
         body.className = 'toast-msg';
         body.textContent = String(message);
@@ -75,7 +75,7 @@ const Toast = (() => {
         close.className = 'toast-close';
         close.type = 'button';
         close.setAttribute('aria-label', 'بستن اعلان');
-        close.textContent = '×';
+        close.innerHTML = AppIcons.svg('X');
         close.addEventListener('click', () => el.remove());
         el.append(icon, body, close);
         getContainer().appendChild(el);
@@ -177,4 +177,12 @@ const FACULTY_PALETTE = [
     '#3b82f6', '#10b981', '#8b5cf6', '#06b6d4',
     '#a855f7', '#2dd4bf', '#6366f1', '#22d3ee',
     '#34d399', '#818cf8', '#4ade80', '#38bdf8',
+];
+
+// Stable course colors keep sections visually distinct even when several belong
+// to the same faculty. Conflict styling still uses the red status color.
+const COURSE_PALETTE = [
+    '#2563eb', '#059669', '#7c3aed', '#0891b2',
+    '#c026d3', '#0d9488', '#4f46e5', '#0284c7',
+    '#16a34a', '#9333ea', '#0f766e', '#0369a1',
 ];

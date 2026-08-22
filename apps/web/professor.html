@@ -84,15 +84,15 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
 <header class="app-topbar">
   <div class="topbar-brand">
-    <div style="width:32px;height:32px;border-radius:var(--r1);background:linear-gradient(135deg,var(--violet),var(--blue));display:flex;align-items:center;justify-content:center;font-size:1rem;" aria-hidden="true">👨‍🏫</div>
+    <div class="topbar-brand-icon" aria-hidden="true"><span data-icon="GraduationCap"></span></div>
     <div>
       <h1 class="topbar-brand-name">داشبورد استاد</h1>
     </div>
   </div>
   <div class="topbar-actions">
-    <button class="btn btn-ghost btn-sm" onclick="Theme.toggle()" title="تغییر تم" aria-label="تغییر تم"><span aria-hidden="true">🌗</span></button>
-    <button class="btn btn-ghost btn-sm" onclick="window.print()" title="چاپ گزارش"><span aria-hidden="true">🖨️</span> چاپ</button>
-    <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none">← انتخاب واحد</a>
+    <button class="btn btn-ghost btn-sm" onclick="Theme.toggle()" title="تغییر تم" aria-label="تغییر تم"><span data-icon="Moon"></span></button>
+    <button class="btn btn-ghost btn-sm" onclick="window.print()" title="چاپ گزارش"><span data-icon="Printer"></span> چاپ</button>
+    <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none"><span data-icon="ArrowLeft"></span> انتخاب واحد</a>
   </div>
 </header>
 
@@ -163,7 +163,7 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
     <div class="panel-label">گزارش تداخل‌ها</div>
     <div class="conflict-list" id="conflictList">
       <div class="empty-state">
-        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-icon"><span data-icon="ListChecks"></span></div>
         <div class="empty-state-title">ابتدا یک گروه انتخاب کنید</div>
       </div>
     </div>
@@ -176,6 +176,7 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 <script src="generated/conflict-rules.generated.js"></script>
 <script src="scripts/domain/course-domain.js"></script>
 <script src="scripts/domain/planner-domain.js"></script>
+<script src="scripts/features/icons.js"></script>
 <script src="scripts/features/ui.js"></script>
 <script src="scripts/adapters/ai-client.js"></script>
 <script src="scripts/pages/professor-dashboard.js"></script>

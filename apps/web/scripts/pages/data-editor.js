@@ -46,7 +46,7 @@ function rfAddRow(type) {
         <td>${buildAC(`ac-${type}-a-${id}`)}</td>
         <td>${buildAC(`ac-${type}-b-${id}`)}</td>
         <td><input type="text" placeholder="دلیل..." aria-label="دلیل" id="reason-${type}-${id}" style="width:100%"></td>
-        <td><button class="btn btn-danger btn-sm" aria-label="حذف ردیف" onclick="document.getElementById('row-${type}-${id}').remove()">×</button></td>
+        <td><button class="btn btn-danger btn-sm" aria-label="حذف ردیف" onclick="document.getElementById('row-${type}-${id}').remove()">${AppIcons.svg('Trash2')}</button></td>
     `;
     tbody.appendChild(tr);
     initAC(`ac-${type}-a-${id}`);
@@ -59,7 +59,7 @@ function buildAC(id) {
         <div class="ac-sel" id="sel-${id}" style="display:none;background:var(--blue-dim);border:1px solid var(--blue);border-radius:var(--r1);padding:4px 8px;font-size:.78rem;display:none;align-items:center;gap:6px">
             <span style="background:var(--blue);color:#fff;border-radius:4px;padding:1px 6px;font-size:var(--fs-2xs)" id="tag-code-${id}"></span>
             <span id="tag-name-${id}"></span>
-            <span style="cursor:pointer;color:var(--err-text);margin-right:auto" role="button" tabindex="0" aria-label="پاک کردن انتخاب" onclick="acClear('${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();acClear('${id}')}">×</span>
+            <span style="cursor:pointer;color:var(--err-text);margin-right:auto" role="button" tabindex="0" aria-label="پاک کردن انتخاب" onclick="acClear('${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();acClear('${id}')}">${AppIcons.svg('X')}</span>
         </div>
         <input type="text" class="ac-inp" id="inp-${id}" placeholder="جستجو (کد یا نام)..." aria-label="جستجوی درس (کد یا نام)" autocomplete="off" style="display:block">
         <div id="drop-${id}" style="position:absolute;top:calc(100% + 2px);right:0;left:0;background:var(--s3);border:1px solid var(--b2);border-radius:var(--r2);max-height:180px;overflow-y:auto;z-index:100;display:none"></div>
@@ -219,7 +219,7 @@ function cfAddRow(data = {}) {
         <td><input type="text" value="${attr((data.prereqs || []).join(', '))}" placeholder="id1, id2" style="min-width:110px" aria-label="پیش‌نیازها (شناسه‌ها)"></td>
         <td><input type="text" value="${attr(data.codes?.[cfCohorts[0]] || data.codes?.['*'] || '')}" style="width:100px" aria-label="کد ورودی ۱"></td>
         <td><input type="text" value="${attr(data.codes?.[cfCohorts[1]] || '')}" style="width:100px" aria-label="کد ورودی ۲"></td>
-        <td><button class="btn btn-danger btn-sm" aria-label="حذف ردیف" onclick="document.getElementById('cf-row-${id}').remove()">×</button></td>
+        <td><button class="btn btn-danger btn-sm" aria-label="حذف ردیف" onclick="document.getElementById('cf-row-${id}').remove()">${AppIcons.svg('Trash2')}</button></td>
     `;
     document.getElementById('cfRows').appendChild(tr);
 }

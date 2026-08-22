@@ -121,12 +121,29 @@ test.describe('responsive navigation', () => {
 
         const nav = page.locator('.mob-nav');
         await expect(nav).toBeVisible();
+        const header = await page.locator('.app-topbar').boundingBox();
+        const actions = await page.locator('.topbar-actions').boundingBox();
+        expect(actions.y + actions.height).toBeLessThanOrEqual(header.y + header.height + 1);
+        await expect(page.locator('#mnSchedule .mob-nav-icon')).toHaveCount(1);
+        await expect(page.locator('#mnSchedule .mob-nav-badge')).toHaveCount(0);
         await nav.getByRole('tab', { name: /برنامه/ }).click();
         await expect(page.locator('body')).toHaveAttribute('data-mob', 'schedule');
         await expect(page.locator('#mainContent')).toBeVisible();
         await nav.getByRole('tab', { name: 'جستجوی درس' }).click();
         await expect(page.locator('body')).toHaveAttribute('data-mob', 'search');
         await expect(page.locator('#tabSearch')).toBeVisible();
+    });
+
+    test('selected courses expose stable color accents', async ({ page }) => {
+        await openPlanner(page);
+        await addFirstSingleSectionCourse(page);
+        await page.locator('.single-course-summary').nth(1).getByRole('button', { name: 'افزودن به برنامه' }).click();
+        await page.locator('#mnSchedule').click();
+
+        const colors = await page.locator('#listView .plan-list-item').evaluateAll(items =>
+            items.slice(0, 2).map(item => item.style.getPropertyValue('--course-color')));
+        expect(colors).toHaveLength(2);
+        expect(colors[0]).not.toBe(colors[1]);
     });
 });
 

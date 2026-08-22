@@ -53,8 +53,8 @@ ${ctx || 'اطلاعاتی در دسترس نیست.'}
     function appendWelcome() {
         const configured = AI.isConfigured();
         const msg = configured
-            ? 'سلام! من دستیار انتخاب واحد هستم. می‌توانی از من درباره برنامه‌ات، پیش‌نیازها، یا پیشنهاد درس بپرسی. 😊'
-            : '⚠️ دستیار روی سرور فعال نیست؛ با مدیر سامانه تماس بگیرید.';
+            ? 'سلام! من دستیار انتخاب واحد هستم. می‌توانی از من درباره برنامه‌ات، پیش‌نیازها، یا پیشنهاد درس بپرسی.'
+            : 'دستیار روی سرور فعال نیست؛ با مدیر سامانه تماس بگیرید.';
         appendMessage('assistant', msg);
     }
 
@@ -67,7 +67,7 @@ ${ctx || 'اطلاعاتی در دسترس نیست.'}
 
         const avatar = document.createElement('div');
         avatar.className = 'ai-avatar';
-        avatar.textContent = role === 'assistant' ? '🤖' : '👤';
+        avatar.innerHTML = AppIcons.svg(role === 'assistant' ? 'Bot' : 'UserRound');
 
         const text = document.createElement('div');
         text.className = 'ai-bubble';
@@ -92,7 +92,7 @@ ${ctx || 'اطلاعاتی در دسترس نیست.'}
         const el = document.createElement('div');
         el.className = 'ai-msg ai-msg-assistant';
         el.id = 'aiTyping';
-        el.innerHTML = `<div class="ai-avatar">🤖</div>
+        el.innerHTML = `<div class="ai-avatar">${AppIcons.svg('Bot')}</div>
             <div class="ai-bubble ai-typing-bubble">
                 <span></span><span></span><span></span>
             </div>`;
@@ -144,7 +144,7 @@ ${ctx || 'اطلاعاتی در دسترس نیست.'}
 
         } catch (e) {
             hideTypingIndicator();
-            appendMessage('assistant', `⚠️ خطا: ${e.message}`);
+            appendMessage('assistant', `خطا: ${e.message}`);
         }
     }
 

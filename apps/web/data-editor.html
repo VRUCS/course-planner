@@ -60,20 +60,20 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
 
 <header class="app-topbar">
   <div class="topbar-brand">
-    <div style="width:32px;height:32px;border-radius:var(--r1);background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:1rem;" aria-hidden="true">⚙️</div>
+    <div class="topbar-brand-icon" aria-hidden="true"><span data-icon="Settings"></span></div>
     <h1 class="topbar-brand-name">ویرایشگر داده</h1>
   </div>
   <div class="topbar-actions">
-    <button class="btn btn-ghost btn-sm" onclick="Theme.toggle()" title="تغییر تم" aria-label="تغییر تم"><span aria-hidden="true">🌗</span></button>
-    <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none">← انتخاب واحد</a>
+    <button class="btn btn-ghost btn-sm" onclick="Theme.toggle()" title="تغییر تم" aria-label="تغییر تم"><span data-icon="Moon"></span></button>
+    <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none"><span data-icon="ArrowLeft"></span> انتخاب واحد</a>
   </div>
 </header>
 
 <div class="page-tabs" role="tablist" aria-label="بخش‌های ویرایشگر">
   <button type="button" class="page-tab active" id="tabBtnRules" role="tab" aria-selected="true"
-          aria-controls="panelRules" onclick="switchAdminTab('rules')"><span aria-hidden="true">📋</span> قوانین تداخل</button>
+          aria-controls="panelRules" onclick="switchAdminTab('rules')"><span data-icon="ListChecks"></span> قوانین تداخل</button>
   <button type="button" class="page-tab" id="tabBtnAdminCurriculum" role="tab" aria-selected="false"
-          aria-controls="panelCurriculum" onclick="switchAdminTab('curriculum')"><span aria-hidden="true">📚</span> چارت درسی</button>
+          aria-controls="panelCurriculum" onclick="switchAdminTab('curriculum')"><span data-icon="GraduationCap"></span> چارت درسی</button>
 </div>
 
 <!-- ── Tab: Rules ──────────────────────────────────────────────────────── -->
@@ -88,15 +88,15 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
     <div class="fg"><label for="rfFaculty">دانشکده</label><select id="rfFaculty" onchange="rfOnFacultyChange()"><option value="">انتخاب...</option></select></div>
     <div class="fg"><label for="rfGroup">گروه آموزشی</label><select id="rfGroup"><option value="">انتخاب...</option></select></div>
     <div style="display:flex;gap:8px;align-items:flex-end">
-      <button class="btn btn-ghost btn-sm" onclick="rfLoadExisting()">📥 بارگذاری موجود</button>
+      <button class="btn btn-ghost btn-sm" onclick="rfLoadExisting()"><span data-icon="Download"></span> بارگذاری موجود</button>
     </div>
   </div>
 
   <!-- Hard rules -->
   <div class="card" style="padding:var(--sp4);margin-bottom:var(--sp4)">
     <div class="section-hd">
-      <span class="section-title"><span class="badge badge-danger">⛔ سخت</span> تداخل اجباری (درس‌های هم‌ترم)</span>
-      <button class="btn btn-ghost btn-sm" onclick="rfAddRow('hard')">+ افزودن</button>
+      <span class="section-title"><span class="badge badge-danger"><span data-icon="CircleX"></span> سخت</span> تداخل اجباری (درس‌های هم‌ترم)</span>
+      <button class="btn btn-ghost btn-sm" onclick="rfAddRow('hard')"><span data-icon="Plus"></span> افزودن</button>
     </div>
     <table class="rule-table">
       <thead><tr><th style="width:30%">درس الف</th><th style="width:30%">درس ب</th><th>دلیل</th><th style="width:40px"></th></tr></thead>
@@ -107,8 +107,8 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
   <!-- Soft rules -->
   <div class="card" style="padding:var(--sp4);margin-bottom:var(--sp4)">
     <div class="section-hd">
-      <span class="section-title"><span class="badge badge-warning">⚠️ نرم</span> تداخل توصیه‌شده (هم‌تراز ترم)</span>
-      <button class="btn btn-ghost btn-sm" onclick="rfAddRow('soft')">+ افزودن</button>
+      <span class="section-title"><span class="badge badge-warning"><span data-icon="CircleAlert"></span> نرم</span> تداخل توصیه‌شده (هم‌تراز ترم)</span>
+      <button class="btn btn-ghost btn-sm" onclick="rfAddRow('soft')"><span data-icon="Plus"></span> افزودن</button>
     </div>
     <table class="rule-table">
       <thead><tr><th style="width:30%">درس الف</th><th style="width:30%">درس ب</th><th>دلیل</th><th style="width:40px"></th></tr></thead>
@@ -117,8 +117,8 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
   </div>
 
   <div style="display:flex;gap:8px">
-    <button class="btn btn-primary" onclick="rfExport()">📤 صادر کردن کد JS</button>
-    <button class="btn btn-ghost" onclick="rfClear()">🗑️ پاک کردن همه</button>
+    <button class="btn btn-primary" onclick="rfExport()"><span data-icon="Download"></span> صادر کردن کد JS</button>
+    <button class="btn btn-ghost" onclick="rfClear()"><span data-icon="Trash2"></span> پاک کردن همه</button>
   </div>
 </div>
 
@@ -138,7 +138,7 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
   <div class="form-row">
     <div class="fg"><label for="cfCohorts">ورودی‌ها (با ویرگول)</label><input type="text" id="cfCohorts" value="۱۴۰۰, ۱۴۰۱"></div>
     <div style="flex:0 0 120px"><label for="cfTotalUnits">کل واحد</label><input type="number" id="cfTotalUnits" value="140"></div>
-    <button class="btn btn-ghost btn-sm" onclick="cfAddRow()" style="align-self:flex-end">+ افزودن درس</button>
+    <button class="btn btn-ghost btn-sm" onclick="cfAddRow()" style="align-self:flex-end"><span data-icon="Plus"></span> افزودن درس</button>
   </div>
 
   <div class="cur-table-wrap">
@@ -155,8 +155,8 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
   </div>
   <br>
   <div style="display:flex;gap:8px">
-    <button class="btn btn-primary" onclick="cfExport()">📤 صادر کردن کد JS</button>
-    <button class="btn btn-ghost" onclick="cfClear()">🗑️ پاک کردن همه</button>
+    <button class="btn btn-primary" onclick="cfExport()"><span data-icon="Download"></span> صادر کردن کد JS</button>
+    <button class="btn btn-ghost" onclick="cfClear()"><span data-icon="Trash2"></span> پاک کردن همه</button>
   </div>
 </div>
 
@@ -165,14 +165,14 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
   <div class="modal-box anim-scale" style="max-width:780px" role="dialog" aria-modal="true" aria-labelledby="outputTitle">
     <div class="modal-header">
       <h3 class="modal-title" id="outputTitle">کد تولیدشده</h3>
-      <button class="modal-close" onclick="closeOutput()" aria-label="بستن">×</button>
+      <button class="modal-close" onclick="closeOutput()" aria-label="بستن"><span data-icon="X"></span></button>
     </div>
     <div class="modal-body code-area">
       <textarea id="outputCode" readonly aria-labelledby="outputTitle"></textarea>
     </div>
     <div style="display:flex;gap:10px;align-items:center;margin-top:16px">
-      <button class="btn btn-success" onclick="copyOutput()"><span aria-hidden="true">📋</span> کپی</button>
-      <span id="copyMsg" role="status" style="display:none;color:var(--ok-text);font-size:var(--fs-sm)">✓ کپی شد!</span>
+      <button class="btn btn-success" onclick="copyOutput()"><span data-icon="Copy"></span> کپی</button>
+      <span id="copyMsg" role="status" style="display:none;color:var(--ok-text);font-size:var(--fs-sm)">کپی شد!</span>
       <span style="font-size:var(--fs-xs);color:var(--t3)">این کد را در فایل مربوطه paste کنید.</span>
     </div>
   </div>
@@ -181,6 +181,7 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
 <script src="generated/course-offerings.generated.js"></script>
 <script src="generated/conflict-rules.generated.js"></script>
 <script src="scripts/domain/course-domain.js"></script>
+<script src="scripts/features/icons.js"></script>
 <script src="scripts/features/ui.js"></script>
 <script src="scripts/pages/data-editor.js"></script>
 </body>
