@@ -21,6 +21,7 @@ def build(destination: Path) -> None:
     # administration surface and therefore must not be published as one.
     for page in ("index.html", "professor.html"):
         shutil.copy2(WEB_ROOT / page, destination / page)
+    shutil.copy2(WEB_ROOT / "favicon.svg", destination / "favicon.svg")
     for directory in ("generated", "styles"):
         shutil.copytree(WEB_ROOT / directory, destination / directory)
     shutil.copytree(
