@@ -945,7 +945,6 @@ function updateTimetable() {
                 <button type="button" class="btn btn-primary show-mobile" onclick="setMobView('search')">رفتن به جستجو</button>
             </div>`;
         document.getElementById('scheduleWarning').hidden = true;
-        updateFacultyLegend({});
         return;
     }
     // Rebuild the grid if the empty state replaced it
@@ -967,7 +966,28 @@ function updateTimetable() {
             div.className = `class-block${blocks.length > 1 ? ' dense' : ''}${hasConflict ? ' conflict' : ''}${justAdded ? ' just-added' : ''}`;
             div.style.setProperty('--course-color', getCourseColor(b));
             if (!hasConflict) div.style.setProperty('--fc', getCourseColor(b));
-            div.title = `${b.name}\n${b.prof}${b.location ? '\n' + b.location : ''}`;
+            const courseDetails = [
+                b.name,
+                `${formatMinutes(b.startMinutes)}–${formatMinutes(b.endMinutes)}`,
+                b.prof,
+                b.location ? `مکان: ${b.location}` : '',
+            ].filter(Boolean).join(' · ');
+            div.title = courseDetails;
+            if (blocks.length > 1) {
+                div.tabIndex = 0;
+                div.setAttribute('role', 'button');
+                div.setAttribute('aria-label', `${b.name}؛ برای جزئیات بیشتر فعال کنید`);
+                const showDetails = () => Toast.info(courseDetails, 8000);
+                div.addEventListener('click', event => {
+                    if (!event.target.closest('.remove-btn')) showDetails();
+                });
+                div.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        showDetails();
+                    }
+                });
+            }
 
             const rm = document.createElement('button');
             rm.type = 'button';
@@ -993,25 +1013,11 @@ function updateTimetable() {
     if (unplaced.length) warning.textContent = `${toPersianNum(unplaced.length)} جلسه خارج از بازهٔ جدول است؛ مشاهده فهرست کامل`;
 
     lastAddedId = null;   // the one-shot conflict animation runs only once
-    updateFacultyLegend(slotMap);
 }
 
 function formatMinutes(minutes) {
     if (!Number.isFinite(minutes)) return '—';
     return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
-}
-
-function updateFacultyLegend(slotMap) {
-    const used = new Set();
-    Object.values(slotMap).flat().forEach(b => used.add(b.faculty));
-    const legend = document.getElementById('facultyLegend');
-    if (!legend) return;
-    if (used.size <= 1) { legend.innerHTML = ''; return; }
-    legend.innerHTML = [...used].map(f => `
-        <span class="faculty-legend-item">
-            <span class="faculty-legend-dot" style="background:${getFacultyColor(f)}"></span>
-            ${SafeDOM.escape(f)}
-        </span>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1229,8 +1235,6 @@ function onToggleTheme() {
 function syncThemeButton(theme) {
     const btn = document.getElementById('themeBtn');
     if (!btn) return;
-    const icon = document.getElementById('themeBtnIcon');
-    if (icon) icon.outerHTML = AppIcons.svg(theme === 'light' ? 'Moon' : 'Sun', 'تغییر تم').replace('<svg ', '<svg id="themeBtnIcon" ');
     btn.setAttribute('aria-label', theme === 'light' ? 'تغییر به تم تیره' : 'تغییر به تم روشن');
 }
 

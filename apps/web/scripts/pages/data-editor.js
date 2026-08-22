@@ -222,6 +222,7 @@ function cfAddRow(data = {}) {
         <td><button class="btn btn-danger btn-sm" aria-label="حذف ردیف" onclick="document.getElementById('cf-row-${id}').remove()">${AppIcons.svg('Trash2')}</button></td>
     `;
     document.getElementById('cfRows').appendChild(tr);
+    AppIcons.enhanceSelects(tr);
 }
 
 function cfCollect() {

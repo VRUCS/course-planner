@@ -107,6 +107,19 @@ function buildTimetable(groupCourses, hardIds, softIds) {
             // Hard conflicts keep the .conflict styling; soft ones tint yellow.
             if (!isHard) div.style.setProperty('--fc', isSoft ? 'var(--yellow)' : 'var(--blue)');
             div.title = `${c.name}\n${c.prof}\n${c.id}`;
+            if (blockCourses.length > 1) {
+                div.tabIndex = 0;
+                div.setAttribute('role', 'button');
+                div.setAttribute('aria-label', `${c.name}؛ برای جزئیات بیشتر فعال کنید`);
+                const showDetails = () => Toast.info(`${c.name} · ${c.prof} · ${c.id}`, 8000);
+                div.addEventListener('click', showDetails);
+                div.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        showDetails();
+                    }
+                });
+            }
             if (isHard) div.insertAdjacentHTML('beforeend', `<span class="class-block-alert" aria-label="تداخل سخت">${AppIcons.svg('CircleAlert')}</span>`);
             const name = document.createElement('div');
             name.className = 'class-block-name';

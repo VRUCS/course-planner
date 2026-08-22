@@ -55,11 +55,24 @@
             replacement.innerHTML = svg(node.dataset.icon, node.dataset.iconLabel || '');
             const icon = replacement.firstElementChild;
             if (node.id) icon.id = node.id;
+            if (node.hasAttribute('data-theme-toggle-icon')) icon.setAttribute('data-theme-toggle-icon', 'true');
             if (node.className) icon.classList.add(...node.className.split(/\s+/).filter(Boolean));
             node.replaceWith(icon);
         });
     }
 
-    window.AppIcons = Object.freeze({ svg, hydrate });
+    function enhanceSelects(root = document) {
+        root.querySelectorAll('select:not(.icon-select)').forEach(select => {
+            const wrapper = document.createElement('span');
+            wrapper.className = 'select-control';
+            select.classList.add('icon-select');
+            select.parentNode.insertBefore(wrapper, select);
+            wrapper.appendChild(select);
+            wrapper.insertAdjacentHTML('beforeend', `<span class="select-chevron" aria-hidden="true">${svg('ChevronDown')}</span>`);
+        });
+    }
+
+    window.AppIcons = Object.freeze({ svg, hydrate, enhanceSelects });
     hydrate();
+    enhanceSelects();
 }());

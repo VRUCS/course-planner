@@ -238,7 +238,6 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 
   /* Main header compact */
   .main-header  { display: none; }   /* hidden — title replaced by bottom‑nav label */
-  .faculty-legend { display: none; }
 
   /* ── Topbar: compact ── */
   .app-topbar {
@@ -349,7 +348,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
             onclick="openStudentProfile()" aria-haspopup="dialog" title="پروفایل تحصیلی">
       <span data-icon="UserRound"></span> <span class="profile-label">پروفایل</span>
     </button>
-    <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="onToggleTheme()" title="تغییر تم" aria-label="تغییر به تم روشن"><span id="themeBtnIcon" data-icon="Moon"></span></button>
+    <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="onToggleTheme()" title="تغییر تم" aria-label="تغییر به تم روشن"><span id="themeBtnIcon" data-icon="Moon" data-theme-toggle-icon></span></button>
     <button class="btn btn-ghost btn-sm mob-exam-btn" style="background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-border)" onclick="openExamModal()" aria-label="امتحانات" title="امتحانات"><span data-icon="CalendarDays"></span> امتحانات</button>
     <button class="btn btn-ghost btn-sm" onclick="printSchedule()" title="چاپ برنامه" aria-label="چاپ برنامه"><span data-icon="Printer"></span></button>
     <button class="btn btn-ghost btn-sm" onclick="openCalendarExport()" title="افزودن به تقویم" aria-label="افزودن برنامه به تقویم"><span data-icon="Download"></span></button>
@@ -448,7 +447,6 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         <h1 class="main-title">برنامه این ترم</h1>
         <div id="selectedInfo" class="main-subtitle" style="display:none"></div>
       </div>
-      <div id="facultyLegend" class="faculty-legend"></div>
     </div>
 
     <!-- Load analyzer badge (فقط وقتی AI فعال است) -->

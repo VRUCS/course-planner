@@ -4,16 +4,26 @@
  */
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
+function syncThemeIcons(theme) {
+    document.querySelectorAll('[data-theme-toggle-icon]').forEach(icon => {
+        const id = icon.id ? ` id="${icon.id}"` : '';
+        const name = theme === 'light' ? 'Moon' : 'Sun';
+        icon.outerHTML = AppIcons.svg(name, 'تغییر تم').replace('<svg ', `<svg data-theme-toggle-icon="true"${id} `);
+    });
+}
+
 const Theme = {
     apply() {
         const saved = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-theme', saved);
+        syncThemeIcons(saved);
     },
     toggle() {
         const current = document.documentElement.getAttribute('data-theme');
         const next = current === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem('theme', next);
+        syncThemeIcons(next);
         return next;
     },
     current() {
