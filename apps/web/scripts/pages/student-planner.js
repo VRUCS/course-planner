@@ -964,7 +964,7 @@ function updateTimetable() {
         blocks.forEach(b => {
             const div = document.createElement('div');
             const justAdded = hasConflict && b.id === lastAddedId;
-            div.className = `class-block${hasConflict ? ' conflict' : ''}${justAdded ? ' just-added' : ''}`;
+            div.className = `class-block${blocks.length > 1 ? ' dense' : ''}${hasConflict ? ' conflict' : ''}${justAdded ? ' just-added' : ''}`;
             div.style.setProperty('--course-color', getCourseColor(b));
             if (!hasConflict) div.style.setProperty('--fc', getCourseColor(b));
             div.title = `${b.name}\n${b.prof}${b.location ? '\n' + b.location : ''}`;

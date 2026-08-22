@@ -103,7 +103,7 @@ function buildTimetable(groupCourses, hardIds, softIds) {
             const isHard = hardIds.has(c.id);
             const isSoft = !isHard && softIds.has(c.id);
             const div = document.createElement('div');
-            div.className = `class-block${isHard ? ' conflict' : ''}`;
+            div.className = `class-block${blockCourses.length > 1 ? ' dense' : ''}${isHard ? ' conflict' : ''}`;
             // Hard conflicts keep the .conflict styling; soft ones tint yellow.
             if (!isHard) div.style.setProperty('--fc', isSoft ? 'var(--yellow)' : 'var(--blue)');
             div.title = `${c.name}\n${c.prof}\n${c.id}`;

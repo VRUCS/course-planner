@@ -359,7 +359,7 @@ select { appearance: auto; background-image: none; padding-left: 12px; }
   border-radius: var(--r1); padding: 3px; min-height: 72px;
   display: flex; flex-direction: column; gap: 2px;
   transition: background var(--fast), border-color var(--fast);
-  position: relative;
+  position: relative; overflow: hidden;
 }
 .slot:hover { background: var(--slot-hover); border-color: var(--b1); }
 
@@ -378,6 +378,11 @@ select { appearance: auto; background-image: none; padding-left: 12px; }
   min-height: 56px;
   box-shadow: none;
 }
+.class-block.dense { min-height: 0; padding: 3px 5px; }
+.class-block.dense .class-block-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.class-block.dense .class-block-prof,
+.class-block.dense .class-block-loc { display: none; }
+.class-block.dense .class-block-time { font-size: var(--fs-2xs); }
 .class-block-name { font-weight: 700; line-height: 1.3; margin-bottom: 2px; }
 .class-block-prof { color: var(--t2); font-size: var(--fs-2xs); }
 .class-block-time { display: inline-flex; align-items: center; gap: 3px; }
