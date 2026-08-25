@@ -63,9 +63,26 @@ test('mobile navigation synchronizes tabs without replacing the global tab handl
 test('student tablists expose complete tab relationships and keyboard enhancement', () => {
     const html = read('apps/web/index.html');
     const ui = read('apps/web/scripts/features/ui.js');
-    assert.match(html, /id="mnSchedule" role="tab" aria-selected="false" tabindex="-1" aria-controls="mainContent"/);
+    assert.match(html, /id="mnSchedule" role="tab" aria-selected="false" tabindex="-1" aria-controls="weeklyView"/);
     assert.match(html, /aria-controls="weeklyView"/);
+    ['weeklyView', 'listView', 'examsView'].forEach(id => {
+        assert.match(html, new RegExp(`id="${id}"[^>]*role="tabpanel"`));
+    });
     ['ArrowRight', 'ArrowLeft', 'Home', 'End'].forEach(key => assert.match(ui, new RegExp(key)));
+});
+
+test('planner hierarchy keeps the next action and current status visible', () => {
+    const html = read('apps/web/index.html');
+    const controller = read('apps/web/scripts/pages/student-planner.js');
+    const css = read('apps/web/styles/main.css');
+    assert.match(html, /class="workflow-hint"/);
+    assert.match(html, /class="plan-status-content"/);
+    assert.match(html, /id="healthPill" role="status"/);
+    assert.match(controller, /function focusCourseSearch()/);
+    assert.match(controller, /onclick="focusCourseSearch\(\)"/);
+    assert.match(controller, /class="empty-state-card"/);
+    assert.match(css, /\.empty-state-card \{/);
+    assert.match(css, /\.plan-status-actions \{/);
 });
 
 test('shared programmatic tab selection synchronizes aria-selected and roving tabindex', () => {
@@ -133,4 +150,34 @@ test('schedule print uses a dedicated A4 landscape document view', () => {
     assert.match(controller, /function renderPrintTimetable\(\)/);
     assert.match(controller, /session\.endMinutes - session\.startMinutes/);
     assert.match(controller, /window\.addEventListener\('afterprint'/);
+});
+
+test('responsive secondary actions have a mobile action sheet', () => {
+    const html = read('apps/web/index.html');
+    const controller = read('apps/web/scripts/pages/student-planner.js');
+    assert.match(html, /id="mobMoreBtn"/);
+    assert.match(html, /id="mobileActionsModal"/);
+    assert.match(html, /runMobileAction\('calendar'\)/);
+    assert.match(html, /href="professor\.html"/);
+    assert.match(controller, /function openMobileActions\(\)/);
+    assert.match(controller, /function runMobileAction\(action\)/);
+});
+
+test('professor dashboard has a skip link, main landmark, and width-safe conflict panel', () => {
+    const html = read('apps/web/professor.html');
+    assert.match(html, /class="skip-link" href="#professorMain"/);
+    assert.match(html, /<main id="professorMain" class="professor-main">/);
+    assert.match(html, /class="professor-brand-icon"/);
+    assert.match(html, /class="summary-card-header"/);
+    assert.match(html, /@media \(max-width: 1100px\)[\s\S]*?\.professor-conflict-panel \{ width: 100%; \}/);
+});
+
+test('extension escapes page-provided labels before inserting popup markup', () => {
+    const source = read('apps/extension/popup.js');
+    const escapeSource = source.match(/function escapeHtml\(value\) \{[\s\S]*?\n\}/)?.[0];
+    assert.ok(escapeSource, 'escapeHtml helper must remain directly testable');
+    const escapeHtml = new Function(`${escapeSource}; return escapeHtml;`)();
+    assert.equal(escapeHtml('<img src=x onerror=alert(1)>'), '&lt;img src=x onerror=alert(1)&gt;');
+    assert.match(source, /\$\{escapeHtml\(faculty \|\| '—'\)\}/);
+    assert.match(source, /\$\{escapeHtml\(group \|\| '—'\)\}/);
 });

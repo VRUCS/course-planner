@@ -643,6 +643,12 @@ function dismissQuickStart() {
     stateRepository.setPreference('onboarding', 'done');
 }
 
+function focusCourseSearch() {
+    if (isSingleWorkspace()) setMobView('search');
+    else switchTab('search');
+    requestAnimationFrame(() => document.getElementById('searchInput')?.focus());
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // UNIT DISPLAY
 // ═══════════════════════════════════════════════════════════════════════════
@@ -794,6 +800,7 @@ function setPlanView(view) {
     state.planView = view;
     const activeTab = document.querySelector(`[data-plan-view="${view}"]`);
     selectTab(activeTab);
+    document.getElementById('mnSchedule')?.setAttribute('aria-controls', `${view}View`);
     document.getElementById('weeklyView').hidden = view !== 'weekly';
     document.getElementById('listView').hidden = view !== 'list';
     document.getElementById('examsView').hidden = view !== 'exams';
@@ -996,10 +1003,13 @@ function updateTimetable() {
     if (state.selected.size === 0) {
         tbl.innerHTML = `
             <div class="timetable-empty empty-state">
-                <div class="empty-state-icon" aria-hidden="true">${AppIcons.svg('CalendarDays')}</div>
-                <div class="empty-state-title">برنامه‌ات خالی است</div>
-                <div class="empty-state-desc">از جستجوی درس، درس‌های موردنظرت را اضافه کن تا اینجا نمایش داده شوند.</div>
-                <button type="button" class="btn btn-primary show-mobile" onclick="setMobView('search')">رفتن به جستجو</button>
+                <div class="empty-state-card">
+                    <div class="empty-state-icon" aria-hidden="true">${AppIcons.svg('CalendarDays')}</div>
+                    <div class="empty-state-kicker">شروع برنامه‌ریزی</div>
+                    <div class="empty-state-title">برنامه‌ات هنوز خالی است</div>
+                    <div class="empty-state-desc">از جستجوی درس، درس‌های موردنظرت را اضافه کن تا اینجا برنامهٔ هفتگی‌ات را ببینی.</div>
+                    <button type="button" class="btn btn-primary" onclick="focusCourseSearch()">رفتن به جستجوی درس</button>
+                </div>
             </div>`;
         document.getElementById('scheduleWarning').hidden = true;
         return;
@@ -1423,6 +1433,21 @@ function openUnitSheet() {
     openDialog(document.getElementById('unitSheet'));
 }
 function closeUnitSheet() { closeDialog(document.getElementById('unitSheet')); }
+
+function openMobileActions() {
+    openDialog(document.getElementById('mobileActionsModal'));
+}
+
+function closeMobileActions() {
+    closeDialog(document.getElementById('mobileActionsModal'));
+}
+
+function runMobileAction(action) {
+    closeMobileActions();
+    if (action === 'print') printSchedule();
+    if (action === 'calendar') openCalendarExport();
+    if (action === 'about') openDialog(document.getElementById('aboutModal'));
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MOBILE NAV

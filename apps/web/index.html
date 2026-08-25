@@ -65,6 +65,9 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 .unit-bar   { width: 60px; height: 4px; background: var(--b0); border-radius: 2px; overflow: hidden; }
 .unit-bar-fill { height: 100%; border-radius: 2px; background: var(--blue); transition: width var(--slow), background var(--mid); }
 .topbar-actions { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; min-width: 0; }
+.topbar-actions > .btn, .topbar-actions > a { min-height: 40px; }
+.topbar-actions .profile-btn { background: var(--blue-dim); border-color: var(--accent-border); color: var(--accent); }
+.topbar-divider { width: 1px; height: 24px; background: var(--b1); margin-inline: 2px; }
 
 /* ── Sidebar ─────────────────────────────────────────────────────────────── */
 .sidebar {
@@ -100,10 +103,19 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 .cur-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; }
 
 /* ── Main ────────────────────────────────────────────────────────────────── */
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 16px 20px; gap: 12px; min-width: 0; min-height: 0; }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 16px 20px; gap: 12px; min-width: 0; min-height: 0; background: radial-gradient(circle at 12% 0%, rgba(59,130,246,.08), transparent 30%), var(--s0); }
 .main-header { display: flex; justify-content: space-between; align-items: center; }
-.main-title  { font-size: 1.1rem; font-weight: 800; }
+.main-heading { display: grid; gap: 3px; min-width: 0; }
+.main-kicker { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: var(--fs-2xs); font-weight: 800; }
+.main-kicker .icon { width: 14px; height: 14px; }
+.main-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.main-title  { font-size: 1.2rem; font-weight: 850; letter-spacing: -.02em; }
+.main-term-badge { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 8px; border: 1px solid var(--b1); border-radius: 999px; color: var(--t2); font-size: var(--fs-2xs); font-weight: 700; }
 .main-subtitle { font-size: var(--fs-xs); color: var(--t3); margin-top: 2px; }
+.workflow-hint { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border: 1px solid var(--b0); border-radius: 999px; color: var(--t3); font-size: var(--fs-2xs); white-space: nowrap; }
+.workflow-step { display: inline-flex; align-items: center; gap: 4px; }
+.workflow-step b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--blue-dim); color: var(--accent); font-size: 10px; }
+.workflow-arrow { color: var(--b2); }
 
 /* ── Compact tablet layout (769–1100px) ──────────────────────────────────── */
 @media (min-width: 769px) and (max-width: 1100px) {
@@ -129,7 +141,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   body[data-mob="schedule"] .main { transform: translateX(0); opacity: 1; pointer-events: auto; }
   .topbar-center { display: none; }
   .app-topbar { padding: 0 14px; gap: 10px; }
-  .topbar-actions .btn:not(#themeBtn):not(.mob-exam-btn):not(.profile-btn) { display: none; }
+  .topbar-actions .btn:not(#themeBtn):not(.mob-exam-btn):not(.profile-btn):not(.mob-more-btn) { display: none; }
   .topbar-actions .profile-btn { padding-inline: 9px; }
   .topbar-actions .profile-btn .profile-label { display: none; }
   .mob-unit-pill {
@@ -171,6 +183,12 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
    ══════════════════════════════════════════════════════════ */
 .mob-nav        { display: none; }
 .mob-unit-pill  { display: none; }
+.mob-more-btn   { display: none; }
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  .mob-nav { display: flex; }
+  .mob-more-btn { display: inline-flex; }
+}
 
 @media (max-width: 768px) {
   /* Body stays 100vh, no body scroll */
@@ -250,12 +268,14 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   .topbar-center, .brand-badge { display: none; }
   .topbar-actions { flex: 0 0 auto; gap: 4px; }
   .topbar-actions .btn { padding: 6px 8px; font-size: .76rem; }
+  .topbar-divider { display: none; }
   /* hide print/professor shortcuts on mobile — accessible via menu */
-  .topbar-actions .btn:not(#themeBtn):not(.mob-exam-btn):not(.profile-btn) { display: none; }
+  .topbar-actions .btn:not(#themeBtn):not(.mob-exam-btn):not(.profile-btn):not(.mob-more-btn) { display: none; }
   .topbar-actions .profile-btn { padding-inline: 9px; }
   .topbar-actions .profile-btn .profile-label { display: none; }
   .mob-exam-btn { width: 36px; padding-inline: 6px !important; font-size: 0 !important; }
   .mob-exam-btn span { font-size: 1rem; }
+  .mob-more-btn { display: inline-flex; width: 36px; padding-inline: 6px !important; }
 
   /* mobile unit pill inside topbar — a real button opening the unit sheet */
   .mob-unit-pill {
@@ -271,6 +291,14 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   .mob-unit-pill.over { background: var(--err-bg); border-color: var(--err-border); color: var(--err-text); }
   .mob-unit-num { font-size: .95rem; font-weight: 800; }
   .mob-unit-max-label { color: var(--t3); font-weight: 500; }
+
+  .plan-status { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .plan-status-actions { width: 100%; justify-content: space-between; }
+  .plan-status-actions .btn { flex: 1; }
+  .plan-view-toolbar { padding-inline: 12px; }
+  .plan-view-label { display: none; }
+  .quick-start-actions { width: 100%; }
+  .empty-state-card { width: min(100%, 360px); padding: 24px 18px; }
 
   /* ── Bottom Navigation ── */
   .mob-nav {
@@ -325,6 +353,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 
   <div class="topbar-center hide-mobile">
     <div class="unit-display" id="unitDisplay" role="status" title="واحدهای انتخاب‌شده">
+      <span class="unit-display-label">واحدهای انتخابی</span>
       <div class="unit-bar" aria-hidden="true"><div class="unit-bar-fill" id="unitBarFill" style="width:0%"></div></div>
       <span class="unit-count" id="unitCount">۰</span>
       <span class="unit-sep">/</span>
@@ -349,8 +378,10 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
             onclick="openStudentProfile()" aria-haspopup="dialog" title="پروفایل تحصیلی">
       <span data-icon="UserRound"></span> <span class="profile-label">پروفایل</span>
     </button>
+    <span class="topbar-divider" aria-hidden="true"></span>
     <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="onToggleTheme()" title="تغییر تم" aria-label="تغییر به تم روشن"><span id="themeBtnIcon" data-icon="Moon" data-theme-toggle-icon></span></button>
     <button class="btn btn-ghost btn-sm mob-exam-btn" style="background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-border)" onclick="openExamModal()" aria-label="امتحانات" title="امتحانات"><span data-icon="CalendarDays"></span> امتحانات</button>
+    <button class="btn btn-ghost btn-sm mob-more-btn" id="mobMoreBtn" type="button" onclick="openMobileActions()" aria-haspopup="dialog" aria-controls="mobileActionsModal" aria-label="سایر ابزارها" title="سایر ابزارها"><span data-icon="MoreHorizontal"></span></button>
     <button class="btn btn-ghost btn-sm" onclick="printSchedule()" title="چاپ برنامه" aria-label="چاپ برنامه"><span data-icon="Printer"></span></button>
     <button class="btn btn-ghost btn-sm" onclick="openCalendarExport()" title="افزودن به تقویم" aria-label="افزودن برنامه به تقویم"><span data-icon="Download"></span></button>
     <a href="professor.html" class="btn btn-ghost btn-sm" style="text-decoration:none"><span class="professor-link-icon" data-icon="GraduationCap" aria-hidden="true"></span> استاد</a>
@@ -377,11 +408,13 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       <!-- Tab: Search -->
       <div class="tab-panel active" id="tabSearch" role="tabpanel" aria-labelledby="tabBtnSearch" style="flex-direction:column">
         <section class="quick-start" id="quickStart" aria-labelledby="quickStartTitle">
-          <div>
+          <div class="quick-start-icon" aria-hidden="true"><span data-icon="Lightbulb"></span></div>
+          <div class="quick-start-copy">
+            <div class="quick-start-kicker">شروع سریع</div>
             <h2 id="quickStartTitle">برای چه رشته‌ای برنامه می‌چینی؟</h2>
             <p>دانشکده، گروه و ورودی را از کنترل‌های زیر انتخاب کن. اطلاعات ارائه‌ها: نیم‌سال جاری</p>
           </div>
-          <div class="dialog-actions"><button type="button" class="btn btn-primary btn-sm" onclick="dismissQuickStart()">نمایش درس‌ها</button><button type="button" class="btn btn-ghost btn-sm" onclick="dismissQuickStart()">فعلاً همه درس‌ها را ببین</button></div>
+          <div class="dialog-actions quick-start-actions"><button type="button" class="btn btn-primary btn-sm" onclick="dismissQuickStart()">نمایش درس‌ها</button><button type="button" class="btn btn-ghost btn-sm" onclick="dismissQuickStart()">فعلاً همه درس‌ها را ببین</button></div>
         </section>
         <div class="search-filters">
           <div class="search-wrapper" role="search">
@@ -444,26 +477,47 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     </header>
     <!-- Desktop header -->
     <div class="main-header">
-      <div>
-        <h1 class="main-title">برنامه این ترم</h1>
+      <div class="main-heading">
+        <div class="main-kicker"><span data-icon="CalendarDays"></span> فضای برنامه‌ریزی</div>
+        <div class="main-title-row">
+          <h1 class="main-title">برنامه این ترم</h1>
+          <span class="main-term-badge">نیم‌سال جاری</span>
+        </div>
         <div id="selectedInfo" class="main-subtitle" style="display:none"></div>
+      </div>
+      <div class="workflow-hint" aria-label="مراحل ساخت برنامه">
+        <span class="workflow-step"><b>۱</b> جستجو</span>
+        <span class="workflow-arrow" aria-hidden="true">←</span>
+        <span class="workflow-step"><b>۲</b> انتخاب</span>
+        <span class="workflow-arrow" aria-hidden="true">←</span>
+        <span class="workflow-step"><b>۳</b> مرور</span>
       </div>
     </div>
 
     <!-- Load analyzer badge (فقط وقتی AI فعال است) -->
     <div id="loadBadge" class="load-badge ok" style="display:none"></div>
     <section class="plan-status" aria-labelledby="planHealthTitle">
-      <div>
-        <h2 id="planHealthTitle">وضعیت برنامه</h2>
-        <span class="health-pill ready" id="healthPill">آماده</span>
+      <div class="plan-status-content">
+        <span class="plan-status-icon" aria-hidden="true"><span data-icon="ListChecks"></span></span>
+        <div>
+          <div class="status-eyebrow">بازبینی سریع</div>
+          <h2 id="planHealthTitle">وضعیت برنامه</h2>
+          <p class="status-hint">پیش از خروجی گرفتن، سقف واحد و تداخل‌ها را بررسی کن.</p>
+        </div>
       </div>
-      <button type="button" class="btn btn-primary btn-sm" onclick="openReviewModal()">مرور نهایی</button>
+      <div class="plan-status-actions">
+        <span class="health-pill ready" id="healthPill" role="status">آماده</span>
+        <button type="button" class="btn btn-primary btn-sm" onclick="openReviewModal()"><span data-icon="ListChecks"></span> مرور نهایی</button>
+      </div>
     </section>
     <div class="attention-queue" id="attentionQueue" aria-live="polite"></div>
-    <div class="plan-view-tabs" role="tablist" aria-label="نمای برنامه">
-      <button type="button" role="tab" aria-selected="true" tabindex="0" aria-controls="weeklyView" data-plan-view="weekly" onclick="setPlanView('weekly')">هفتگی</button>
-      <button type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="listView" data-plan-view="list" onclick="setPlanView('list')">فهرست</button>
-      <button type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="examsView" data-plan-view="exams" onclick="setPlanView('exams')">امتحان‌ها</button>
+    <div class="plan-view-toolbar">
+      <span class="plan-view-label">نمای برنامه</span>
+      <div class="plan-view-tabs" role="tablist" aria-label="نمای برنامه">
+        <button type="button" role="tab" id="planTabWeekly" aria-selected="true" tabindex="0" aria-controls="weeklyView" data-plan-view="weekly" onclick="setPlanView('weekly')">هفتگی</button>
+        <button type="button" role="tab" id="planTabList" aria-selected="false" tabindex="-1" aria-controls="listView" data-plan-view="list" onclick="setPlanView('list')">فهرست</button>
+        <button type="button" role="tab" id="planTabExams" aria-selected="false" tabindex="-1" aria-controls="examsView" data-plan-view="exams" onclick="setPlanView('exams')">امتحان‌ها</button>
+      </div>
     </div>
     <button type="button" class="schedule-warning" id="scheduleWarning" hidden onclick="setPlanView('list')">بعضی جلسه‌ها خارج از بازهٔ جدول‌اند؛ مشاهده فهرست کامل</button>
 
@@ -473,7 +527,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       <span id="mobSelectedInfo" style="font-size:var(--fs-xs);color:var(--t3)"></span>
     </div>
 
-    <div class="timetable-container" id="weeklyView">
+    <div class="timetable-container" id="weeklyView" role="tabpanel" aria-labelledby="planTabWeekly" tabindex="0">
       <div class="timetable-inner" id="timetable"></div>
     </div>
     <section class="print-timetable" id="printTimetable" aria-label="نسخه چاپی برنامه هفتگی"></section>
@@ -481,8 +535,8 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       <span>برنامهٔ پیشنهادی دانشجو — پیش از ثبت نهایی با سامانهٔ آموزشی تطبیق داده شود.</span>
       <span>entekhab-vahed · v0.1.0</span>
     </footer>
-    <div class="plan-list" id="listView" tabindex="-1" hidden></div>
-    <div class="plan-list" id="examsView" hidden></div>
+    <div class="plan-list" id="listView" role="tabpanel" aria-labelledby="planTabList" tabindex="0" hidden></div>
+    <div class="plan-list" id="examsView" role="tabpanel" aria-labelledby="planTabExams" tabindex="0" hidden></div>
   </main>
 
 </div>
@@ -625,7 +679,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     </div>
     <span>جستجو</span>
   </button>
-  <button class="mob-nav-btn" id="mnSchedule" role="tab" aria-selected="false" tabindex="-1" aria-controls="mainContent" onclick="setMobView('schedule')" aria-label="برنامه هفتگی">
+  <button class="mob-nav-btn" id="mnSchedule" role="tab" aria-selected="false" tabindex="-1" aria-controls="weeklyView" onclick="setMobView('schedule')" aria-label="برنامه هفتگی">
     <div class="mob-nav-icon-wrap"><span class="mob-nav-icon"><span data-icon="CalendarDays"></span></span></div>
     <span>برنامه</span>
   </button>
@@ -676,6 +730,22 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
                placeholder="—" oninput="onGpaChange(this.value)">
       </div>
       <p class="unit-sheet-help">معدل ترم قبل سقف واحد را تعیین می‌کند: زیر ۱۲ ← ۱۴ واحد، ۱۷ به بالا ← ۲۴ واحد</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Mobile / tablet actions ─────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="mobileActionsModal" onclick="if(event.target===this)closeMobileActions()">
+  <div class="modal-box mobile-actions-dialog" role="dialog" aria-modal="true" aria-labelledby="mobileActionsTitle">
+    <div class="modal-header">
+      <h3 class="modal-title" id="mobileActionsTitle">سایر ابزارها</h3>
+      <button class="modal-close" type="button" onclick="closeMobileActions()" aria-label="بستن"><span data-icon="X"></span></button>
+    </div>
+    <div class="mobile-actions-list">
+      <button type="button" class="btn btn-ghost" onclick="runMobileAction('print')"><span data-icon="Printer"></span> چاپ برنامه</button>
+      <button type="button" class="btn btn-ghost" onclick="runMobileAction('calendar')"><span data-icon="Download"></span> افزودن برنامه به تقویم</button>
+      <button type="button" class="btn btn-ghost" onclick="runMobileAction('about')"><span data-icon="Info"></span> دربارهٔ پروژه</button>
+      <a href="professor.html" class="btn btn-ghost" style="text-decoration:none"><span data-icon="GraduationCap"></span> داشبورد استاد</a>
     </div>
   </div>
 </div>
