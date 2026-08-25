@@ -31,6 +31,7 @@ test('course search and sidebar filters retain usable form sizing', () => {
     const html = read('apps/web/index.html');
     const css = read('apps/web/styles/main.css');
     const controller = read('apps/web/scripts/pages/student-planner.js');
+    const storage = read('apps/web/scripts/adapters/planner-storage.js');
     assert.match(css, /input\[type=search\]/);
     assert.match(css, /\.search-wrapper \{ position: relative; width: 100%; \}/);
     assert.match(css, /\[hidden\] \{ display: none !important; \}/);
@@ -43,6 +44,12 @@ test('course search and sidebar filters retain usable form sizing', () => {
     assert.match(controller, /<dt>استاد<\/dt>/);
     assert.match(controller, /<dt>زمان کلاس<\/dt>/);
     assert.match(controller, /افزودن به برنامه/);
+    assert.match(storage, /searchFaculty: 'uni_search_faculty'/);
+    assert.match(storage, /searchGroup: 'uni_search_group'/);
+    assert.match(controller, /function saveSearchFilters\(\)/);
+    assert.match(controller, /stateRepository\.setPreference\('searchFaculty'/);
+    assert.match(controller, /stateRepository\.setPreference\('faculty', faculty\)/);
+    assert.doesNotMatch(controller, /facultyFilter'\)\.value = faculty/);
 });
 
 test('tablet navigation shares the 1100px workspace breakpoint in JS and CSS', () => {
@@ -71,6 +78,16 @@ test('student tablists expose complete tab relationships and keyboard enhancemen
     ['ArrowRight', 'ArrowLeft', 'Home', 'End'].forEach(key => assert.match(ui, new RegExp(key)));
 });
 
+test('curriculum identity and entry year come from the profile context', () => {
+    const html = read('apps/web/index.html');
+    const controller = read('apps/web/scripts/pages/student-planner.js');
+    assert.match(html, /id="curriculumControls"[^>]*><\/div>/);
+    assert.doesNotMatch(html, /id="cohortSelect"/);
+    assert.match(controller, /cur-profile-context/);
+    assert.match(controller, /cohort: stateRepository\.getPreference\('cohort'\)/);
+    assert.match(controller, /ورودی انتخاب نشده/);
+});
+
 test('planner hierarchy keeps the next action and current status visible', () => {
     const html = read('apps/web/index.html');
     const controller = read('apps/web/scripts/pages/student-planner.js');
@@ -83,6 +100,19 @@ test('planner hierarchy keeps the next action and current status visible', () =>
     assert.match(controller, /class="empty-state-card"/);
     assert.match(css, /\.empty-state-card \{/);
     assert.match(css, /\.plan-status-actions \{/);
+    assert.match(html, /class="plan-status-context"/);
+    assert.match(html, /id="unitDisplayPlan"/);
+    assert.match(html, /id="planGpaValue"/);
+    assert.match(controller, /\['', 'Sheet', 'Plan'\]/);
+});
+
+test('undo toast action has independent sizing from the icon-only close button', () => {
+    const css = read('apps/web/styles/main.css');
+    const controller = read('apps/web/scripts/pages/student-planner.js');
+    assert.match(controller, /undo\.type = 'button'; undo\.className = 'toast-action'/);
+    assert.match(css, /\.toast-action \{/);
+    assert.match(css, /\.toast-action \.icon \{ width: 15px; height: 15px; \}/);
+    assert.match(css, /white-space: nowrap; position: relative;/);
 });
 
 test('shared programmatic tab selection synchronizes aria-selected and roving tabindex', () => {
@@ -169,7 +199,17 @@ test('professor dashboard has a skip link, main landmark, and width-safe conflic
     assert.match(html, /<main id="professorMain" class="professor-main">/);
     assert.match(html, /class="professor-brand-icon"/);
     assert.match(html, /class="summary-card-header"/);
-    assert.match(html, /@media \(max-width: 1100px\)[\s\S]*?\.professor-conflict-panel \{ width: 100%; \}/);
+    assert.match(html, /@media \(max-width: 1180px\)[\s\S]*?\.professor-layout \{ grid-template-columns: 1fr; overflow-y: auto; \}/);
+    assert.match(html, /timetable-scroll-hint/);
+});
+
+test('action colors and compact controls have accessible contrast and targets', () => {
+    const css = read('apps/web/styles/main.css');
+    assert.match(css, /--blue:\s+#2563eb/);
+    assert.match(css, /--green:\s+#047857/);
+    assert.match(css, /--red:\s+#b91c1c/);
+    assert.match(css, /\.btn-sm\s+\{ min-height: 36px/);
+    assert.match(css, /outline: 3px solid var\(--accent\)/);
 });
 
 test('extension escapes page-provided labels before inserting popup markup', () => {

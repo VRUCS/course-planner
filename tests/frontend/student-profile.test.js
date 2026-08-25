@@ -21,13 +21,29 @@ test('student profile is an accessible local-only academic context dialog', () =
     assert.match(html, /شماره دانشجویی یا اطلاعات هویتی دریافت نمی‌کنیم/);
 });
 
-test('profile applies shared preferences to catalog and offers honest curriculum routing', () => {
+test('profile stays separate from catalog search filters and offers honest curriculum routing', () => {
     for (const preference of ['faculty', 'group', 'cohort', 'gpa']) {
         assert.match(script, new RegExp(`setPreference\\('${preference}'`));
     }
-    assert.match(script, /document\.getElementById\('facultyFilter'\)\.value = faculty/);
-    assert.match(script, /document\.getElementById\('groupFilter'\)\.value = group/);
+    assert.match(script, /function saveSearchFilters\(\)/);
+    assert.match(script, /setPreference\('searchFaculty'/);
+    assert.doesNotMatch(script, /document\.getElementById\('facultyFilter'\)\.value = faculty/);
+    assert.doesNotMatch(script, /document\.getElementById\('groupFilter'\)\.value = group/);
     assert.match(script, /نقشه درسی این رشته موجود است/);
     assert.match(script, /فعلاً نقشه درسی این رشته در داده‌های پروژه موجود نیست/);
     assert.match(script, /function deleteStudentProfile\(\)/);
+});
+
+test('curriculum is derived from the saved academic profile, not temporary search filters', () => {
+    const currentCurriculum = script.match(/function getCurrentCurriculum\(\) \{[\s\S]*?\n\}/)?.[0];
+    const renderCurriculum = script.match(/function renderCurriculumTab\(\) \{[\s\S]*?\n\}/)?.[0];
+    assert.ok(currentCurriculum, 'curriculum lookup must remain directly testable');
+    assert.ok(renderCurriculum, 'curriculum renderer must remain directly testable');
+    assert.match(currentCurriculum, /getAcademicProfile\(\)/);
+    assert.doesNotMatch(currentCurriculum, /facultyFilter|groupFilter/);
+    assert.match(renderCurriculum, /getAcademicProfile\(\)/);
+    assert.doesNotMatch(renderCurriculum, /facultyFilter|groupFilter/);
+    assert.match(script, /برای نمایش نقشه درسی، رشته‌ات را در پروفایل تحصیلی انتخاب کن/);
+    assert.match(script, /cohort: stateRepository\.getPreference\('cohort'\)/);
+    assert.doesNotMatch(renderCurriculum, /cohortSelect|onCohortChange/);
 });

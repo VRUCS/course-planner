@@ -11,7 +11,7 @@ async function addFirstSingleSectionCourse(page) {
     await expect(card).toBeVisible();
     const name = (await card.locator('.course-group-title').textContent()).trim();
     await card.getByRole('button', { name: 'افزودن به برنامه' }).click();
-    await expect(page.locator('#unitCount')).not.toHaveText('۰');
+    await expect(page.locator('#unitCountPlan')).not.toHaveText('۰');
     return name;
 }
 
@@ -55,6 +55,9 @@ test('search narrows courses and advanced filters collapse cleanly', async ({ pa
 
 test('selecting a single-section course updates the timetable', async ({ page }) => {
     await openPlanner(page);
+    const card = page.locator('.single-course-summary').first();
+    await expect(card.locator('.single-course-facts')).toContainText('امتحان');
+    await expect(card.locator('.single-course-facts')).toContainText('ظرفیت');
     const courseName = await addFirstSingleSectionCourse(page);
 
     await expect(page.locator('#selectedStat')).toContainText('انتخاب‌شده');
@@ -69,10 +72,10 @@ test('selected courses persist after a reload', async ({ page }) => {
     await page.reload();
     await expect(page.locator('#courseCount')).not.toHaveText('...');
     await expect(page.locator('#timetable .class-block', { hasText: courseName }).first()).toBeVisible();
-    await expect(page.locator('#unitCount')).not.toHaveText('۰');
+    await expect(page.locator('#unitCountPlan')).not.toHaveText('۰');
 });
 
-test('academic profile applies relevant courses and persists locally', async ({ page }) => {
+test('academic profile and search filters remain independent', async ({ page }) => {
     await openPlanner(page);
 
     await page.getByRole('button', { name: /پروفایل/ }).click();
@@ -83,16 +86,47 @@ test('academic profile applies relevant courses and persists locally', async ({ 
     await dialog.locator('#profileGpa').fill('17.25');
     await dialog.getByRole('button', { name: 'ذخیره و نمایش درس‌های مرتبط' }).click();
 
-    await expect(page.locator('#facultyFilter')).toHaveValue('علوم ریاضی و کامپیوتر');
-    await expect(page.locator('#groupFilter')).toHaveValue('علوم کامپیوتر');
-    await expect(page.locator('#unitMax')).toHaveText('۲۴ واحد');
+    await expect(page.locator('#facultyFilter')).toHaveValue('');
+    await expect(page.locator('#groupFilter')).toHaveValue('');
+    await expect(page.locator('#unitMaxPlan')).toHaveText('۲۴ واحد');
     await expect(page.locator('#courseList .course-group').first()).toBeVisible();
+
+    await page.locator('#facultyFilter').selectOption({ label: 'فنی و مهندسی' });
+    await expect(page.locator('#facultyFilter')).toHaveValue('فنی و مهندسی');
+    await page.getByRole('button', { name: /پروفایل/ }).click();
+    await expect(page.getByRole('dialog', { name: 'پروفایل تحصیلی' }).locator('#profileFaculty'))
+        .toHaveValue('علوم ریاضی و کامپیوتر');
 
     await page.reload();
     await expect(page.locator('#courseCount')).not.toHaveText('...');
+    await expect(page.locator('#facultyFilter')).toHaveValue('فنی و مهندسی');
     await page.getByRole('button', { name: /پروفایل/ }).click();
-    await expect(page.getByRole('dialog', { name: 'پروفایل تحصیلی' }).locator('#profileGpa'))
-        .toHaveValue('17.25');
+    const profileDialog = page.getByRole('dialog', { name: 'پروفایل تحصیلی' });
+    await expect(profileDialog.locator('#profileFaculty')).toHaveValue('علوم ریاضی و کامپیوتر');
+    await expect(profileDialog.locator('#profileGroup')).toHaveValue('علوم کامپیوتر');
+    await expect(profileDialog.locator('#profileGpa')).toHaveValue('17.25');
+});
+
+test('curriculum follows the academic profile after search filters change', async ({ page }) => {
+    await openPlanner(page);
+
+    await page.getByRole('button', { name: /پروفایل/ }).click();
+    const profile = page.getByRole('dialog', { name: 'پروفایل تحصیلی' });
+    await profile.locator('#profileFaculty').selectOption({ label: 'علوم ریاضی و کامپیوتر' });
+    await profile.locator('#profileGroup').selectOption({ label: 'علوم کامپیوتر' });
+    await profile.getByRole('button', { name: 'ذخیره و نمایش درس‌های مرتبط' }).click();
+
+    await page.locator('#facultyFilter').selectOption({ label: 'فنی و مهندسی' });
+    const searchGroup = page.locator('#groupFilter');
+    if (await searchGroup.locator('option').count() > 1) {
+        await searchGroup.selectOption({ index: 1 });
+    }
+
+    await page.getByRole('tab', { name: 'نقشه درسی' }).click();
+    await expect(page.locator('#curriculumControls')).toBeVisible();
+    await expect(page.locator('#curriculumScroll .sem-block').first()).toBeVisible();
+    await expect(page.locator('#curriculumScroll')).toContainText('ریاضی عمومی ۱');
+    await expect(page.locator('#curriculumScroll')).not.toContainText('برای نمایش نقشه درسی');
 });
 
 test('opens and closes the About dialog from the top bar', async ({ page }) => {
@@ -138,6 +172,12 @@ test.describe('responsive navigation', () => {
         await nav.getByRole('tab', { name: /برنامه/ }).click();
         await expect(page.locator('body')).toHaveAttribute('data-mob', 'schedule');
         await expect(page.locator('#mainContent')).toBeVisible();
+        await expect.poll(async () => {
+            const box = await page.locator('#mainContent').boundingBox();
+            return Boolean(box && box.x >= -1 && box.x + box.width <= 391);
+        }).toBe(true);
+        await page.locator('#planTabWeekly').click();
+        await expect(page.locator('#weeklyView')).toBeVisible();
         await nav.getByRole('tab', { name: 'جستجوی درس' }).click();
         await expect(page.locator('body')).toHaveAttribute('data-mob', 'search');
         await expect(page.locator('#tabSearch')).toBeVisible();
@@ -164,6 +204,7 @@ test.describe('responsive navigation', () => {
         await expect(actions.getByRole('link', { name: /داشبورد استاد/ })).toHaveAttribute('href', 'professor.html');
         await expect(actions.getByRole('button', { name: /چاپ برنامه/ })).toBeVisible();
         await expect(actions.getByRole('button', { name: /افزودن برنامه به تقویم/ })).toBeVisible();
+        await expect(actions.getByRole('button', { name: /برنامه امتحانات/ })).toBeVisible();
         await actions.getByRole('button', { name: /دربارهٔ پروژه/ }).click();
         await expect(page.getByRole('dialog', { name: /درباره/ })).toBeVisible();
     });
@@ -192,6 +233,11 @@ test('professor dashboard keeps its conflict panel inside the viewport at 1024px
     const panel = await page.locator('.professor-conflict-panel').boundingBox();
     expect(panel.x).toBeGreaterThanOrEqual(0);
     expect(panel.x + panel.width).toBeLessThanOrEqual(1024);
+    const timetable = await page.locator('.professor-timetable-panel .timetable-box').evaluate(element => ({
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+    }));
+    expect(timetable.scrollWidth).toBeLessThanOrEqual(timetable.clientWidth + 1);
 });
 
 test('print media exposes the ink-saving schedule document', async ({ page }) => {

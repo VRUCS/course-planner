@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data:; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https:; object-src 'none'; base-uri 'self'; form-action 'self'">
-<title>داشبورد استاد — انتخاب واحد هوشمند</title>
+<title>داشبورد استاد — انتخاب واحد یار</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
 <link rel="stylesheet" href="styles/main.css">
@@ -89,7 +89,7 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
   border-bottom: 1px solid var(--b0); display: flex; align-items: center;
   justify-content: space-between; gap: 20px; flex-shrink: 0;
 }
-.professor-topbar { background: radial-gradient(circle at 88% 0%, rgba(59,130,246,.1), transparent 30%), var(--s0); }
+.professor-topbar { background: radial-gradient(circle at 88% 0%, rgba(37,99,235,.1), transparent 30%), var(--s0); }
 .professor-brand { min-width: 0; display: flex; align-items: center; gap: 12px; }
 .professor-brand-icon { display: inline-grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; border: 1px solid var(--accent-border); border-radius: 12px; background: var(--blue-dim); color: var(--accent); }
 .professor-brand-icon .icon { width: 20px; height: 20px; }
@@ -131,7 +131,9 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 .professor-conflict-panel .panel-label { font-size: .86rem; line-height: 1.5; }
 .professor-timetable-panel .timetable-box {
   padding: 12px; border-radius: 8px; overflow: auto;
+  scrollbar-color: var(--accent) var(--s2);
 }
+.timetable-scroll-hint { display: none; color: var(--t3); font-size: var(--fs-2xs); line-height: 1.5; }
 .professor-timetable-panel .tt-grid {
   grid-template-columns: 72px repeat(5, minmax(150px, 1fr));
   grid-template-rows: 44px repeat(5, minmax(94px, 1fr));
@@ -161,9 +163,13 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 .professor-conflict-panel .conflict-reason { font-size: var(--fs-xs); line-height: 1.7; }
 .professor-conflict-panel .time-chip { font-size: var(--fs-xs); padding: 3px 8px; }
 
-@media (max-width: 1100px) {
-  .professor-layout { grid-template-columns: minmax(0, 1fr) 330px; }
-  .professor-conflict-panel { width: 100%; }
+@media (max-width: 1180px) {
+  /* Keep the weekly grid readable at tablet widths instead of squeezing an
+     850px timetable beside a second panel and clipping a day column. */
+  .professor-layout { grid-template-columns: 1fr; overflow-y: auto; }
+  .professor-timetable-panel { min-height: 540px; }
+  .professor-conflict-panel { width: 100%; min-height: 280px; }
+  .timetable-scroll-hint { display: block; }
 }
 @media (max-width: 768px) {
   .professor-topbar { min-height: 60px; padding: 8px 12px; gap: 10px; }
@@ -177,6 +183,10 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
   .professor-layout { display: flex; flex-direction: column; overflow-y: auto; padding: 12px; }
   .professor-timetable-panel { flex: none; min-height: 460px; }
   .professor-timetable-panel .timetable-box { min-height: 420px; max-height: none; }
+  .professor-timetable-panel .tt-grid {
+    grid-template-columns: 54px repeat(5, minmax(120px, 1fr));
+    min-width: 674px;
+  }
   .professor-conflict-panel { width: 100%; }
   .professor-conflict-panel .conflict-list { max-height: none; }
 }
@@ -197,7 +207,7 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
   <div class="professor-actions">
     <button class="btn btn-ghost btn-sm" onclick="Theme.toggle()" title="تغییر تم" aria-label="تغییر تم"><span data-icon="Moon" data-theme-toggle-icon></span></button>
     <button class="btn btn-ghost btn-sm" onclick="window.print()" title="چاپ گزارش"><span data-icon="Printer"></span> چاپ</button>
-    <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none"><span data-icon="ArrowLeft"></span> انتخاب واحد</a>
+    <a href="index.html" class="btn btn-ghost btn-sm tool-back-link"><span data-icon="ArrowLeft"></span> انتخاب واحد یار</a>
   </div>
 </header>
 
@@ -260,6 +270,7 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
   <div class="tt-panel professor-timetable-panel">
     <div class="panel-label" id="ttTitle">برنامه هفتگی گروه</div>
     <p class="schedule-warning" id="unsupportedScheduleWarning" hidden role="status"></p>
+    <p class="timetable-scroll-hint">برای دیدن همهٔ روزها، جدول را افقی جابه‌جا کن.</p>
     <div class="timetable-box">
       <div class="tt-grid" id="timetable"></div>
     </div>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data:; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https:; object-src 'none'; base-uri 'self'; form-action 'self'">
-<title>ویرایشگر داده — انتخاب واحد هوشمند</title>
+<title>ویرایشگر داده — انتخاب واحد یار</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
 <link rel="stylesheet" href="styles/main.css">
@@ -57,7 +57,9 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
 .form-row .fg { flex: 1; min-width: 140px; }
 </style>
 </head>
-<body>
+<body class="editor-page">
+
+<a class="skip-link" href="#editorMain">رفتن به محتوای اصلی</a>
 
 <header class="app-topbar">
   <div class="topbar-brand">
@@ -66,10 +68,11 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
   </div>
   <div class="topbar-actions">
     <button class="btn btn-ghost btn-sm" onclick="Theme.toggle()" title="تغییر تم" aria-label="تغییر تم"><span data-icon="Moon" data-theme-toggle-icon></span></button>
-    <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none"><span data-icon="ArrowLeft"></span> انتخاب واحد</a>
+    <a href="index.html" class="btn btn-ghost btn-sm tool-back-link"><span data-icon="ArrowLeft"></span> انتخاب واحد یار</a>
   </div>
 </header>
 
+<main id="editorMain" class="editor-main">
 <div class="page-tabs" role="tablist" aria-label="بخش‌های ویرایشگر">
   <button type="button" class="page-tab active" id="tabBtnRules" role="tab" aria-selected="true"
           aria-controls="panelRules" onclick="switchAdminTab('rules')"><span data-icon="ListChecks"></span> قوانین تداخل</button>
@@ -80,7 +83,7 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
 <!-- ── Tab: Rules ──────────────────────────────────────────────────────── -->
 <div class="tab-panel active" id="panelRules" role="tabpanel" aria-labelledby="tabBtnRules">
 
-  <div class="info-box" style="margin-bottom:20px">
+  <div class="info-box editor-note">
     این ویرایشگر برای بررسی سناریوهاست. قوانین مرجع از چارت و
     <code>courses.json</code> به‌صورت deterministic تولید می‌شوند.
   </div>
@@ -88,13 +91,13 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
   <div class="form-row">
     <div class="fg"><label for="rfFaculty">دانشکده</label><select id="rfFaculty" onchange="rfOnFacultyChange()"><option value="">انتخاب...</option></select></div>
     <div class="fg"><label for="rfGroup">گروه آموزشی</label><select id="rfGroup"><option value="">انتخاب...</option></select></div>
-    <div style="display:flex;gap:8px;align-items:flex-end">
+    <div class="editor-inline-actions">
       <button class="btn btn-ghost btn-sm" onclick="rfLoadExisting()"><span data-icon="Download"></span> بارگذاری موجود</button>
     </div>
   </div>
 
   <!-- Hard rules -->
-  <div class="card" style="padding:var(--sp4);margin-bottom:var(--sp4)">
+  <div class="card editor-card">
     <div class="section-hd">
       <span class="section-title"><span class="badge badge-danger"><span data-icon="CircleX"></span> سخت</span> تداخل اجباری (درس‌های هم‌ترم)</span>
       <button class="btn btn-ghost btn-sm" onclick="rfAddRow('hard')"><span data-icon="Plus"></span> افزودن</button>
@@ -106,7 +109,7 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
   </div>
 
   <!-- Soft rules -->
-  <div class="card" style="padding:var(--sp4);margin-bottom:var(--sp4)">
+  <div class="card editor-card">
     <div class="section-hd">
       <span class="section-title"><span class="badge badge-warning"><span data-icon="CircleAlert"></span> نرم</span> تداخل توصیه‌شده (هم‌تراز ترم)</span>
       <button class="btn btn-ghost btn-sm" onclick="rfAddRow('soft')"><span data-icon="Plus"></span> افزودن</button>
@@ -117,7 +120,7 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
     </table>
   </div>
 
-  <div style="display:flex;gap:8px">
+  <div class="editor-actions">
     <button class="btn btn-primary" onclick="rfExport()"><span data-icon="Download"></span> صادر کردن کد JS</button>
     <button class="btn btn-ghost" onclick="rfClear()"><span data-icon="Trash2"></span> پاک کردن همه</button>
   </div>
@@ -126,7 +129,7 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
 <!-- ── Tab: Curriculum ─────────────────────────────────────────────────── -->
 <div class="tab-panel" id="panelCurriculum" role="tabpanel" aria-labelledby="tabBtnAdminCurriculum">
 
-  <div class="info-box" style="margin-bottom:20px">
+  <div class="info-box editor-note">
     چارت را وارد و قطعه JSON را پس از بازبینی در
     <code>data/canonical/curricula.json</code> داخل <code>programs</code> قرار دهید.
   </div>
@@ -138,8 +141,8 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
   </div>
   <div class="form-row">
     <div class="fg"><label for="cfCohorts">ورودی‌ها (با ویرگول)</label><input type="text" id="cfCohorts" value="۱۴۰۰, ۱۴۰۱"></div>
-    <div style="flex:0 0 120px"><label for="cfTotalUnits">کل واحد</label><input type="number" id="cfTotalUnits" value="140"></div>
-    <button class="btn btn-ghost btn-sm" onclick="cfAddRow()" style="align-self:flex-end"><span data-icon="Plus"></span> افزودن درس</button>
+    <div class="fg editor-units-field"><label for="cfTotalUnits">کل واحد</label><input type="number" id="cfTotalUnits" value="140"></div>
+    <button class="btn btn-ghost btn-sm editor-add-course" onclick="cfAddRow()"><span data-icon="Plus"></span> افزودن درس</button>
   </div>
 
   <div class="cur-table-wrap">
@@ -154,16 +157,16 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
       <tbody id="cfRows"></tbody>
     </table>
   </div>
-  <br>
-  <div style="display:flex;gap:8px">
+  <div class="editor-actions">
     <button class="btn btn-primary" onclick="cfExport()"><span data-icon="Download"></span> صادر کردن کد JS</button>
     <button class="btn btn-ghost" onclick="cfClear()"><span data-icon="Trash2"></span> پاک کردن همه</button>
   </div>
 </div>
+</main>
 
 <!-- ── Output Modal ────────────────────────────────────────────────────── -->
 <div class="modal-backdrop" id="outputModal" onclick="if(event.target===this)closeOutput()">
-  <div class="modal-box anim-scale" style="max-width:780px" role="dialog" aria-modal="true" aria-labelledby="outputTitle">
+  <div class="modal-box editor-output-modal anim-scale" role="dialog" aria-modal="true" aria-labelledby="outputTitle">
     <div class="modal-header">
       <h3 class="modal-title" id="outputTitle">کد تولیدشده</h3>
       <button class="modal-close" onclick="closeOutput()" aria-label="بستن"><span data-icon="X"></span></button>
@@ -171,10 +174,10 @@ label { font-size: var(--fs-xs); color: var(--t3); font-weight: 700; display: bl
     <div class="modal-body code-area">
       <textarea id="outputCode" readonly aria-labelledby="outputTitle"></textarea>
     </div>
-    <div style="display:flex;gap:10px;align-items:center;margin-top:16px">
+    <div class="editor-output-actions">
       <button class="btn btn-success" onclick="copyOutput()"><span data-icon="Copy"></span> کپی</button>
-      <span id="copyMsg" role="status" style="display:none;color:var(--ok-text);font-size:var(--fs-sm)">کپی شد!</span>
-      <span style="font-size:var(--fs-xs);color:var(--t3)">این کد را در فایل مربوطه paste کنید.</span>
+      <span id="copyMsg" class="editor-output-status" role="status">کپی شد!</span>
+      <span class="editor-output-help">این کد را در فایل مربوطه paste کنید.</span>
     </div>
   </div>
 </div>

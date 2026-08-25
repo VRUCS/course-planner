@@ -8,6 +8,7 @@ const Advisor = (() => {
     let history = [];
     let isOpen  = false;
     let isTyping = false;
+    let focusOrigin = null;
 
     // ─── System prompt ────────────────────────────────────────────────────────
     function buildSystemPrompt() {
@@ -33,8 +34,11 @@ ${ctx || 'اطلاعاتی در دسترس نیست.'}
     function open() {
         if (isOpen) return;
         isOpen = true;
-        getPanel().classList.add('open');
-        getPanel().setAttribute('aria-hidden', 'false');
+        focusOrigin = document.activeElement;
+        const panel = getPanel();
+        panel?.classList.add('open');
+        panel?.setAttribute('aria-hidden', 'false');
+        if (panel) panel.inert = false;
         document.getElementById('aiFab')?.setAttribute('aria-expanded', 'true');
         getInput()?.focus();
         if (history.length === 0) appendWelcome();
@@ -42,10 +46,14 @@ ${ctx || 'اطلاعاتی در دسترس نیست.'}
 
     function close() {
         isOpen = false;
-        getPanel().classList.remove('open');
-        getPanel().setAttribute('aria-hidden', 'true');
+        const panel = getPanel();
+        panel?.classList.remove('open');
+        panel?.setAttribute('aria-hidden', 'true');
+        if (panel) panel.inert = true;
         document.getElementById('aiFab')?.setAttribute('aria-expanded', 'false');
-        document.getElementById('aiFab')?.focus();
+        if (focusOrigin && typeof focusOrigin.focus === 'function') focusOrigin.focus();
+        else document.getElementById('aiFab')?.focus();
+        focusOrigin = null;
     }
 
     function toggle() { isOpen ? close() : open(); }
@@ -159,6 +167,32 @@ ${ctx || 'اطلاعاتی در دسترس نیست.'}
         if (msgs) msgs.innerHTML = '';
         appendWelcome();
     }
+
+    function handleKeydown(event) {
+        if (!isOpen) return;
+        const panel = getPanel();
+        if (!panel) return;
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            close();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+        const focusable = [...panel.querySelectorAll('button, textarea, input, select, a[href], [tabindex]:not([tabindex="-1"])')]
+            .filter(element => !element.disabled && !element.hidden && element.offsetParent !== null);
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault(); last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault(); first.focus();
+        }
+    }
+
+    document.addEventListener('keydown', handleKeydown);
+    const initialPanel = getPanel();
+    if (initialPanel) initialPanel.inert = true;
 
     // ─── پیشنهادهای سریع ─────────────────────────────────────────────────────
     const QUICK_PROMPTS = [

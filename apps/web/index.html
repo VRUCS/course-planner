@@ -6,7 +6,7 @@
 <meta name="application-version" content="0.1.0">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net data:; img-src 'self' data:; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https:; object-src 'none'; base-uri 'self'; form-action 'self'">
-<title>انتخاب واحد هوشمند</title>
+<title>انتخاب واحد یار</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
 <link rel="stylesheet" href="styles/main.css">
@@ -33,7 +33,6 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 }
 .brand-name  { font-size: 0.92rem; font-weight: 800; }
 .brand-badge { font-size: var(--fs-2xs); background: var(--blue-dim); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 4px; padding: 1px 6px; font-weight: 700; }
-.topbar-center { flex: 1; display: flex; justify-content: center; align-items: center; gap: 10px; }
 .gpa-box {
   display: flex; align-items: center; gap: 6px;
   background: var(--s1); border: 1px solid var(--b0);
@@ -45,9 +44,6 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   color: var(--t0); font: inherit; font-weight: 700; text-align: center;
   -moz-appearance: textfield; appearance: textfield;
 }
-/* Only the compact topbar pill opts out of the global input min-height;
-   the unit-sheet copy keeps its 44px touch size (QA DEF-3) */
-.topbar-center .gpa-box input { min-height: 0; }
 .unit-sheet-help {
   font-size: var(--fs-xs); color: var(--t2); line-height: 1.8; margin-top: 12px;
 }
@@ -98,21 +94,25 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 .course-list { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 10px 10px; }
 
 /* Curriculum tab */
-.cur-controls { padding: 12px 14px 10px; border-bottom: 1px solid var(--b0); flex-shrink: 0; }
-.cur-controls label { font-size: var(--fs-xs); color: var(--t3); font-weight: 600; display: block; margin-bottom: 5px; }
+.cur-controls { padding: 10px 14px; border-bottom: 1px solid var(--b0); flex-shrink: 0; }
+.cur-profile-context { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cur-profile-copy { display: grid; gap: 2px; min-width: 0; }
+.cur-profile-copy strong { color: var(--t1); font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cur-profile-copy > span:last-child { color: var(--t2); font-size: var(--fs-2xs); }
+.cur-profile-label { color: var(--accent); font-size: var(--fs-2xs); font-weight: 700; }
+.cur-profile-context .btn { flex-shrink: 0; }
 .cur-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; }
 
 /* ── Main ────────────────────────────────────────────────────────────────── */
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 16px 20px; gap: 12px; min-width: 0; min-height: 0; background: radial-gradient(circle at 12% 0%, rgba(59,130,246,.08), transparent 30%), var(--s0); }
-.main-header { display: flex; justify-content: space-between; align-items: center; }
-.main-heading { display: grid; gap: 3px; min-width: 0; }
-.main-kicker { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: var(--fs-2xs); font-weight: 800; }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 10px 20px; gap: 8px; min-width: 0; min-height: 0; background: radial-gradient(circle at 12% 0%, rgba(37,99,235,.08), transparent 30%), var(--s0); }
+.main-header { display: flex; justify-content: space-between; align-items: center; min-height: 30px; }
+.main-heading { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.main-kicker { display: none; }
 .main-kicker .icon { width: 14px; height: 14px; }
 .main-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.main-title  { font-size: 1.2rem; font-weight: 850; letter-spacing: -.02em; }
-.main-term-badge { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 8px; border: 1px solid var(--b1); border-radius: 999px; color: var(--t2); font-size: var(--fs-2xs); font-weight: 700; }
-.main-subtitle { font-size: var(--fs-xs); color: var(--t3); margin-top: 2px; }
-.workflow-hint { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border: 1px solid var(--b0); border-radius: 999px; color: var(--t3); font-size: var(--fs-2xs); white-space: nowrap; }
+.main-title  { font-size: 1rem; font-weight: 850; letter-spacing: -.02em; }
+.main-subtitle, .workflow-hint { display: none; }
+.workflow-hint { align-items: center; gap: 7px; padding: 6px 10px; border: 1px solid var(--b0); border-radius: 999px; color: var(--t3); font-size: var(--fs-2xs); white-space: nowrap; }
 .workflow-step { display: inline-flex; align-items: center; gap: 4px; }
 .workflow-step b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--blue-dim); color: var(--accent); font-size: 10px; }
 .workflow-arrow { color: var(--b2); }
@@ -343,27 +343,12 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 
 <!-- ── Top Bar ─────────────────────────────────────────────────────────────── -->
 <header class="app-topbar no-print">
-  <a href="#" class="brand" onclick="return false">
-    <div class="brand-logo"><span data-icon="BookOpen"></span></div>
+  <div class="brand" aria-label="انتخاب واحد یار">
+    <div class="brand-logo"><span data-icon="CalendarDays"></span></div>
     <div>
-      <div class="brand-name">انتخاب واحد</div>
+      <div class="brand-name">انتخاب واحد یار</div>
     </div>
-    <span class="brand-badge hide-mobile">هوشمند <small class="app-version" title="نسخه آزمایشی">v0.1.0</small></span>
-  </a>
-
-  <div class="topbar-center hide-mobile">
-    <div class="unit-display" id="unitDisplay" role="status" title="واحدهای انتخاب‌شده">
-      <span class="unit-display-label">واحدهای انتخابی</span>
-      <div class="unit-bar" aria-hidden="true"><div class="unit-bar-fill" id="unitBarFill" style="width:0%"></div></div>
-      <span class="unit-count" id="unitCount">۰</span>
-      <span class="unit-sep">/</span>
-      <span class="unit-max" id="unitMax">۲۰ واحد</span>
-    </div>
-    <div class="gpa-box" title="معدل ترم قبل سقف واحد را تعیین می‌کند: زیر ۱۲ ← ۱۴ واحد، ۱۷ به بالا ← ۲۴ واحد">
-      <label for="gpaInput">معدل</label>
-      <input id="gpaInput" type="number" inputmode="decimal" min="0" max="20" step="0.01"
-             placeholder="—" oninput="onGpaChange(this.value)">
-    </div>
+    <span class="brand-badge hide-mobile"><small class="app-version" title="نسخه آزمایشی">v0.1.0</small></span>
   </div>
 
   <!-- unit pill فقط روی موبایل نمایش داده می‌شود -->
@@ -380,11 +365,11 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     </button>
     <span class="topbar-divider" aria-hidden="true"></span>
     <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="onToggleTheme()" title="تغییر تم" aria-label="تغییر به تم روشن"><span id="themeBtnIcon" data-icon="Moon" data-theme-toggle-icon></span></button>
-    <button class="btn btn-ghost btn-sm mob-exam-btn" style="background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-border)" onclick="openExamModal()" aria-label="امتحانات" title="امتحانات"><span data-icon="CalendarDays"></span> امتحانات</button>
+    <button class="btn btn-ghost btn-sm mob-exam-btn" onclick="openExamModal()" aria-label="امتحانات" title="امتحانات"><span data-icon="CalendarDays"></span> امتحانات</button>
     <button class="btn btn-ghost btn-sm mob-more-btn" id="mobMoreBtn" type="button" onclick="openMobileActions()" aria-haspopup="dialog" aria-controls="mobileActionsModal" aria-label="سایر ابزارها" title="سایر ابزارها"><span data-icon="MoreHorizontal"></span></button>
     <button class="btn btn-ghost btn-sm" onclick="printSchedule()" title="چاپ برنامه" aria-label="چاپ برنامه"><span data-icon="Printer"></span></button>
     <button class="btn btn-ghost btn-sm" onclick="openCalendarExport()" title="افزودن به تقویم" aria-label="افزودن برنامه به تقویم"><span data-icon="Download"></span></button>
-    <a href="professor.html" class="btn btn-ghost btn-sm" style="text-decoration:none"><span class="professor-link-icon" data-icon="GraduationCap" aria-hidden="true"></span> استاد</a>
+    <a href="professor.html" class="btn btn-ghost btn-sm tool-back-link"><span class="professor-link-icon" data-icon="GraduationCap" aria-hidden="true"></span> استاد</a>
     <button class="btn btn-ghost btn-sm" onclick="openDialog(document.getElementById('aboutModal'))" title="درباره پروژه"><span data-icon="Info"></span> درباره</button>
   </div>
 </header>
@@ -406,15 +391,15 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     <div class="sidebar-body">
 
       <!-- Tab: Search -->
-      <div class="tab-panel active" id="tabSearch" role="tabpanel" aria-labelledby="tabBtnSearch" style="flex-direction:column">
+      <div class="tab-panel active" id="tabSearch" role="tabpanel" aria-labelledby="tabBtnSearch">
         <section class="quick-start" id="quickStart" aria-labelledby="quickStartTitle">
           <div class="quick-start-icon" aria-hidden="true"><span data-icon="Lightbulb"></span></div>
           <div class="quick-start-copy">
             <div class="quick-start-kicker">شروع سریع</div>
             <h2 id="quickStartTitle">برای چه رشته‌ای برنامه می‌چینی؟</h2>
-            <p>دانشکده، گروه و ورودی را از کنترل‌های زیر انتخاب کن. اطلاعات ارائه‌ها: نیم‌سال جاری</p>
+            <p>رشته‌ات را از پروفایل انتخاب کن یا با فیلترها یک درس دیگر را جستجو کن.</p>
           </div>
-          <div class="dialog-actions quick-start-actions"><button type="button" class="btn btn-primary btn-sm" onclick="dismissQuickStart()">نمایش درس‌ها</button><button type="button" class="btn btn-ghost btn-sm" onclick="dismissQuickStart()">فعلاً همه درس‌ها را ببین</button></div>
+          <div class="dialog-actions quick-start-actions"><button type="button" class="btn btn-primary btn-sm" onclick="dismissQuickStart()">نمایش درس‌ها</button></div>
         </section>
         <div class="search-filters">
           <div class="search-wrapper" role="search">
@@ -439,22 +424,19 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         </div>
         <div class="course-list-header">
           <span class="course-list-count" id="courseCount" aria-live="polite">...</span>
-          <span style="font-size:var(--fs-2xs);color:var(--t3)" id="selectedStat" aria-live="polite"></span>
+          <span class="course-list-selected" id="selectedStat" aria-live="polite"></span>
         </div>
         <div class="course-list" id="courseList"></div>
       </div>
 
       <!-- Tab: Curriculum -->
-      <div class="tab-panel" id="tabCurriculum" role="tabpanel" aria-labelledby="tabBtnCurriculum" hidden style="flex-direction:column">
-        <div class="cur-controls" id="curriculumControls" style="display:none">
-          <label for="cohortSelect">ورودی:</label>
-          <select id="cohortSelect" onchange="onCohortChange()"></select>
-        </div>
+      <div class="tab-panel" id="tabCurriculum" role="tabpanel" aria-labelledby="tabBtnCurriculum" hidden>
+        <div class="cur-controls" id="curriculumControls" style="display:none"></div>
         <div class="cur-scroll" id="curriculumScroll">
           <div class="empty-state">
             <div class="empty-state-icon"><span data-icon="GraduationCap"></span></div>
             <div class="empty-state-title">نقشه درسی</div>
-            <div class="empty-state-desc">از تب جستجو، یک دانشکده و گروه آموزشی انتخاب کنید.</div>
+            <div class="empty-state-desc">برای نمایش نقشه درسی، رشته‌ات را در پروفایل تحصیلی انتخاب کن.</div>
           </div>
         </div>
       </div>
@@ -466,7 +448,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   <main class="main" id="mainContent">
     <header class="print-header" aria-hidden="true">
       <div>
-        <div class="print-kicker">انتخاب واحد هوشمند</div>
+        <div class="print-kicker">انتخاب واحد یار</div>
         <h1>برنامهٔ هفتگی کلاس‌ها</h1>
       </div>
       <div class="print-meta">
@@ -481,9 +463,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         <div class="main-kicker"><span data-icon="CalendarDays"></span> فضای برنامه‌ریزی</div>
         <div class="main-title-row">
           <h1 class="main-title">برنامه این ترم</h1>
-          <span class="main-term-badge">نیم‌سال جاری</span>
         </div>
-        <div id="selectedInfo" class="main-subtitle" style="display:none"></div>
       </div>
       <div class="workflow-hint" aria-label="مراحل ساخت برنامه">
         <span class="workflow-step"><b>۱</b> جستجو</span>
@@ -504,6 +484,37 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
           <h2 id="planHealthTitle">وضعیت برنامه</h2>
           <p class="status-hint">پیش از خروجی گرفتن، سقف واحد و تداخل‌ها را بررسی کن.</p>
         </div>
+      </div>
+      <div class="plan-status-context" role="group" aria-label="خلاصهٔ ظرفیت و معدل">
+        <div class="plan-units-summary unit-display" id="unitDisplayPlan" role="status" title="واحدهای انتخاب‌شده">
+          <div class="plan-context-copy">
+            <span class="plan-context-label">واحدهای انتخابی</span>
+            <span class="plan-context-value">
+              <span class="unit-count" id="unitCountPlan">۰</span>
+              <span class="unit-sep">/</span>
+              <span class="unit-max" id="unitMaxPlan">۲۰ واحد</span>
+            </span>
+          </div>
+          <div class="unit-bar" aria-hidden="true"><div class="unit-bar-fill" id="unitBarFillPlan" style="width:0%"></div></div>
+        </div>
+        <span id="selectedInfo" class="plan-selected-summary" style="display:none" aria-live="polite">
+          <span class="plan-context-copy">
+            <span class="plan-context-label">دروس انتخاب‌شده</span>
+            <span class="plan-context-value">
+              <span id="selectedCount">۰</span><span class="plan-selected-unit">درس</span>
+            </span>
+          </span>
+        </span>
+        <button type="button" class="plan-gpa-summary" onclick="openStudentProfile()"
+                title="ویرایش معدل ترم قبل">
+          <span class="plan-context-copy">
+            <span class="plan-context-label">معدل ترم قبل</span>
+            <span class="plan-context-value plan-gpa-value">
+              <span id="planGpaValue">—</span><span class="plan-gpa-scale">/ ۲۰</span>
+            </span>
+          </span>
+          <span data-icon="Pencil" aria-hidden="true"></span>
+        </button>
       </div>
       <div class="plan-status-actions">
         <span class="health-pill ready" id="healthPill" role="status">آماده</span>
@@ -544,12 +555,12 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 <div class="modal-backdrop" id="aboutModal">
   <div class="modal-box about-dialog" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
     <div class="modal-header">
-      <h2 class="modal-title" id="aboutTitle">دربارهٔ انتخاب واحد هوشمند</h2>
+      <h2 class="modal-title" id="aboutTitle">دربارهٔ انتخاب واحد یار</h2>
       <button class="modal-close" onclick="closeDialog(document.getElementById('aboutModal'))" aria-label="بستن"><span data-icon="X"></span></button>
     </div>
     <div class="modal-body">
       <div class="about-intro">
-        <span class="about-logo" aria-hidden="true"><span data-icon="BookOpen"></span></span>
+        <span class="about-logo" aria-hidden="true"><span data-icon="CalendarDays"></span></span>
         <div>
           <h3>یک برنامه‌ریز دانشگاهی آزاد و دانشجویی</h3>
           <p>این سامانه به‌عنوان پروژهٔ کارشناسی ساخته شده تا جست‌وجوی درس‌ها، بررسی تداخل‌ها و ساخت برنامهٔ هفتگی ساده‌تر و قابل‌اعتمادتر شود.</p>
@@ -744,8 +755,9 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     <div class="mobile-actions-list">
       <button type="button" class="btn btn-ghost" onclick="runMobileAction('print')"><span data-icon="Printer"></span> چاپ برنامه</button>
       <button type="button" class="btn btn-ghost" onclick="runMobileAction('calendar')"><span data-icon="Download"></span> افزودن برنامه به تقویم</button>
+      <button type="button" class="btn btn-ghost" onclick="runMobileAction('exams')"><span data-icon="CalendarDays"></span> برنامه امتحانات</button>
       <button type="button" class="btn btn-ghost" onclick="runMobileAction('about')"><span data-icon="Info"></span> دربارهٔ پروژه</button>
-      <a href="professor.html" class="btn btn-ghost" style="text-decoration:none"><span data-icon="GraduationCap"></span> داشبورد استاد</a>
+      <a href="professor.html" class="btn btn-ghost tool-back-link"><span data-icon="GraduationCap"></span> داشبورد استاد</a>
     </div>
   </div>
 </div>

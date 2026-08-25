@@ -17,6 +17,8 @@
         cohort: 'selectedCohort',
         faculty: 'uni_faculty',
         group: 'uni_group',
+        searchFaculty: 'uni_search_faculty',
+        searchGroup: 'uni_search_group',
         gpa: 'uni_gpa',
         onboarding: 'uni_planner_onboarding_v1',
     });

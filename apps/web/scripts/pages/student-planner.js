@@ -17,7 +17,6 @@ const stateRepository = window.PlannerStorage.createRepository(
 const state = {
     selected: new Set(),           // IDs of selected courses
     activeSidebarTab: 'search',
-    cohort: stateRepository.getPreference('cohort'),
     curriculum: { passed: new Set(), failed: new Set() },
     expandedGroups: new Set(),
     visibleGroups: 30,
@@ -41,13 +40,15 @@ function onGpaChange(rawValue) {
 }
 
 function restoreGpaInput() {
-    // Desktop input and mobile-sheet input stay in sync; never overwrite the
+    // The mobile-sheet and profile inputs stay in sync; never overwrite the
     // field the user is currently typing in.
     const value = stateRepository.getPreference('gpa');
-    ['gpaInput', 'gpaInputSheet', 'profileGpa'].forEach(id => {
+    ['gpaInputSheet', 'profileGpa'].forEach(id => {
         const input = document.getElementById(id);
         if (input && document.activeElement !== input) input.value = value ?? '';
     });
+    const planGpaValue = document.getElementById('planGpaValue');
+    if (planGpaValue) planGpaValue.textContent = value == null ? '—' : toPersianNum(String(value));
 }
 
 function profileCurriculumFor(faculty, group) {
@@ -129,11 +130,7 @@ function applyStudentProfile(event) {
     stateRepository.setPreference('cohort', cohort);
     stateRepository.setPreference('gpa', gpa);
     stateRepository.setPreference('onboarding', 'done');
-    state.cohort = cohort;
 
-    document.getElementById('facultyFilter').value = faculty;
-    rebuildGroupFilter();
-    document.getElementById('groupFilter').value = group;
     dismissQuickStart();
     restoreGpaInput();
     updateUnitDisplay();
@@ -148,10 +145,6 @@ function applyStudentProfile(event) {
 
 function deleteStudentProfile() {
     ['faculty', 'group', 'cohort', 'gpa'].forEach(name => stateRepository.setPreference(name, null));
-    state.cohort = '';
-    document.getElementById('facultyFilter').value = '';
-    rebuildGroupFilter();
-    document.getElementById('groupFilter').value = '';
     restoreGpaInput();
     updateUnitDisplay();
     renderCourseList();
@@ -205,13 +198,13 @@ function init() {
     buildFacultyColors();
     loadState();
     setupFilters();
-    restoreFacultyGroup();
+    restoreSearchFilters();
     buildTimetableGrid();
     renderCourseList();
     updateTimetable();
     updateUnitDisplay();
 
-    // Restore saved faculty/group
+    // Restore saved search filters; these are independent from the academic profile.
     restoreGpaInput();
     syncThemeButton(Theme.current());
 
@@ -220,10 +213,10 @@ function init() {
         state.visibleGroups = 30; renderCourseList();
     }, 200));
     document.getElementById('facultyFilter').addEventListener('change', () => {
-        rebuildGroupFilter(); renderCourseList(); syncCurriculumTab(); saveFacultyGroup();
+        rebuildGroupFilter(); renderCourseList(); syncCurriculumTab(); saveSearchFilters();
     });
     document.getElementById('groupFilter').addEventListener('change', () => {
-        renderCourseList(); syncCurriculumTab(); saveFacultyGroup();
+        renderCourseList(); syncCurriculumTab(); saveSearchFilters();
         if (document.getElementById('facultyFilter').value &&
             document.getElementById('groupFilter').value) dismissQuickStart();
     });
@@ -255,7 +248,7 @@ function buildFacultyColors() {
 }
 
 function getFacultyColor(faculty) {
-    return facultyColors[faculty] || '#3b82f6';
+    return facultyColors[faculty] || '#2563eb';
 }
 
 function getCourseColor(courseOrId) {
@@ -334,14 +327,14 @@ function setupFilters() {
     planner.getFaculties(courses).forEach(faculty => sel.add(new Option(faculty, faculty)));
 }
 
-function saveFacultyGroup() {
-    stateRepository.setPreference('faculty', document.getElementById('facultyFilter').value);
-    stateRepository.setPreference('group', document.getElementById('groupFilter').value);
+function saveSearchFilters() {
+    stateRepository.setPreference('searchFaculty', document.getElementById('facultyFilter').value);
+    stateRepository.setPreference('searchGroup', document.getElementById('groupFilter').value);
 }
 
-function restoreFacultyGroup() {
-    const savedFac = stateRepository.getPreference('faculty');
-    const savedGrp = stateRepository.getPreference('group');
+function restoreSearchFilters() {
+    const savedFac = stateRepository.getPreference('searchFaculty');
+    const savedGrp = stateRepository.getPreference('searchGroup');
     if (!savedFac) return;
 
     const facSel = document.getElementById('facultyFilter');
@@ -444,14 +437,26 @@ function renderCourseList() {
             const sessionLabel = sessions.length
                 ? sessions.map(formatSessionChip).join('، ')
                 : 'زمان اعلام نشده';
+            const exam = CourseDomain.parseExam(section.exam_text);
+            const hasCapacity = Number(section.capacity) > 0;
+            const remaining = hasCapacity
+                ? `${toPersianNum(Math.max(0, Number(section.capacity) - Number(section.enrolled || 0)))} نفر خالی`
+                : 'ظرفیت اعلام نشده';
+            const capacityDetail = hasCapacity
+                ? `${toPersianNum(section.enrolled || 0)} از ${toPersianNum(section.capacity)}`
+                : '';
             article.innerHTML = `<div class="single-course-summary">
               <div class="single-course-heading">
                 <h3 class="course-group-title">${SafeDOM.escape(section.name || 'درس بدون نام')}</h3>
                 <span class="course-group-meta"><bdi dir="ltr">${SafeDOM.escape(group.baseId)}</bdi> · ${toPersianNum(section.units || 0)} واحد</span>
               </div>
               <dl class="single-course-facts">
+                <div><dt>گروه</dt><dd><bdi dir="ltr">${SafeDOM.escape(planner.getSectionId(section))}</bdi></dd></div>
                 <div><dt>استاد</dt><dd>${SafeDOM.escape(section.prof || 'استاد اعلام نشده')}</dd></div>
                 <div><dt>زمان کلاس</dt><dd>${SafeDOM.escape(sessionLabel)}</dd></div>
+                <div><dt>جنسیت</dt><dd>${SafeDOM.escape(section.gender || 'جنسیت اعلام نشده')}</dd></div>
+                <div><dt>امتحان</dt><dd>${exam ? toPersianNum(exam.date) : 'تاریخ اعلام نشده'}</dd></div>
+                <div><dt>ظرفیت</dt><dd>${remaining}${capacityDetail ? `<small class="single-course-detail">${capacityDetail}</small>` : ''}</dd></div>
               </dl>
               <div class="section-action">
                 <button type="button" class="btn ${isSelected ? 'btn-ghost' : 'btn-primary'} btn-sm" ${isSelected ? 'disabled' : ''}>${isSelected ? 'انتخاب‌شده' : 'افزودن به برنامه'}</button>
@@ -531,7 +536,7 @@ function commitAdd(course, change = planner.planSelectionChange(course, state.se
     scheduleLoadAnalysis();
     const toast = Toast.info(`${course.name} اضافه شد`, 5000);
     const undo = document.createElement('button');
-    undo.type = 'button'; undo.className = 'toast-close'; undo.innerHTML = `${AppIcons.svg('RotateCcw')} واگردانی`;
+    undo.type = 'button'; undo.className = 'toast-action'; undo.innerHTML = `${AppIcons.svg('RotateCcw')} واگردانی`;
     undo.setAttribute('aria-label', `واگردانی افزودن ${course.name}`);
     undo.addEventListener('click', () => {
         state.selected = new Set(before); saveState(); renderCourseList(); updateTimetable(); updateUnitDisplay();
@@ -605,6 +610,14 @@ function renderActiveFilters(filters) {
     const chips = [];
     const add = (label, reset) => chips.push({ label, reset });
     if (filters.term) add(`جستجو: ${filters.term}`, () => { document.getElementById('searchInput').value = ''; });
+    if (filters.faculty) add(`دانشکده: ${filters.faculty}`, () => {
+        document.getElementById('facultyFilter').value = '';
+        rebuildGroupFilter(); document.getElementById('groupFilter').value = '';
+        saveSearchFilters();
+    });
+    if (filters.group) add(`گروه: ${filters.group}`, () => {
+        document.getElementById('groupFilter').value = ''; saveSearchFilters();
+    });
     if (filters.gender) add(`جنسیت: ${filters.gender}`, () => { document.getElementById('genderFilter').value = ''; });
     if (filters.day !== '') add(`روز: ${DAY_NAMES[Number(filters.day)]}`, () => { document.getElementById('dayFilter').value = ''; });
     if (filters.units) add(`${filters.units} واحدی`, () => { document.getElementById('unitsFilter').value = ''; });
@@ -633,7 +646,7 @@ function clearAllFilters() {
     ['genderFilter', 'dayFilter', 'unitsFilter'].forEach(id => { document.getElementById(id).value = ''; });
     ['availabilityFilter', 'conflictFilter'].forEach(id => { document.getElementById(id).checked = false; });
     document.getElementById('sortFilter').value = 'relevance';
-    saveFacultyGroup();
+    saveSearchFilters();
     renderCourseList();
 }
 
@@ -666,7 +679,9 @@ function updateUnitDisplay() {
 
     // ── desktop unit bar + mobile sheet copy ──
     const info = document.getElementById('selectedInfo');
-    ['', 'Sheet'].forEach(suffix => {
+    const selectedCount = document.getElementById('selectedCount');
+    if (selectedCount) selectedCount.textContent = toPersianNum(state.selected.size);
+    ['', 'Sheet', 'Plan'].forEach(suffix => {
         const fill    = document.getElementById(`unitBarFill${suffix}`);
         const countEl = document.getElementById(`unitCount${suffix}`);
         const display = document.getElementById(`unitDisplay${suffix}`);
@@ -683,11 +698,11 @@ function updateUnitDisplay() {
         }
     });
     if (info) {
-        info.style.display = state.selected.size > 0 ? 'block' : 'none';
-        if (state.selected.size > 0) {
-            info.textContent = `${toPersianNum(state.selected.size)} درس — ${toPersianNum(total)} واحد${total > maxUnits ? ' — بیش از سقف' : ''}`;
-            info.style.color = total > maxUnits ? 'var(--err-text)' : 'var(--t3)';
-        }
+        info.style.display = state.selected.size > 0 ? 'inline-flex' : 'none';
+        info.classList.toggle('danger', total > maxUnits);
+        info.setAttribute('aria-label', total > maxUnits
+            ? `${toPersianNum(state.selected.size)} درس انتخاب‌شده، بیش از سقف واحد`
+            : `${toPersianNum(state.selected.size)} درس انتخاب‌شده`);
     }
 
     // ── mobile pill + schedule header ──
@@ -1090,17 +1105,24 @@ function formatMinutes(minutes) {
 // ═══════════════════════════════════════════════════════════════════════════
 // CURRICULUM TRACKER
 // ═══════════════════════════════════════════════════════════════════════════
+function getAcademicProfile() {
+    return {
+        faculty: stateRepository.getPreference('faculty'),
+        group: stateRepository.getPreference('group'),
+        cohort: stateRepository.getPreference('cohort'),
+    };
+}
+
 function getCurrentCurriculum() {
     if (typeof CURRICULUM_REGISTRY === 'undefined') return null;
-    const fac = document.getElementById('facultyFilter').value;
-    const grp = document.getElementById('groupFilter').value;
+    const { faculty: fac, group: grp } = getAcademicProfile();
     if (!fac || !grp) return null;
     return CURRICULUM_REGISTRY[`${fac} >> ${grp}`] || null;
 }
 
-function getCodeForCohort(cur) {
+function getCodeForCohort(cur, cohort = getAcademicProfile().cohort) {
     if (!cur.codes) return null;
-    return cur.codes[state.cohort] || cur.codes['*'] || null;
+    return cur.codes[cohort] || cur.codes['*'] || null;
 }
 
 function isOfferedThisSemester(cur) {
@@ -1109,11 +1131,12 @@ function isOfferedThisSemester(cur) {
 }
 
 function getCourseStatus(id, data) {
+    const { cohort } = getAcademicProfile();
     return planner.getCurriculumStatus(id, data, {
         selectedIds: state.selected,
         passedIds: state.curriculum.passed,
         failedIds: state.curriculum.failed,
-        cohort: state.cohort,
+        cohort,
     });
 }
 
@@ -1132,24 +1155,17 @@ function toggleCurriculumCourse(id) {
     renderCurriculumTab();
 }
 
-function onCohortChange() {
-    state.cohort = document.getElementById('cohortSelect').value;
-    stateRepository.setPreference('cohort', state.cohort);
-    renderCurriculumTab();
-}
-
 function renderCurriculumTab() {
     const container = document.getElementById('curriculumScroll');
     const controls  = document.getElementById('curriculumControls');
-    const fac = document.getElementById('facultyFilter').value;
-    const grp = document.getElementById('groupFilter').value;
+    const { faculty: fac, group: grp, cohort } = getAcademicProfile();
 
     if (!fac || !grp) {
         controls.style.display = 'none';
         container.innerHTML = `<div class="empty-state">
             <div class="empty-state-icon">${AppIcons.svg('GraduationCap')}</div>
             <div class="empty-state-title">نقشه درسی</div>
-            <div class="empty-state-desc">از تب جستجو، یک دانشکده و گروه انتخاب کنید.</div>
+            <div class="empty-state-desc">برای نمایش نقشه درسی، رشته‌ات را در پروفایل تحصیلی انتخاب کن.</div>
         </div>`;
         return;
     }
@@ -1165,21 +1181,17 @@ function renderCurriculumTab() {
         return;
     }
 
-    // Setup cohort selector
+    // The academic profile is the single source of truth for curriculum
+    // identity, including entry year. Search filters never reach this path.
     controls.style.display = 'block';
-    const cohortEl = document.getElementById('cohortSelect');
-    if (cohortEl.dataset.forGroup !== `${fac}|${grp}`) {
-        cohortEl.innerHTML = '';
-        (data.cohorts || []).forEach(c => cohortEl.add(new Option(`ورودی ${c}`, c)));
-        cohortEl.dataset.forGroup = `${fac}|${grp}`;
-        if (state.cohort && data.cohorts?.includes(state.cohort)) {
-            cohortEl.value = state.cohort;
-        } else {
-            state.cohort = data.cohorts?.[data.cohorts.length - 1] || '';
-            cohortEl.value = state.cohort;
-            stateRepository.setPreference('cohort', state.cohort);
-        }
-    }
+    controls.innerHTML = `<div class="cur-profile-context">
+        <div class="cur-profile-copy">
+            <span class="cur-profile-label">رشته و ورودی پروفایل</span>
+            <strong>${SafeDOM.escape(grp)}</strong>
+            <span>${cohort ? `ورودی ${SafeDOM.escape(cohort)}` : 'ورودی انتخاب نشده'}</span>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="openStudentProfile()">ویرایش پروفایل</button>
+    </div>`;
 
     // Build semester map
     const semMap = {};
@@ -1411,16 +1423,19 @@ function configureAIContext() {
     if (typeof AI === 'undefined') return;
     // Dependency inversion: the API client receives context from the planner
     // instead of reaching into DOM elements and global application state.
-    AI.setContextProvider(() => planner.buildStudentContext({
-        faculty: document.getElementById('facultyFilter')?.value,
-        group: document.getElementById('groupFilter')?.value,
-        cohort: state.cohort,
-        curriculum: getCurrentCurriculum(),
-        passedIds: state.curriculum.passed,
-        failedIds: state.curriculum.failed,
-        selectedIds: state.selected,
-        courses,
-    }));
+    AI.setContextProvider(() => {
+        const profile = getAcademicProfile();
+        return planner.buildStudentContext({
+            faculty: profile.faculty,
+            group: profile.group,
+            cohort: profile.cohort,
+            curriculum: getCurrentCurriculum(),
+            passedIds: state.curriculum.passed,
+            failedIds: state.curriculum.failed,
+            selectedIds: state.selected,
+            courses,
+        });
+    });
 }
 
 // ─── Load Modal helpers ──────────────────────────────────────────────────
@@ -1446,6 +1461,7 @@ function runMobileAction(action) {
     closeMobileActions();
     if (action === 'print') printSchedule();
     if (action === 'calendar') openCalendarExport();
+    if (action === 'exams') openExamModal();
     if (action === 'about') openDialog(document.getElementById('aboutModal'));
 }
 
