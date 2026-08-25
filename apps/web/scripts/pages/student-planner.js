@@ -3,7 +3,16 @@
 // ═══════════════════════════════════════════════════════════════════════════
 const courses = (typeof UNIVERSITY_DATA !== 'undefined') ? UNIVERSITY_DATA : [];
 const planner = window.PlannerDomain;
-const stateRepository = window.PlannerStorage.createRepository(window.localStorage);
+const browserStorage = (() => {
+    try {
+        return window.localStorage;
+    } catch {
+        return null;
+    }
+})();
+const stateRepository = window.PlannerStorage.createRepository(
+    browserStorage || window.PlannerStorage.createMemoryStorage(),
+);
 
 const state = {
     selected: new Set(),           // IDs of selected courses
@@ -167,6 +176,7 @@ function openDialog(dialog) {
     if (!dialog) return;
     dialogFocusOrigins.set(dialog, document.activeElement);
     dialog.classList.add('open');
+    dialog.setAttribute('aria-hidden', 'false');
     const target = dialog.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
     if (!target) return;
     target.focus();
@@ -182,6 +192,7 @@ function openDialog(dialog) {
 function closeDialog(dialog) {
     if (!dialog) return;
     dialog.classList.remove('open');
+    dialog.setAttribute('aria-hidden', 'true');
     dialogFocusOrigins.get(dialog)?.focus?.();
     dialogFocusOrigins.delete(dialog);
 }
@@ -190,6 +201,7 @@ function closeDialog(dialog) {
 // INIT
 // ═══════════════════════════════════════════════════════════════════════════
 function init() {
+    document.querySelectorAll('.modal-backdrop').forEach(dialog => dialog.setAttribute('aria-hidden', 'true'));
     buildFacultyColors();
     loadState();
     setupFilters();
@@ -351,9 +363,14 @@ function rebuildGroupFilter() {
 }
 
 function formatSessionChip(session) {
-    const startHour = Math.floor(session.startMinutes / 60);
-    const endHour = Math.ceil(session.endMinutes / 60);
-    return `${DAY_NAMES[session.day]} ${toPersianNum(startHour)}–${toPersianNum(endHour)}`;
+    const formatTime = minutes => {
+        if (!Number.isFinite(minutes)) return '—';
+        const hours = String(Math.floor(minutes / 60)).padStart(2, '0');
+        const mins = String(minutes % 60).padStart(2, '0');
+        return toPersianNum(`${hours}:${mins}`);
+    };
+    const unsupported = session.slot === null ? ' · خارج از بازهٔ جدول' : '';
+    return `${DAY_NAMES[session.day]} ${formatTime(session.startMinutes)}–${formatTime(session.endMinutes)}${unsupported}`;
 }
 
 function getSelectedSessionList(excludeId) {
@@ -706,8 +723,12 @@ function renderPlanWorkspace() {
     const selected = [...state.selected].map(id => planner.findCourse(courses, id)).filter(Boolean);
     document.getElementById('listView').innerHTML = `<h2 class="sr-only" id="planListFocus" tabindex="-1">فهرست درس‌های انتخاب‌شده</h2>${selected.length ? selected.map(course => {
         const sessions = CourseDomain.parseSchedule(course.time_html);
-        return `<article class="plan-list-item" style="--course-color:${getCourseColor(course)}" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1"><h3>${SafeDOM.escape(course.name)} · گروه <bdi dir="ltr">${SafeDOM.escape(planner.getSectionId(course))}</bdi></h3><button class="remove-section" onclick="removeCourse('${SafeDOM.escape(course.id)}')" aria-label="حذف ${SafeDOM.escape(course.name)}">${AppIcons.svg('Trash2')}</button><p>${SafeDOM.escape(course.prof || 'استاد اعلام نشده')} · ${sessions.length ? sessions.map(formatSessionChip).join('، ') : 'زمان اعلام نشده'}</p></article>`;
+        return `<article class="plan-list-item" style="--course-color:${getCourseColor(course)}" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1"><h3>${SafeDOM.escape(course.name)} · گروه <bdi dir="ltr">${SafeDOM.escape(planner.getSectionId(course))}</bdi></h3><button class="remove-section" type="button" aria-label="حذف ${SafeDOM.escape(course.name)}">${AppIcons.svg('Trash2')}</button><p>${SafeDOM.escape(course.prof || 'استاد اعلام نشده')} · ${sessions.length ? sessions.map(formatSessionChip).join('، ') : 'زمان اعلام نشده'}</p></article>`;
     }).join('') : '<div class="empty-state"><div class="empty-state-title">برنامه‌ات خالی است</div></div>'}`;
+    document.querySelectorAll('#listView [data-course-id] .remove-section').forEach(button => {
+        const item = button.closest('[data-course-id]');
+        button.addEventListener('click', () => removeCourse(item.dataset.courseId));
+    });
     const examEntries = selected
         .map(course => ({ course, exam: CourseDomain.parseExam(course.exam_text) }))
         .sort((a, b) => (a.exam?.date || '9999').localeCompare(b.exam?.date || '9999'));
@@ -819,7 +840,7 @@ function openCalendarExport() {
         stateRepository.getPreference('calendarStart') || '';
     document.getElementById('calendarEnd').value =
         stateRepository.getPreference('calendarEnd') || '';
-    modal.classList.add('open');
+    openDialog(modal);
     document.getElementById('calendarStart').focus();
 }
 

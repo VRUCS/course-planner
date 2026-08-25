@@ -102,6 +102,18 @@ test('plan UI exposes corrective actions and unsupported-session warning', () =>
     assert.match(controller, /id="planListFocus" tabindex="-1"/);
     assert.match(controller, /selectTab\(activeTab\)/);
     assert.match(controller, /خارج از بازهٔ جدول/);
+    assert.match(controller, /formatSessionChip\(session\)/);
+    assert.match(controller, /session\.slot === null/);
+});
+
+test('storage and data-driven actions cannot break startup or become inline script injection', () => {
+    const storage = read('apps/web/scripts/adapters/planner-storage.js');
+    const theme = read('apps/web/scripts/features/ui.js');
+    const controller = read('apps/web/scripts/pages/student-planner.js');
+    assert.match(storage, /createMemoryStorage/);
+    assert.match(theme, /getThemeStorage/);
+    assert.match(controller, /browserStorage = \(\(\) => \{/);
+    assert.doesNotMatch(controller, /onclick="removeCourse\('\$\{SafeDOM\.escape\(course\.id\)\}\)/);
 });
 
 test('schedule print uses a dedicated A4 landscape document view', () => {

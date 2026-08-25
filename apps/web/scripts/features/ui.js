@@ -4,6 +4,30 @@
  */
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
+function getThemeStorage() {
+    try {
+        return window.localStorage;
+    } catch {
+        return null;
+    }
+}
+
+function readThemePreference() {
+    try {
+        return getThemeStorage()?.getItem('theme') || 'dark';
+    } catch {
+        return 'dark';
+    }
+}
+
+function writeThemePreference(theme) {
+    try {
+        getThemeStorage()?.setItem('theme', theme);
+    } catch {
+        // A blocked or full storage area must not disable theme switching.
+    }
+}
+
 function syncThemeIcons(theme) {
     document.querySelectorAll('[data-theme-toggle-icon]').forEach(icon => {
         const id = icon.id ? ` id="${icon.id}"` : '';
@@ -14,7 +38,7 @@ function syncThemeIcons(theme) {
 
 const Theme = {
     apply() {
-        const saved = localStorage.getItem('theme') || 'dark';
+        const saved = readThemePreference();
         document.documentElement.setAttribute('data-theme', saved);
         syncThemeIcons(saved);
     },
@@ -22,7 +46,7 @@ const Theme = {
         const current = document.documentElement.getAttribute('data-theme');
         const next = current === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
+        writeThemePreference(next);
         syncThemeIcons(next);
         return next;
     },

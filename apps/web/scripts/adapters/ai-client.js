@@ -24,6 +24,19 @@ const AI = (() => {
     let _healthChecked = false;
     let _contextProvider = () => '';
 
+    function timeoutRequest(options, timeoutMs) {
+        if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+            return { options: { ...options, signal: AbortSignal.timeout(timeoutMs) }, cleanup() {} };
+        }
+        if (typeof AbortController === 'undefined') return { options, cleanup() {} };
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        return {
+            options: { ...options, signal: controller.signal },
+            cleanup() { clearTimeout(timer); },
+        };
+    }
+
     // بررسی وضعیت سرور در ابتدا
     async function checkHealth() {
         if (_healthChecked) return;
@@ -32,8 +45,9 @@ const AI = (() => {
             _updateInteractiveUI();
             return;
         }
+        const request = timeoutRequest({}, 3000);
         try {
-            const res = await fetch(`${BACKEND_URL}/health`, { signal: AbortSignal.timeout(3000) });
+            const res = await fetch(`${BACKEND_URL}/health`, request.options);
             if (res.ok) {
                 const data = await res.json();
                 _interactiveEnabled = data.ai_interactive_enabled ?? false;
@@ -42,6 +56,7 @@ const AI = (() => {
         } catch {
             // سرور در دسترس نیست — همه فیچرهای AI غیرفعال
         } finally {
+            request.cleanup();
             _healthChecked = true;
             // UI always reaches a deterministic state, including HTTP errors.
             _updateInteractiveUI();
@@ -62,58 +77,70 @@ const AI = (() => {
     // ─── Interactive: complete (نیاز به AI_INTERACTIVE_ENABLED=true) ──────
     async function complete(messages, { model, jsonMode = false, maxTokens } = {}) {
         if (!_interactiveEnabled) throw new Error('فیچرهای تعاملی AI هنوز فعال نشده‌اند.');
-        const res = await fetch(`${BACKEND_URL}/api/ai/chat/complete`, {
+        const request = timeoutRequest({
             method:  'POST',
             headers: requestHeaders(),
             body: JSON.stringify({ messages, model, json_mode: jsonMode, max_tokens: maxTokens }),
-            signal: AbortSignal.timeout(30000),
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || `خطای سرور: ${res.status}`);
+        }, 30000);
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/ai/chat/complete`, request.options);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `خطای سرور: ${res.status}`);
+            }
+            const data = await res.json();
+            if (jsonMode) {
+                try { return JSON.parse(data.content); }
+                catch { return { raw: data.content }; }
+            }
+            return data.content;
+        } finally {
+            request.cleanup();
         }
-        const data = await res.json();
-        if (jsonMode) {
-            try { return JSON.parse(data.content); }
-            catch { return { raw: data.content }; }
-        }
-        return data.content;
     }
 
     // ─── Interactive: streaming (نیاز به AI_INTERACTIVE_ENABLED=true) ─────
     async function* stream(messages, { model, maxTokens } = {}) {
         if (!_interactiveEnabled) throw new Error('فیچرهای تعاملی AI هنوز فعال نشده‌اند.');
-        const res = await fetch(`${BACKEND_URL}/api/ai/chat/stream`, {
+        const request = timeoutRequest({
             method:  'POST',
             headers: requestHeaders(),
             body: JSON.stringify({ messages, model, max_tokens: maxTokens }),
-            signal: AbortSignal.timeout(60000),
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || `خطای سرور: ${res.status}`);
-        }
-
-        const reader  = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop();
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (!trimmed || trimmed === 'data: [DONE]') continue;
-                if (!trimmed.startsWith('data: ')) continue;
-                try {
-                    const json  = JSON.parse(trimmed.slice(6));
-                    const delta = json.choices?.[0]?.delta?.content;
-                    if (delta) yield delta;
-                } catch { /* skip */ }
+        }, 60000);
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/ai/chat/stream`, request.options);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `خطای سرور: ${res.status}`);
             }
+
+            const reader  = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            const parseLine = line => {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed === 'data: [DONE]' || !trimmed.startsWith('data: ')) return '';
+                try {
+                    const json = JSON.parse(trimmed.slice(6));
+                    return json.choices?.[0]?.delta?.content || '';
+                } catch { return ''; }
+            };
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                for (const line of lines) {
+                    const delta = parseLine(line);
+                    if (delta) yield delta;
+                }
+            }
+            const finalDelta = parseLine(buffer);
+            if (finalDelta) yield finalDelta;
+        } finally {
+            request.cleanup();
         }
     }
 

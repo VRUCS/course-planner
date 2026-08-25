@@ -12,6 +12,25 @@ function init() {
     buildEmptyTimetable();
 }
 
+function formatSessionTime(session) {
+    const format = minutes => {
+        const hours = String(Math.floor(minutes / 60)).padStart(2, '0');
+        const mins = String(minutes % 60).padStart(2, '0');
+        return toPersianNum(`${hours}:${mins}`);
+    };
+    return `${DAY_NAMES[session.day]} ${format(session.startMinutes)}–${format(session.endMinutes)}`;
+}
+
+function updateUnsupportedScheduleWarning(sessions = []) {
+    const warning = document.getElementById('unsupportedScheduleWarning');
+    if (!warning) return;
+    warning.hidden = sessions.length === 0;
+    if (!sessions.length) return;
+    const examples = sessions.slice(0, 2).map(({ session }) => formatSessionTime(session)).join('، ');
+    const suffix = sessions.length > 2 ? '، و موارد دیگر' : '';
+    warning.textContent = `${toPersianNum(sessions.length)} جلسه خارج از بازهٔ جدول است؛ زمان دقیق در داده‌ها ثبت شده: ${examples}${suffix}`;
+}
+
 // ─── Filter handlers ──────────────────────────────────────────────────────
 function onFacultyChange() {
     const fac = document.getElementById('facultySelect').value;
@@ -31,6 +50,7 @@ function render() {
 
     if (!fac || !grp) {
         buildEmptyTimetable();
+        updateUnsupportedScheduleWarning();
         setSummary(0, 0, 0, 0);
         document.getElementById('conflictList').innerHTML = `
             <div class="empty-state">
@@ -84,14 +104,17 @@ function buildEmptyTimetable() {
             tbl.appendChild(slot);
         }
     });
+    updateUnsupportedScheduleWarning();
 }
 
 function buildTimetable(groupCourses, hardIds, softIds) {
     buildEmptyTimetable();
     const slotMap = {};
+    const unsupported = [];
     groupCourses.forEach(course => {
         parseSchedule(course.time_html).forEach(sess => {
             const key = `${sess.day}-${sess.slot}`;
+            if (sess.slot === null) unsupported.push({ course, session: sess });
             (slotMap[key] ??= []).push(course);
         });
     });
@@ -131,6 +154,7 @@ function buildTimetable(groupCourses, hardIds, softIds) {
             el.appendChild(div);
         });
     });
+    updateUnsupportedScheduleWarning(unsupported);
 }
 
 // ─── Conflict list ────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createRepository } = require('../../apps/web/scripts/adapters/planner-storage.js');
+const { createMemoryStorage, createRepository } = require('../../apps/web/scripts/adapters/planner-storage.js');
 
 function memoryStorage(initial = {}) {
     const values = new Map(Object.entries(initial));
@@ -60,4 +60,12 @@ test('unavailable browser storage degrades to an empty in-memory state', () => {
     assert.equal(repository.getPreference('cohort'), '');
     assert.doesNotThrow(() => repository.saveSelection(new Set(['a'])));
     assert.doesNotThrow(() => repository.setPreference('cohort', '۱۴۰۲'));
+});
+
+test('memory storage is available for browsers that block localStorage access', () => {
+    const repository = createRepository(createMemoryStorage());
+    repository.setPreference('faculty', 'فنی');
+    assert.equal(repository.getPreference('faculty'), 'فنی');
+    repository.saveSelection(new Set(['a']));
+    assert.deepEqual([...repository.loadSelection(new Set(['a']))], ['a']);
 });

@@ -109,5 +109,14 @@
         });
     }
 
-    return Object.freeze({ DEFAULT_KEYS, createRepository });
+    function createMemoryStorage(initial = {}) {
+        const values = new Map(Object.entries(initial));
+        return {
+            getItem(key) { return values.get(key) ?? null; },
+            setItem(key, value) { values.set(key, String(value)); },
+            removeItem(key) { values.delete(key); },
+        };
+    }
+
+    return Object.freeze({ DEFAULT_KEYS, createMemoryStorage, createRepository });
 });
