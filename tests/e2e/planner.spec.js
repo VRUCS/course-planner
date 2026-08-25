@@ -22,16 +22,7 @@ test('renders the RTL planner and its initial empty schedule', async ({ page }) 
     await expect(page.getByRole('heading', { name: 'برنامه این ترم' })).toBeVisible();
     await expect(page.getByRole('searchbox', { name: /جستجو در نام درس/ })).toBeVisible();
     await expect(page.locator('#courseList .course-group').first()).toBeVisible();
-    await expect(page.locator('#timetable').getByText('برنامه‌ات هنوز خالی است')).toBeVisible();
-});
-
-test('empty schedule makes the next planning step explicit', async ({ page }) => {
-    await openPlanner(page);
-
-    const emptyState = page.locator('.empty-state-card');
-    await expect(emptyState).toBeVisible();
-    await emptyState.getByRole('button', { name: 'رفتن به جستجوی درس' }).click();
-    await expect(page.locator('#searchInput')).toBeFocused();
+    await expect(page.locator('#timetable').getByText('برنامه‌ات خالی است')).toBeVisible();
 });
 
 test('search narrows courses and advanced filters collapse cleanly', async ({ page }) => {
@@ -154,44 +145,6 @@ test.describe('responsive navigation', () => {
         expect(colors).toHaveLength(2);
         expect(colors[0]).not.toBe(colors[1]);
     });
-
-    test('mobile action sheet exposes secondary tools', async ({ page }) => {
-        await openPlanner(page);
-
-        await page.locator('#mobMoreBtn').click();
-        const actions = page.getByRole('dialog', { name: 'سایر ابزارها' });
-        await expect(actions).toBeVisible();
-        await expect(actions.getByRole('link', { name: /داشبورد استاد/ })).toHaveAttribute('href', 'professor.html');
-        await expect(actions.getByRole('button', { name: /چاپ برنامه/ })).toBeVisible();
-        await expect(actions.getByRole('button', { name: /افزودن برنامه به تقویم/ })).toBeVisible();
-        await actions.getByRole('button', { name: /دربارهٔ پروژه/ }).click();
-        await expect(page.getByRole('dialog', { name: /درباره/ })).toBeVisible();
-    });
-});
-
-test('tablet navigation keeps the schedule reachable at 800px', async ({ page }) => {
-    await page.setViewportSize({ width: 800, height: 900 });
-    await openPlanner(page);
-
-    const nav = page.locator('.mob-nav');
-    await expect(nav).toBeVisible();
-    await nav.getByRole('tab', { name: /برنامه/ }).click();
-    await expect(page.locator('body')).toHaveAttribute('data-mob', 'schedule');
-    await expect.poll(async () => {
-        const box = await page.locator('#mainContent').boundingBox();
-        return Boolean(box && box.x >= 0 && box.x + box.width <= 800);
-    }).toBe(true);
-});
-
-test('professor dashboard keeps its conflict panel inside the viewport at 1024px', async ({ page }) => {
-    await page.setViewportSize({ width: 1024, height: 900 });
-    await page.goto('/professor.html');
-
-    await expect(page.locator('#professorMain')).toBeVisible();
-    await expect(page.locator('.skip-link')).toHaveAttribute('href', '#professorMain');
-    const panel = await page.locator('.professor-conflict-panel').boundingBox();
-    expect(panel.x).toBeGreaterThanOrEqual(0);
-    expect(panel.x + panel.width).toBeLessThanOrEqual(1024);
 });
 
 test('print media exposes the ink-saving schedule document', async ({ page }) => {

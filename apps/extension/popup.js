@@ -3,14 +3,6 @@
 // ───────────────────────────────────────────────────────────────────────────
 function $(id) { return document.getElementById(id); }
 function toPersian(n) { return String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]); }
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
 
 function showProgress(msg) {
     $('progressBar').style.display = 'flex';
@@ -217,8 +209,8 @@ async function doExtractChart() {
         downloadJson(output, 'golestan_curriculum.json');
 
         showResult(`
-            <div class="result-stat"><span>دانشکده:</span> <span class="val" style="font-size:.75rem">${escapeHtml(faculty || '—')}</span></div>
-            <div class="result-stat"><span>گروه:</span> <span class="val" style="font-size:.75rem">${escapeHtml(group || '—')}</span></div>
+            <div class="result-stat"><span>دانشکده:</span> <span class="val" style="font-size:.75rem">${faculty || '—'}</span></div>
+            <div class="result-stat"><span>گروه:</span> <span class="val" style="font-size:.75rem">${group || '—'}</span></div>
             <div class="result-stat"><span>کل درس‌ها:</span> <span class="val">${toPersian(courses.length)}</span></div>
             <div class="result-stat"><span>عمومی:</span> <span class="val">${toPersian(courses.filter(c=>c.type==='general').length)}</span></div>
             <div class="result-stat"><span>پایه + اصلی:</span> <span class="val">${toPersian(courses.filter(c=>c.type==='core'||c.type==='main').length)}</span></div>

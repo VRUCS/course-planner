@@ -11,10 +11,8 @@
 <link rel="stylesheet" href="styles/main.css">
 <style>
 body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-.professor-main { display: flex; flex: 1; min-height: 0; flex-direction: column; overflow: hidden; }
 @media (max-width: 768px) {
   body { height: auto; overflow: auto; }
-  .professor-main { flex: none; overflow: visible; }
   .page-layout { overflow: visible; }
 }
 
@@ -89,11 +87,7 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
   border-bottom: 1px solid var(--b0); display: flex; align-items: center;
   justify-content: space-between; gap: 20px; flex-shrink: 0;
 }
-.professor-topbar { background: radial-gradient(circle at 88% 0%, rgba(59,130,246,.1), transparent 30%), var(--s0); }
-.professor-brand { min-width: 0; display: flex; align-items: center; gap: 12px; }
-.professor-brand-icon { display: inline-grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; border: 1px solid var(--accent-border); border-radius: 12px; background: var(--blue-dim); color: var(--accent); }
-.professor-brand-icon .icon { width: 20px; height: 20px; }
-.professor-brand-kicker { color: var(--accent); font-size: var(--fs-2xs); font-weight: 800; }
+.professor-brand { min-width: 0; }
 .professor-brand-name { font-size: 1.05rem; line-height: 1.35; font-weight: 800; color: var(--t0); }
 .professor-brand-subtitle { margin-top: 2px; color: var(--t3); font-size: var(--fs-xs); }
 .professor-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -110,13 +104,6 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 .professor-summary-bar { padding: 14px 24px; gap: 12px; }
 .professor-summary-bar .summary-card { min-height: 82px; padding: 12px 16px; }
 .professor-summary-bar .summary-card-label { font-size: var(--fs-xs); }
-.professor-summary-bar .summary-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-.professor-summary-bar .summary-card-icon { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: var(--b0); color: var(--t2); }
-.professor-summary-bar .summary-card-icon .icon { width: 15px; height: 15px; }
-.professor-summary-bar .summary-card.primary .summary-card-icon { color: var(--accent); background: var(--blue-dim); }
-.professor-summary-bar .summary-card.danger .summary-card-icon { color: var(--err-text); background: var(--err-bg); }
-.professor-summary-bar .summary-card.warning .summary-card-icon { color: var(--warn-text); background: var(--warn-bg); }
-.professor-summary-bar .summary-card.success .summary-card-icon { color: var(--ok-text); background: var(--ok-bg); }
 .professor-legend {
   min-height: 42px; padding: 9px 24px; gap: 18px; line-height: 1.6;
   font-size: var(--fs-xs); background: var(--s0);
@@ -163,7 +150,6 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
 @media (max-width: 1100px) {
   .professor-layout { grid-template-columns: minmax(0, 1fr) 330px; }
-  .professor-conflict-panel { width: 100%; }
 }
 @media (max-width: 768px) {
   .professor-topbar { min-height: 60px; padding: 8px 12px; gap: 10px; }
@@ -183,13 +169,10 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 </style>
 </head>
 <body class="professor-page">
-<a class="skip-link" href="#professorMain">رفتن به محتوای اصلی</a>
 
 <header class="professor-topbar">
   <div class="professor-brand">
-    <span class="professor-brand-icon" aria-hidden="true"><span data-icon="GraduationCap"></span></span>
     <div>
-      <div class="professor-brand-kicker">فضای آموزشی</div>
       <h1 class="professor-brand-name">داشبورد استاد</h1>
       <p class="professor-brand-subtitle">بررسی برنامه هفتگی و تداخل‌های آموزشی</p>
     </div>
@@ -201,7 +184,6 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
   </div>
 </header>
 
-<main id="professorMain" class="professor-main">
 <!-- Controls -->
 <div class="controls-bar professor-controls">
   <div class="control-group">
@@ -229,19 +211,19 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 <!-- Summary -->
 <div class="summary-bar professor-summary-bar" role="group" aria-label="خلاصه تداخل‌ها">
   <div class="summary-card primary">
-    <div class="summary-card-header"><div class="summary-card-label">کل درس‌های نمایش‌داده‌شده</div><span class="summary-card-icon" aria-hidden="true"><span data-icon="BookOpen"></span></span></div>
+    <div class="summary-card-label">کل درس‌های نمایش‌داده‌شده</div>
     <div class="summary-card-value" id="sumTotal">—</div>
   </div>
   <div class="summary-card danger">
-    <div class="summary-card-header"><div class="summary-card-label">تداخل سخت (باید برطرف شود)</div><span class="summary-card-icon" aria-hidden="true"><span data-icon="CircleAlert"></span></span></div>
+    <div class="summary-card-label">تداخل سخت (باید برطرف شود)</div>
     <div class="summary-card-value" id="sumHard">—</div>
   </div>
   <div class="summary-card warning">
-    <div class="summary-card-header"><div class="summary-card-label">تداخل نرم (توصیه برطرف‌سازی)</div><span class="summary-card-icon" aria-hidden="true"><span data-icon="CalendarDays"></span></span></div>
+    <div class="summary-card-label">تداخل نرم (توصیه برطرف‌سازی)</div>
     <div class="summary-card-value" id="sumSoft">—</div>
   </div>
   <div class="summary-card success">
-    <div class="summary-card-header"><div class="summary-card-label">جفت‌های بدون تداخل</div><span class="summary-card-icon" aria-hidden="true"><span data-icon="Check"></span></span></div>
+    <div class="summary-card-label">جفت‌های بدون تداخل</div>
     <div class="summary-card-value" id="sumOk">—</div>
   </div>
 </div>
@@ -277,8 +259,6 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
   </div>
 
 </div>
-
-</main>
 
 <script src="scripts/adapters/app-config.js"></script>
 <script src="generated/course-offerings.generated.js"></script>
