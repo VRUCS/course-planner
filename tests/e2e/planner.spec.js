@@ -2,6 +2,7 @@
 const { test, expect } = require('@playwright/test');
 
 async function openPlanner(page) {
+    await page.addInitScript(() => window.localStorage.setItem('uni_planner_help_guide_v1', 'done'));
     await page.goto('/index.html');
     await expect(page.locator('#courseCount')).not.toHaveText('...');
 }
@@ -140,6 +141,25 @@ test('opens and closes the About dialog from the top bar', async ({ page }) => {
     await expect(dialog).toBeHidden();
 });
 
+test('first visit guide spotlights the main workflow and can be reopened', async ({ page }) => {
+    await page.goto('/index.html');
+    await expect(page.locator('#courseCount')).not.toHaveText('...');
+
+    const guide = page.locator('#helpGuidePopover');
+    await expect(guide).toBeVisible();
+    await expect(guide).toContainText('به انتخاب واحد یار خوش آمدی');
+    await guide.getByRole('button', { name: 'شروع راهنما' }).click();
+    await expect(guide).toContainText('درس موردنظرت را پیدا کن');
+    await expect(page.locator('#helpGuideSpotlight')).toBeVisible();
+
+    await guide.getByRole('button', { name: 'رد کردن' }).click();
+    await expect(guide).toBeHidden();
+    await page.getByRole('button', { name: 'راهنمای استفاده' }).click();
+    await expect(guide).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(guide).toBeHidden();
+});
+
 test('calendar export modal accepts a term range without external side effects', async ({ page }) => {
     await openPlanner(page);
     await addFirstSingleSectionCourse(page);
@@ -154,6 +174,61 @@ test('calendar export modal accepts a term range without external side effects',
     await expect(dialog.getByRole('checkbox', { name: /یادآوری/ })).toBeChecked();
     await dialog.getByRole('button', { name: 'انصراف' }).click();
     await expect(dialog).toBeHidden();
+});
+
+test('calendar export downloads an ICS file and remembers the term range', async ({ page }) => {
+    await openPlanner(page);
+    await addFirstSingleSectionCourse(page);
+    await page.evaluate(() => { window.open = () => null; });
+
+    await page.getByRole('button', { name: 'افزودن برنامه به تقویم' }).click();
+    const dialog = page.getByRole('dialog', { name: /Google Calendar/ });
+    await dialog.getByLabel('شروع کلاس‌ها').fill('2026-09-19');
+    await dialog.getByLabel('پایان کلاس‌ها').fill('2026-12-31');
+
+    const downloadPromise = page.waitForEvent('download');
+    await dialog.getByRole('button', { name: 'دانلود و بازکردن Google Calendar' }).click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toBe('barname-daneshgah.ics');
+    await expect(dialog).toBeHidden();
+    expect(await page.evaluate(() => ({
+        start: window.localStorage.getItem('uni_calendar_start_v1'),
+        end: window.localStorage.getItem('uni_calendar_end_v1'),
+    }))).toEqual({ start: '2026-09-19', end: '2026-12-31' });
+});
+
+test('opening calendar export from review replaces the previous modal', async ({ page }) => {
+    await openPlanner(page);
+    await addFirstSingleSectionCourse(page);
+
+    const reviewTrigger = page.getByRole('button', { name: 'مرور نهایی' });
+    await reviewTrigger.click();
+    await expect(page.locator('#reviewModal')).toHaveAttribute('aria-hidden', 'false');
+
+    await page.getByRole('button', { name: 'افزودن به تقویم' }).click();
+    await expect(page.locator('#calendarModal')).toHaveAttribute('aria-hidden', 'false');
+    await expect(page.locator('#reviewModal')).toBeHidden();
+    await expect(page.locator('.modal-backdrop.open')).toHaveCount(1);
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#calendarModal')).toBeHidden();
+    await expect(reviewTrigger).toBeFocused();
+});
+
+test('list and exam views use readable tables', async ({ page }) => {
+    await openPlanner(page);
+    await addFirstSingleSectionCourse(page);
+
+    await page.locator('#planTabList').click();
+    await expect(page.locator('#listView .schedule-table')).toBeVisible();
+    await expect(page.locator('#listView')).toContainText('زمان کلاس');
+    await expect(page.locator('#listView .plan-table-row')).toHaveCount(1);
+
+    await page.locator('#planTabExams').click();
+    await expect(page.locator('#examsView .exams-table')).toBeVisible();
+    await expect(page.locator('#examsView')).toContainText('وضعیت');
+    await expect(page.locator('#examsView .plan-table-row')).toHaveCount(1);
 });
 
 test.describe('responsive navigation', () => {
@@ -189,7 +264,7 @@ test.describe('responsive navigation', () => {
         await page.locator('.single-course-summary').nth(1).getByRole('button', { name: 'افزودن به برنامه' }).click();
         await page.locator('#mnSchedule').click();
 
-        const colors = await page.locator('#listView .plan-list-item').evaluateAll(items =>
+        const colors = await page.locator('#listView .plan-table-row').evaluateAll(items =>
             items.slice(0, 2).map(item => item.style.getPropertyValue('--course-color')));
         expect(colors).toHaveLength(2);
         expect(colors[0]).not.toBe(colors[1]);

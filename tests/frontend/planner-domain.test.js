@@ -38,7 +38,7 @@ test('planner derives timetable and exam conflicts without DOM access', () => {
     assert.deepEqual(planner.detectPairConflicts('CS101', 'CS102', courses), [{
         secA: 'CS101_01',
         secB: 'CS102_01',
-        times: ['شنبه 08:00'],
+        times: ['شنبه 08:00–09:30 ↔ 09:00–10:30'],
     }]);
 });
 

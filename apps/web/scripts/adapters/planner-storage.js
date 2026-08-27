@@ -21,6 +21,9 @@
         searchGroup: 'uni_search_group',
         gpa: 'uni_gpa',
         onboarding: 'uni_planner_onboarding_v1',
+        helpGuide: 'uni_planner_help_guide_v1',
+        calendarStart: 'uni_calendar_start_v1',
+        calendarEnd: 'uni_calendar_end_v1',
     });
 
     function safeParse(raw, fallback) {

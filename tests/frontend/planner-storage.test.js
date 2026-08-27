@@ -46,6 +46,11 @@ test('repository round-trips progress and preferences through its adapter', () =
     assert.equal(repository.getPreference('cohort'), '۱۴۰۲');
     repository.setPreference('cohort', null);
     assert.equal(repository.getPreference('cohort'), '');
+
+    repository.setPreference('calendarStart', '2026-09-19');
+    repository.setPreference('calendarEnd', '2026-12-31');
+    assert.equal(repository.getPreference('calendarStart'), '2026-09-19');
+    assert.equal(repository.getPreference('calendarEnd'), '2026-12-31');
 });
 
 test('unavailable browser storage degrades to an empty in-memory state', () => {

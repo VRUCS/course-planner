@@ -29,8 +29,11 @@ test('profile stays separate from catalog search filters and offers honest curri
     assert.match(script, /setPreference\('searchFaculty'/);
     assert.doesNotMatch(script, /document\.getElementById\('facultyFilter'\)\.value = faculty/);
     assert.doesNotMatch(script, /document\.getElementById\('groupFilter'\)\.value = group/);
-    assert.match(script, /نقشه درسی این رشته موجود است/);
+    assert.match(script, /curriculumDataNotice\(curriculum, selectedCohort\)/);
     assert.match(script, /فعلاً نقشه درسی این رشته در داده‌های پروژه موجود نیست/);
+    assert.match(script, /function getCurriculumCoverage\(curriculum, cohort = ''\)/);
+    assert.match(script, /منبع رسمی این نقشه در داده‌های پروژه ثبت نشده است/);
+    assert.match(script, /کد تطبیق ثبت نشده/);
     assert.match(script, /function deleteStudentProfile\(\)/);
 });
 

@@ -370,6 +370,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     <button class="btn btn-ghost btn-sm" onclick="printSchedule()" title="چاپ برنامه" aria-label="چاپ برنامه"><span data-icon="Printer"></span></button>
     <button class="btn btn-ghost btn-sm" onclick="openCalendarExport()" title="افزودن به تقویم" aria-label="افزودن برنامه به تقویم"><span data-icon="Download"></span></button>
     <a href="professor.html" class="btn btn-ghost btn-sm tool-back-link"><span class="professor-link-icon" data-icon="GraduationCap" aria-hidden="true"></span> استاد</a>
+    <button class="btn btn-ghost btn-sm help-guide-trigger" id="helpGuideBtn" type="button" onclick="openHelpGuide()" title="راهنمای استفاده" aria-label="راهنمای استفاده"><span data-icon="Lightbulb"></span> راهنما</button>
     <button class="btn btn-ghost btn-sm" onclick="openDialog(document.getElementById('aboutModal'))" title="درباره پروژه"><span data-icon="Info"></span> درباره</button>
   </div>
 </header>
@@ -476,7 +477,7 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 
     <!-- Load analyzer badge (فقط وقتی AI فعال است) -->
     <div id="loadBadge" class="load-badge ok" style="display:none"></div>
-    <section class="plan-status" aria-labelledby="planHealthTitle">
+    <section class="plan-status" id="planStatus" aria-labelledby="planHealthTitle">
       <div class="plan-status-content">
         <span class="plan-status-icon" aria-hidden="true"><span data-icon="ListChecks"></span></span>
         <div>
@@ -756,10 +757,34 @@ body   { display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       <button type="button" class="btn btn-ghost" onclick="runMobileAction('print')"><span data-icon="Printer"></span> چاپ برنامه</button>
       <button type="button" class="btn btn-ghost" onclick="runMobileAction('calendar')"><span data-icon="Download"></span> افزودن برنامه به تقویم</button>
       <button type="button" class="btn btn-ghost" onclick="runMobileAction('exams')"><span data-icon="CalendarDays"></span> برنامه امتحانات</button>
+      <button type="button" class="btn btn-ghost" onclick="runMobileAction('guide')"><span data-icon="Lightbulb"></span> راهنمای استفاده</button>
       <button type="button" class="btn btn-ghost" onclick="runMobileAction('about')"><span data-icon="Info"></span> دربارهٔ پروژه</button>
       <a href="professor.html" class="btn btn-ghost tool-back-link"><span data-icon="GraduationCap"></span> داشبورد استاد</a>
     </div>
   </div>
+</div>
+
+<!-- ── First-visit interactive help guide ────────────────────────────────── -->
+<div class="help-guide" id="helpGuide" aria-hidden="true">
+  <div class="help-guide-scrim" aria-hidden="true"></div>
+  <div class="help-guide-spotlight" id="helpGuideSpotlight" aria-hidden="true"></div>
+  <section class="help-guide-popover" id="helpGuidePopover" role="dialog" aria-modal="true"
+           aria-labelledby="helpGuideTitle" aria-describedby="helpGuideText" tabindex="-1">
+    <div class="help-guide-popover-header">
+      <span class="help-guide-icon" id="helpGuideIcon" aria-hidden="true"></span>
+      <button type="button" class="help-guide-close" id="helpGuideClose" aria-label="بستن راهنما"><span data-icon="X"></span></button>
+    </div>
+    <div class="help-guide-progress" id="helpGuideProgress" aria-live="polite"></div>
+    <h2 id="helpGuideTitle"></h2>
+    <p id="helpGuideText"></p>
+    <div class="help-guide-footer">
+      <button type="button" class="btn btn-ghost btn-sm" id="helpGuideSkip">رد کردن</button>
+      <div class="help-guide-navigation">
+        <button type="button" class="btn btn-ghost btn-sm" id="helpGuidePrevious">قبلی</button>
+        <button type="button" class="btn btn-primary btn-sm" id="helpGuideNext">مرحله بعد</button>
+      </div>
+    </div>
+  </section>
 </div>
 
 <!-- ── AI Chat FAB + Panel ────────────────────────────────────────────────── -->

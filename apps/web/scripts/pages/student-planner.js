@@ -80,7 +80,7 @@ function updateProfileCurriculumOptions(selectedCohort = '') {
     cohortSelect.disabled = !curriculum;
     curriculumButton.hidden = !curriculum;
     note.textContent = !group ? '' : curriculum
-        ? 'نقشه درسی این رشته موجود است؛ پس از ذخیره می‌توانید درس‌های چارت و وضعیت پیش‌نیازها را ببینید.'
+        ? curriculumDataNotice(curriculum, selectedCohort)
         : 'فعلاً نقشه درسی این رشته در داده‌های پروژه موجود نیست؛ فیلتر درس‌های ارائه‌شده همچنان اعمال می‌شود.';
 }
 
@@ -165,9 +165,228 @@ function openProfileCurriculum() {
 const facultyColors = {};
 const dialogFocusOrigins = new WeakMap();
 
+const HELP_GUIDE_STEPS = Object.freeze([
+    {
+        icon: 'Lightbulb',
+        title: 'به انتخاب واحد یار خوش آمدی',
+        text: 'در چند مرحله کوتاه، مسیر پیدا کردن درس، ساختن برنامه و بررسی امتحان‌ها را با هم مرور می‌کنیم.',
+    },
+    {
+        icon: 'Search',
+        target: '#searchInput',
+        title: '۱. درس موردنظرت را پیدا کن',
+        text: 'نام درس، استاد یا کد درس را وارد کن تا نتایج همان لحظه محدود شوند. برای شروع لازم نیست فرم پیچیده‌ای پر کنی.',
+    },
+    {
+        icon: 'Filter',
+        target: '.search-filters .filter-row',
+        title: '۲. جستجو را دقیق‌تر کن',
+        text: 'دانشکده و گروه اینجا فقط فیلتر جستجو هستند؛ با رشته‌ای که در پروفایل ذخیره کرده‌ای همگام نمی‌شوند.',
+    },
+    {
+        icon: 'Plus',
+        target: '#courseList .course-group',
+        title: '۳. گروه مناسب را مقایسه و اضافه کن',
+        text: 'زمان، استاد، ظرفیت و امتحان هر ارائه را ببین و با دکمه «افزودن به برنامه» آن را انتخاب کن. تداخل‌ها پیش از اضافه‌شدن بررسی می‌شوند.',
+    },
+    {
+        icon: 'UserRound',
+        target: '#profileBtn',
+        title: '۴. پروفایل تحصیلی را یک‌بار تنظیم کن',
+        text: 'رشته، سال ورود و معدل ترم قبل را در پروفایل ذخیره کن تا نقشه درسی و سقف واحدها متناسب با وضعیتت نمایش داده شوند.',
+    },
+    {
+        icon: 'ListChecks',
+        target: '#planStatus',
+        workspace: 'schedule',
+        title: '۵. وضعیت برنامه را کنترل کن',
+        text: 'تعداد درس‌ها، واحدهای انتخابی، سقف واحد و موارد نیازمند بررسی در این خلاصه جمع شده‌اند؛ قبل از خروجی گرفتن آن را مرور کن.',
+    },
+    {
+        icon: 'CalendarDays',
+        target: '.plan-view-tabs',
+        workspace: 'schedule',
+        title: '۶. نمای مناسب را انتخاب کن',
+        text: 'نمای هفتگی برای دیدن زمان‌بندی، فهرست برای مقایسه جزئیات و امتحان‌ها برای بررسی تاریخ و تداخل آزمون‌هاست.',
+    },
+]);
+
+const helpGuideState = {
+    open: false,
+    index: 0,
+    previousFocus: null,
+    initialMobileView: null,
+    positionTimer: null,
+};
+
+function getHelpGuideTarget(step) {
+    return step.target ? document.querySelector(step.target) : null;
+}
+
+function positionHelpGuide() {
+    if (!helpGuideState.open) return;
+    const guide = document.getElementById('helpGuide');
+    const popover = document.getElementById('helpGuidePopover');
+    const spotlight = document.getElementById('helpGuideSpotlight');
+    const step = HELP_GUIDE_STEPS[helpGuideState.index];
+    const target = getHelpGuideTarget(step);
+    if (!guide || !popover || !spotlight) return;
+
+    const targetBox = target?.getBoundingClientRect();
+    const targetVisible = targetBox && targetBox.width > 0 && targetBox.height > 0;
+    guide.classList.toggle('has-target', Boolean(targetVisible));
+    if (!targetVisible) {
+        spotlight.style.cssText = '';
+        popover.dataset.placement = 'center';
+        popover.style.left = `${Math.max(16, (window.innerWidth - popover.offsetWidth) / 2)}px`;
+        popover.style.top = `${Math.max(16, (window.innerHeight - popover.offsetHeight) / 2)}px`;
+        return;
+    }
+
+    const pad = 7;
+    spotlight.style.left = `${Math.max(4, targetBox.left - pad)}px`;
+    spotlight.style.top = `${Math.max(4, targetBox.top - pad)}px`;
+    spotlight.style.width = `${Math.min(window.innerWidth - 8, targetBox.width + pad * 2)}px`;
+    spotlight.style.height = `${Math.min(window.innerHeight - 8, targetBox.height + pad * 2)}px`;
+
+    const popoverWidth = popover.offsetWidth;
+    const popoverHeight = popover.offsetHeight;
+    const gap = 17;
+    const maxLeft = Math.max(16, window.innerWidth - popoverWidth - 16);
+    const left = Math.min(maxLeft, Math.max(16, targetBox.left + targetBox.width / 2 - popoverWidth / 2));
+    const belowTop = targetBox.bottom + gap;
+    const aboveTop = targetBox.top - popoverHeight - gap;
+    const above = belowTop + popoverHeight > window.innerHeight - 16 && aboveTop >= 16;
+    const top = above ? aboveTop : Math.min(window.innerHeight - popoverHeight - 16, Math.max(16, belowTop));
+    popover.dataset.placement = above ? 'above' : 'below';
+    popover.style.left = `${left}px`;
+    popover.style.top = `${top}px`;
+}
+
+function renderHelpGuideStep() {
+    if (!helpGuideState.open) return;
+    const step = HELP_GUIDE_STEPS[helpGuideState.index];
+    if (!step) return;
+    if (step.workspace === 'schedule' && isSingleWorkspace()) setMobView('schedule');
+
+    const target = getHelpGuideTarget(step);
+    target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    document.getElementById('helpGuideIcon').innerHTML = AppIcons.svg(step.icon);
+    document.getElementById('helpGuideProgress').textContent = helpGuideState.index === 0
+        ? 'راهنمای کوتاه'
+        : `مرحله ${toPersianNum(helpGuideState.index)} از ${toPersianNum(HELP_GUIDE_STEPS.length - 1)}`;
+    document.getElementById('helpGuideTitle').textContent = step.title;
+    document.getElementById('helpGuideText').textContent = step.text;
+    document.getElementById('helpGuidePrevious').hidden = helpGuideState.index === 0;
+    document.getElementById('helpGuideNext').textContent = helpGuideState.index === 0
+        ? 'شروع راهنما' : helpGuideState.index === HELP_GUIDE_STEPS.length - 1 ? 'تمام شد' : 'مرحله بعد';
+    window.clearTimeout(helpGuideState.positionTimer);
+    helpGuideState.positionTimer = window.setTimeout(() => {
+        positionHelpGuide();
+        document.getElementById('helpGuideNext')?.focus();
+    }, step.workspace === 'schedule' && isSingleWorkspace() ? 260 : 30);
+}
+
+function closeHelpGuide() {
+    const guide = document.getElementById('helpGuide');
+    if (!guide || !helpGuideState.open) return;
+    window.clearTimeout(helpGuideState.positionTimer);
+    helpGuideState.open = false;
+    guide.classList.remove('open', 'has-target');
+    guide.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('help-guide-locked');
+    if (helpGuideState.initialMobileView && isSingleWorkspace()) setMobView(helpGuideState.initialMobileView);
+    helpGuideState.initialMobileView = null;
+    const focusOrigin = helpGuideState.previousFocus;
+    helpGuideState.previousFocus = null;
+    stateRepository.setPreference('helpGuide', 'done');
+    focusOrigin?.focus?.();
+}
+
+function nextHelpGuideStep() {
+    if (helpGuideState.index >= HELP_GUIDE_STEPS.length - 1) {
+        closeHelpGuide();
+        return;
+    }
+    helpGuideState.index += 1;
+    renderHelpGuideStep();
+}
+
+function previousHelpGuideStep() {
+    if (helpGuideState.index === 0) return;
+    helpGuideState.index -= 1;
+    renderHelpGuideStep();
+}
+
+function trapHelpGuideFocus(event) {
+    const popover = document.getElementById('helpGuidePopover');
+    const focusable = [...popover.querySelectorAll('button:not([hidden]), [href], input, select, textarea')]
+        .filter(element => !element.disabled && element.offsetParent !== null);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault(); last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+    }
+}
+
+function handleHelpGuideKeydown(event) {
+    if (!helpGuideState.open) return false;
+    if (event.key === 'Escape') { event.preventDefault(); closeHelpGuide(); return true; }
+    if (event.key === 'Tab') { trapHelpGuideFocus(event); return true; }
+    if (event.key === 'ArrowLeft') { event.preventDefault(); nextHelpGuideStep(); return true; }
+    if (event.key === 'ArrowRight') { event.preventDefault(); previousHelpGuideStep(); return true; }
+    return true;
+}
+
+function openHelpGuide() {
+    const guide = document.getElementById('helpGuide');
+    if (!guide || helpGuideState.open) return;
+    helpGuideState.open = true;
+    helpGuideState.index = 0;
+    helpGuideState.previousFocus = document.activeElement;
+    helpGuideState.initialMobileView = isSingleWorkspace() ? (document.body.getAttribute('data-mob') || 'search') : null;
+    guide.classList.add('open');
+    guide.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('help-guide-locked');
+    renderHelpGuideStep();
+}
+
+function setupHelpGuide() {
+    document.getElementById('helpGuideClose')?.addEventListener('click', closeHelpGuide);
+    document.getElementById('helpGuideSkip')?.addEventListener('click', closeHelpGuide);
+    document.getElementById('helpGuideNext')?.addEventListener('click', nextHelpGuideStep);
+    document.getElementById('helpGuidePrevious')?.addEventListener('click', previousHelpGuideStep);
+    document.getElementById('helpGuide')?.addEventListener('click', event => {
+        if (event.target.classList.contains('help-guide-scrim')) closeHelpGuide();
+    });
+}
+
+function scheduleFirstVisitHelp() {
+    if (stateRepository.getPreference('helpGuide') === 'done') return;
+    window.setTimeout(() => {
+        if (!document.querySelector('.modal-backdrop.open')) openHelpGuide();
+    }, 650);
+}
+
 function openDialog(dialog) {
     if (!dialog) return;
-    dialogFocusOrigins.set(dialog, document.activeElement);
+    const currentDialog = document.querySelector('.modal-backdrop.open');
+    const focusOrigin = currentDialog && currentDialog !== dialog
+        ? dialogFocusOrigins.get(currentDialog) || document.activeElement
+        : dialogFocusOrigins.get(dialog) || document.activeElement;
+
+    // Keep one modal in the accessibility tree at a time. This also prevents
+    // two backdrops from competing for Escape and focus-trap behavior.
+    if (currentDialog && currentDialog !== dialog) {
+        currentDialog.classList.remove('open');
+        currentDialog.setAttribute('aria-hidden', 'true');
+        dialogFocusOrigins.delete(currentDialog);
+    }
+
+    dialogFocusOrigins.set(dialog, focusOrigin);
     dialog.classList.add('open');
     dialog.setAttribute('aria-hidden', 'false');
     const target = dialog.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
@@ -186,8 +405,9 @@ function closeDialog(dialog) {
     if (!dialog) return;
     dialog.classList.remove('open');
     dialog.setAttribute('aria-hidden', 'true');
-    dialogFocusOrigins.get(dialog)?.focus?.();
+    const focusOrigin = dialogFocusOrigins.get(dialog);
     dialogFocusOrigins.delete(dialog);
+    focusOrigin?.focus?.();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -225,6 +445,10 @@ function init() {
             state.visibleGroups = 30; renderCourseList();
         }));
     document.addEventListener('keydown', event => {
+        if (helpGuideState.open) {
+            handleHelpGuideKeydown(event);
+            return;
+        }
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
             event.preventDefault(); document.getElementById('searchInput').focus(); return;
         }
@@ -742,10 +966,35 @@ function renderPlanWorkspace() {
         button.addEventListener('click', () => focusPlanIssue(health.issues[Number(button.dataset.issueIndex)]));
     });
     const selected = [...state.selected].map(id => planner.findCourse(courses, id)).filter(Boolean);
-    document.getElementById('listView').innerHTML = `<h2 class="sr-only" id="planListFocus" tabindex="-1">فهرست درس‌های انتخاب‌شده</h2>${selected.length ? selected.map(course => {
-        const sessions = CourseDomain.parseSchedule(course.time_html);
-        return `<article class="plan-list-item" style="--course-color:${getCourseColor(course)}" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1"><h3>${SafeDOM.escape(course.name)} · گروه <bdi dir="ltr">${SafeDOM.escape(planner.getSectionId(course))}</bdi></h3><button class="remove-section" type="button" aria-label="حذف ${SafeDOM.escape(course.name)}">${AppIcons.svg('Trash2')}</button><p>${SafeDOM.escape(course.prof || 'استاد اعلام نشده')} · ${sessions.length ? sessions.map(formatSessionChip).join('، ') : 'زمان اعلام نشده'}</p></article>`;
-    }).join('') : '<div class="empty-state"><div class="empty-state-title">برنامه‌ات خالی است</div></div>'}`;
+    const listTable = selected.length ? `<div class="plan-table-wrap">
+        <table class="plan-table schedule-table">
+            <caption class="sr-only">جدول درس‌های انتخاب‌شده</caption>
+            <colgroup><col class="plan-col-course"><col class="plan-col-group"><col class="plan-col-professor"><col class="plan-col-schedule"><col class="plan-col-exam"><col class="plan-col-action"></colgroup>
+            <thead><tr>
+                <th scope="col">درس</th><th scope="col">گروه</th><th scope="col">استاد</th>
+                <th scope="col">زمان کلاس</th><th scope="col">امتحان</th><th scope="col"><span class="sr-only">عملیات</span></th>
+            </tr></thead>
+            <tbody>${selected.map(course => {
+                const sessions = CourseDomain.parseSchedule(course.time_html);
+                const exam = CourseDomain.parseExam(course.exam_text);
+                const sessionText = sessions.length
+                    ? sessions.map(session => `<span class="table-line">${SafeDOM.escape(formatSessionChip(session))}</span>`).join('')
+                    : '<span class="table-muted">زمان اعلام نشده</span>';
+                const examText = exam
+                    ? `<span class="table-line">${toPersianNum(exam.date)}</span><small class="table-muted">${SafeDOM.escape(formatExamTime(exam))}</small>`
+                    : '<span class="table-muted">اعلام نشده</span>';
+                return `<tr class="plan-table-row" style="--course-color:${getCourseColor(course)}" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1">
+                    <th scope="row" class="table-course"><strong>${SafeDOM.escape(course.name)}</strong><small>${toPersianNum(course.units || 0)} واحد</small></th>
+                    <td><bdi dir="ltr">${SafeDOM.escape(planner.getSectionId(course))}</bdi></td>
+                    <td>${SafeDOM.escape(course.prof || 'استاد اعلام نشده')}</td>
+                    <td class="table-lines">${sessionText}</td>
+                    <td class="table-lines">${examText}</td>
+                    <td class="table-action"><button class="remove-section" type="button" aria-label="حذف ${SafeDOM.escape(course.name)}">${AppIcons.svg('Trash2')}</button></td>
+                </tr>`;
+            }).join('')}</tbody>
+        </table>
+    </div>` : '<div class="empty-state"><div class="empty-state-title">برنامه‌ات خالی است</div></div>';
+    document.getElementById('listView').innerHTML = `<h2 class="sr-only" id="planListFocus" tabindex="-1">فهرست درس‌های انتخاب‌شده</h2>${listTable}`;
     document.querySelectorAll('#listView [data-course-id] .remove-section').forEach(button => {
         const item = button.closest('[data-course-id]');
         button.addEventListener('click', () => removeCourse(item.dataset.courseId));
@@ -761,21 +1010,43 @@ function renderPlanWorkspace() {
         : examSameDayCount
             ? `<div class="exam-conflict-summary warning" role="status"><span class="exam-summary-icon" aria-hidden="true">${AppIcons.svg('CalendarDays')}</span><div><strong>امتحان‌های فشرده</strong><span>${toPersianNum(examSameDayCount)} درس با امتحان در یک روز قرار دارند.</span></div></div>`
             : '';
-    document.getElementById('examsView').innerHTML = `<h2 class="sr-only" id="examListFocus" tabindex="-1">فهرست امتحان‌های انتخاب‌شده</h2>${examEntries.length ? `${examSummary}${examFlags.map(({ course, exam, overlaps, sameDay, overlapCourses, sameDayCourses }) => {
+    const examsTable = examEntries.length ? `<div class="plan-table-wrap">
+        <table class="plan-table exams-table">
+            <caption class="sr-only">جدول امتحان‌های انتخاب‌شده</caption>
+            <colgroup><col class="plan-col-course"><col class="plan-col-date"><col class="plan-col-time"><col class="plan-col-status"><col class="plan-col-note"><col class="plan-col-action"></colgroup>
+            <thead><tr>
+                <th scope="col">درس</th><th scope="col">تاریخ</th><th scope="col">ساعت</th>
+                <th scope="col">وضعیت</th><th scope="col">توضیح</th><th scope="col"><span class="sr-only">عملیات</span></th>
+            </tr></thead>
+            <tbody>${examFlags.map(({ course, exam, overlaps, sameDay, overlapCourses, sameDayCourses }) => {
         const stateClass = overlaps ? ' has-exam-conflict' : sameDay ? ' has-exam-same-day' : '';
         const status = overlaps
             ? `<span class="exam-status danger">${AppIcons.svg('CircleAlert')} تداخل زمانی</span>`
             : sameDay
                 ? `<span class="exam-status warning">${AppIcons.svg('CalendarDays')} همان روز</span>`
                 : !exam
-                    ? `<span class="exam-status muted">${AppIcons.svg('CircleAlert')} زمان اعلام نشده</span>`
-                    : '';
+                ? `<span class="exam-status muted">${AppIcons.svg('CircleAlert')} زمان اعلام نشده</span>`
+                    : `<span class="exam-status confirmed">${AppIcons.svg('CalendarDays')} ثبت‌شده</span>`;
         const related = overlaps ? overlapCourses : sameDayCourses;
         const relatedText = related.length
-            ? `<p class="exam-conflict-detail">${overlaps ? 'هم‌زمان با' : 'همان روز با'}: ${related.map(other => `«${SafeDOM.escape(other.name)}»`).join('، ')}</p>`
-            : '';
-        return `<article class="plan-list-item exam-list-item${stateClass}" style="--course-color:${getCourseColor(course)}" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1"><h3>${SafeDOM.escape(course.name)}</h3>${status}<p class="exam-list-meta">${exam ? `${AppIcons.svg('CalendarDays')}${toPersianNum(exam.date)} <span aria-hidden="true">·</span> ${AppIcons.svg('Clock')}${formatExamTime(exam)}` : 'تاریخ و ساعت امتحان اعلام نشده'}</p>${relatedText}</article>`;
-    }).join('')}` : '<div class="empty-state"><div class="empty-state-title">امتحانی برای نمایش نیست</div></div>'}`;
+            ? `${overlaps ? 'هم‌زمان با' : 'همان روز با'}: ${related.map(other => `«${SafeDOM.escape(other.name)}»`).join('، ')}`
+            : '—';
+        return `<tr class="plan-table-row exam-table-row${stateClass}" style="--course-color:${getCourseColor(course)}" data-course-id="${SafeDOM.escape(course.id)}" tabindex="-1">
+            <th scope="row" class="table-course"><strong>${SafeDOM.escape(course.name)}</strong><small>گروه <bdi dir="ltr">${SafeDOM.escape(planner.getSectionId(course))}</bdi></small></th>
+            <td>${exam ? toPersianNum(exam.date) : '<span class="table-muted">—</span>'}</td>
+            <td>${exam ? SafeDOM.escape(formatExamTime(exam)) : '<span class="table-muted">—</span>'}</td>
+            <td>${status}</td>
+            <td class="${related.length ? 'exam-conflict-detail' : 'table-muted'}">${relatedText}</td>
+            <td class="table-action"><button class="remove-section" type="button" aria-label="حذف ${SafeDOM.escape(course.name)}">${AppIcons.svg('Trash2')}</button></td>
+        </tr>`;
+    }).join('')}</tbody>
+        </table>
+    </div>` : '<div class="empty-state"><div class="empty-state-title">امتحانی برای نمایش نیست</div></div>';
+    document.getElementById('examsView').innerHTML = `<h2 class="sr-only" id="examListFocus" tabindex="-1">فهرست امتحان‌های انتخاب‌شده</h2>${examSummary}${examsTable}`;
+    document.querySelectorAll('#examsView [data-course-id] .remove-section').forEach(button => {
+        const item = button.closest('[data-course-id]');
+        button.addEventListener('click', () => removeCourse(item.dataset.courseId));
+    });
     const scheduleButton = document.getElementById('mnSchedule');
     scheduleButton?.classList.toggle('has-issues', !health.ready);
     scheduleButton?.setAttribute('aria-label', `برنامه، ${health.ready ? 'آماده' : `${health.issues.length} مورد نیازمند بررسی`}`);
@@ -1125,6 +1396,31 @@ function getCodeForCohort(cur, cohort = getAcademicProfile().cohort) {
     return cur.codes[cohort] || cur.codes['*'] || null;
 }
 
+function getCurriculumCoverage(curriculum, cohort = '') {
+    const entries = Array.isArray(curriculum?.courses) ? curriculum.courses : [];
+    const mapped = entries.filter(course => cohort
+        ? Boolean(getCodeForCohort(course, cohort))
+        : Object.keys(course.codes || {}).length > 0).length;
+    return { total: entries.length, mapped, unmapped: entries.length - mapped };
+}
+
+function curriculumDataNotice(curriculum, cohort = '') {
+    const coverage = getCurriculumCoverage(curriculum, cohort);
+    const hasSource = Array.isArray(curriculum.sourceFiles) && curriculum.sourceFiles.length > 0;
+    const review = curriculum.reviewStatus === 'reviewed' && hasSource
+        ? 'این نقشه درسی بازبینی شده است.'
+        : hasSource
+            ? 'منبع نقشه ثبت شده، اما تأیید نهایی آموزشی نشده است.'
+            : 'منبع رسمی این نقشه در داده‌های پروژه ثبت نشده است.';
+    const scope = cohort
+        ? `برای ورودی ${toPersianNum(cohort)}، ${toPersianNum(coverage.mapped)} از ${toPersianNum(coverage.total)} درس کد تطبیق دارند.`
+        : `${toPersianNum(coverage.mapped)} از ${toPersianNum(coverage.total)} درس حداقل یک کد تطبیق دارند؛ سال ورود را برای تطبیق دقیق انتخاب کنید.`;
+    const caution = coverage.unmapped
+        ? ' درس‌های بدون کد در پیشنهادهای این ترم وارد نمی‌شوند تا از تطبیق اشتباه جلوگیری شود.'
+        : '';
+    return `${review} ${scope}${caution}`;
+}
+
 function isOfferedThisSemester(cur) {
     const code = getCodeForCohort(cur);
     return code ? courses.some(c => c.id.startsWith(code + '_')) : false;
@@ -1184,6 +1480,10 @@ function renderCurriculumTab() {
     // The academic profile is the single source of truth for curriculum
     // identity, including entry year. Search filters never reach this path.
     controls.style.display = 'block';
+    const coverage = getCurriculumCoverage(data, cohort);
+    const qualityTone = data.reviewStatus === 'reviewed'
+        && Array.isArray(data.sourceFiles) && data.sourceFiles.length > 0
+        && coverage.unmapped === 0 ? 'verified' : 'warning';
     controls.innerHTML = `<div class="cur-profile-context">
         <div class="cur-profile-copy">
             <span class="cur-profile-label">رشته و ورودی پروفایل</span>
@@ -1191,6 +1491,10 @@ function renderCurriculumTab() {
             <span>${cohort ? `ورودی ${SafeDOM.escape(cohort)}` : 'ورودی انتخاب نشده'}</span>
         </div>
         <button type="button" class="btn btn-ghost btn-sm" onclick="openStudentProfile()">ویرایش پروفایل</button>
+    </div>
+    <div class="cur-data-quality ${qualityTone}" role="status">
+        ${AppIcons.svg(qualityTone === 'verified' ? 'ShieldCheck' : 'Info')}
+        <div><strong>وضعیت داده‌ی نقشه</strong><span>${SafeDOM.escape(curriculumDataNotice(data, cohort))}</span></div>
     </div>`;
 
     // Build semester map
@@ -1232,6 +1536,11 @@ function renderCurriculumTab() {
         semCourses.forEach(c => {
             const st = getCourseStatus(c.id, data);
             const offered = isOfferedThisSemester(c);
+            const hasAnyCode = Object.keys(c.codes || {}).length > 0;
+            const hasActiveCode = Boolean(getCodeForCohort(c, cohort));
+            const mappingNote = !hasAnyCode
+                ? 'کد تطبیق ثبت نشده'
+                : cohort && !hasActiveCode ? 'کد این ورودی ثبت نشده' : '';
             const offeredDot = (offered && st !== 'passed' && st !== 'taking')
                 ? `<span class="offered-dot" title="این ترم ارائه می‌شود"></span>` : '';
 
@@ -1242,13 +1551,14 @@ function renderCurriculumTab() {
             }) - 1;
 
             html += `
-                <div class="cur-card ${st}" data-curriculum-action="${actionIndex}" role="button" tabindex="0"
-                     title="${SafeDOM.escape(statusTooltip[st] || '')}"
-                     aria-label="${SafeDOM.escape(`«${c.name}»، ${statusTooltip[st] || ''}`)}">
+                <div class="cur-card ${st}${mappingNote ? ' unmapped' : ''}" data-curriculum-action="${actionIndex}" role="button" tabindex="0"
+                     title="${SafeDOM.escape(`${statusTooltip[st] || ''}${mappingNote ? `؛ ${mappingNote}` : ''}`)}"
+                     aria-label="${SafeDOM.escape(`«${c.name}»، ${statusTooltip[st] || ''}${mappingNote ? `؛ ${mappingNote}` : ''}`)}">
                     <div class="cur-card-name">${SafeDOM.escape(c.name)}</div>
                     <div class="cur-card-footer">
                         <span class="cur-card-units">${toPersianNum(c.units)} واحد</span>
                         <div style="display:flex;align-items:center;gap:4px;">
+                            ${mappingNote ? `<span class="cur-card-mapping">${SafeDOM.escape(mappingNote)}</span>` : ''}
                             ${offeredDot}
                             ${st === 'locked' ? `<span title="کلیک برای مسیریاب" aria-hidden="true">${AppIcons.svg('Map')}</span>` : ''}
                             <span class="cur-status-glyph" aria-hidden="true">${statusGlyph[st] || ''}</span>
@@ -1462,6 +1772,7 @@ function runMobileAction(action) {
     if (action === 'print') printSchedule();
     if (action === 'calendar') openCalendarExport();
     if (action === 'exams') openExamModal();
+    if (action === 'guide') openHelpGuide();
     if (action === 'about') openDialog(document.getElementById('aboutModal'));
 }
 
@@ -1636,4 +1947,6 @@ init();
 enhanceTablists();
 configureAIContext();
 initMobile();
+setupHelpGuide();
 initAIFeatures();
+scheduleFirstVisitHelp();

@@ -153,6 +153,16 @@ test('plan UI exposes corrective actions and unsupported-session warning', () =>
     assert.match(controller, /session\.slot === null/);
 });
 
+test('selected schedule and exam views expose semantic comparison tables', () => {
+    const controller = read('apps/web/scripts/pages/student-planner.js');
+    const css = read('apps/web/styles/main.css');
+    assert.match(controller, /class="plan-table schedule-table"/);
+    assert.match(controller, /class="plan-table exams-table"/);
+    assert.match(controller, /scope="row" class="table-course"/);
+    assert.match(css, /\.plan-table thead \{ position: sticky/);
+    assert.match(css, /\.plan-table\.schedule-table \{ min-width: 820px/);
+});
+
 test('storage and data-driven actions cannot break startup or become inline script injection', () => {
     const storage = read('apps/web/scripts/adapters/planner-storage.js');
     const theme = read('apps/web/scripts/features/ui.js');
@@ -191,6 +201,25 @@ test('responsive secondary actions have a mobile action sheet', () => {
     assert.match(html, /href="professor\.html"/);
     assert.match(controller, /function openMobileActions\(\)/);
     assert.match(controller, /function runMobileAction\(action\)/);
+});
+
+test('first-visit help guide has a persistent, accessible entry point', () => {
+    const html = read('apps/web/index.html');
+    const controller = read('apps/web/scripts/pages/student-planner.js');
+    const storage = read('apps/web/scripts/adapters/planner-storage.js');
+    const css = read('apps/web/styles/main.css');
+    assert.match(html, /id="helpGuideBtn"[^>]*onclick="openHelpGuide\(\)"/);
+    assert.match(html, /id="helpGuide"[^>]*aria-hidden="true"/);
+    assert.match(html, /role="dialog" aria-modal="true"[\s\S]*?aria-labelledby="helpGuideTitle"/);
+    assert.match(html, /id="helpGuideNext"/);
+    assert.match(html, /runMobileAction\('guide'\)/);
+    assert.match(controller, /const HELP_GUIDE_STEPS = Object\.freeze/);
+    assert.match(controller, /function scheduleFirstVisitHelp\(\)/);
+    assert.match(controller, /stateRepository\.getPreference\('helpGuide'\)/);
+    assert.match(controller, /stateRepository\.setPreference\('helpGuide', 'done'\)/);
+    assert.match(storage, /helpGuide: 'uni_planner_help_guide_v1'/);
+    assert.match(css, /\.help-guide-spotlight/);
+    assert.match(css, /\.help-guide-popover/);
 });
 
 test('professor dashboard has a skip link, main landmark, and width-safe conflict panel', () => {

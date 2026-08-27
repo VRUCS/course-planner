@@ -196,15 +196,27 @@
         const sectionsB = groupCourses.filter(course => course.id.startsWith(`${baseB}_`));
         const conflicts = [];
 
+        const formatTime = minutes => {
+            if (!Number.isFinite(minutes)) return '—';
+            return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+        };
+
         for (const sectionA of sectionsA) {
             const sessionsA = CourseDomain.parseSchedule(sectionA.time_html);
             for (const sectionB of sectionsB) {
                 const sessionsB = CourseDomain.parseSchedule(sectionB.time_html);
                 if (!CourseDomain.sessionsOverlap(sessionsA, sessionsB)) continue;
-                const times = sessionsA
-                    .filter(a => sessionsB.some(b => a.day === b.day
-                        && a.startMinutes < b.endMinutes && b.startMinutes < a.endMinutes))
-                    .map(session => `${CourseDomain.DAY_NAMES[session.day]} ${session.slot}:00`);
+                const times = [];
+                sessionsA.forEach(sessionA => {
+                    sessionsB.forEach(sessionB => {
+                        const overlaps = sessionA.day === sessionB.day
+                            && sessionA.startMinutes < sessionB.endMinutes
+                            && sessionB.startMinutes < sessionA.endMinutes;
+                        if (!overlaps) return;
+                        const day = CourseDomain.DAY_NAMES[sessionA.day];
+                        times.push(`${day} ${formatTime(sessionA.startMinutes)}–${formatTime(sessionA.endMinutes)} ↔ ${formatTime(sessionB.startMinutes)}–${formatTime(sessionB.endMinutes)}`);
+                    });
+                });
                 conflicts.push({ secA: sectionA.id, secB: sectionB.id, times });
             }
         }
