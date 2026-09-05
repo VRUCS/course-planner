@@ -168,7 +168,7 @@ tests/             Backend, frontend, pipeline, and end-to-end tests
 docs/assets/       README screenshots and documentation assets
 ```
 
-The browser client is organized into domain logic, adapters, shared features, page controllers, generated data wrappers, and styles. See the focused READMEs in [`apps/web`](apps/web/README.md), [`apps/api`](apps/api/README.md), [`data`](data/README.md), and [`tools/data_pipeline`](tools/data_pipeline/README.md) for deeper technical notes.
+The browser client is organized into domain logic, adapters, shared features, page controllers, generated data wrappers, and styles. See the focused READMEs in [`apps/web`](apps/web/README.md), [`apps/api`](apps/api/README.md), [`data`](data/README.md), and [`tools/data_pipeline`](tools/data_pipeline/README.md) for deeper technical notes. For a developer handoff and continuation workflow, see the [English continuation guide](docs/continuation-guide.en.md) or the [Persian continuation guide](docs/continuation-guide.fa.md).
 
 ## Testing
 

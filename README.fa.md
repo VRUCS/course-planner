@@ -170,7 +170,7 @@ tests/             تست‌های backend، frontend، pipeline و end-to-end
 docs/assets/       اسکرین‌شات‌ها و دارایی‌های مستندات
 ```
 
-کلاینت مرورگر به بخش‌های منطق دامنه، adapterها، قابلیت‌های مشترک، کنترلرهای صفحه، wrapperهای داده‌ی تولیدشده و styleها تقسیم شده است. برای جزئیات فنی بیشتر به READMEهای [`apps/web`](apps/web/README.md)، [`apps/api`](apps/api/README.md)، [`data`](data/README.md) و [`tools/data_pipeline`](tools/data_pipeline/README.md) مراجعه کنید.
+کلاینت مرورگر به بخش‌های منطق دامنه، adapterها، قابلیت‌های مشترک، کنترلرهای صفحه، wrapperهای داده‌ی تولیدشده و styleها تقسیم شده است. برای جزئیات فنی بیشتر به READMEهای [`apps/web`](apps/web/README.md)، [`apps/api`](apps/api/README.md)، [`data`](data/README.md) و [`tools/data_pipeline`](tools/data_pipeline/README.md) مراجعه کنید. برای تحویل فنی و مسیر ادامهٔ پروژه، [راهنمای ادامه به فارسی](docs/continuation-guide.fa.md) یا [راهنمای ادامه به انگلیسی](docs/continuation-guide.en.md) را ببینید.
 
 ## تست
 
